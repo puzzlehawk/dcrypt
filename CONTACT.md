@@ -2,6 +2,8 @@ Mail
 ----
 dcrypt@safe-mail.net
 
+Please make use of PGP!
+
 PGP
 ---
 
