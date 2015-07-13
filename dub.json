@@ -1,0 +1,33 @@
+{
+	"name": "dcrypt",
+	"description": "A cryptography library for the D programming language.",
+	"license": "MIT",
+
+	"buildTypes": {
+		"unittest": {
+			"buildOptions": ["debugMode", "debugInfo", "unittests"]
+		},
+		"debug": {
+			"buildOptions": ["debugMode", "debugInfo", "optimize"]
+		},
+		"release": {
+			"buildOptions": ["releaseMode", "optimize", "inline"]
+		},
+		"benchmark": {
+			"buildOptions": ["releaseMode", "optimize", "inline"],
+			"versions": ["Benchmark"]
+		}
+	},
+
+	"configurations": [
+        {
+            "name": "libdcrypt",
+            "targetType": "library"
+        },
+		{
+            "name": "selftest",
+            "targetType": "executable",
+			"versions": ["Benchmark"]
+        }
+	]
+}
