@@ -35,7 +35,7 @@ unittest {
 	
 	
 	// encryption mode
-	cbc.start(true, new ParametersWithIV(key, iv));
+	cbc.start(true, key, iv);
 	
 	ubyte[plain.length] buf;
 	buf = plain;
@@ -47,7 +47,7 @@ unittest {
 	assert(buf == expected_ciphertext, text(cbc.name,": encryption failed"));
 	
 	// decryption mode
-	cbc.start(false, new ParametersWithIV(key, iv));
+	cbc.start(false, key, iv);
 	
 	foreach(block; chunks(buf[],16)) {
 		cbc.processBlock(block,block);
@@ -101,9 +101,6 @@ public struct CBC(Cipher) if(isBlockCipher!Cipher)
 		assert(keyParam !is null, "Nullpointer!");
 	}
 	body {
-		bool oldEncrypting = this.forEncryption;
-
-		this.forEncryption = forEncryption;
 
 		if (ParametersWithIV ivParam = cast(ParametersWithIV) keyParam)
 		{
@@ -111,7 +108,7 @@ public struct CBC(Cipher) if(isBlockCipher!Cipher)
 		}
 		else
 		{
-			start(forEncryption, keyParam.getKey(), null);
+			start(forEncryption, keyParam.getKey());
 		}
 	}
 
@@ -131,6 +128,7 @@ public struct CBC(Cipher) if(isBlockCipher!Cipher)
 	body {
 
 		bool oldMode = this.forEncryption;
+		this.forEncryption = forEncryption;
 
 		if(userKey is null) {
 			// possible to change iv overhead of new key setup
