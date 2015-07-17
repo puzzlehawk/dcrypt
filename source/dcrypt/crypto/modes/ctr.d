@@ -72,31 +72,11 @@ public struct CTR(Cipher) if(isBlockCipher!Cipher) {
 		Cipher cipher;
 	}
 
-	public void init(bool forEncryption, KeyParameter params) nothrow {
-		if(ParametersWithIV ivParams = cast(ParametersWithIV) params) {
-			init(forEncryption, ivParams);
-		} else {
-			init(forEncryption, new ParametersWithIV(params.getKey, new ubyte[blockSize]));
-		}
-	}
-
-	public void init(bool forEncryption, ParametersWithIV params) nothrow 
-	in {
-		// does the IV match the block size?
-		assert(params.getIV().length == blockSize, "length of IV has to be the same as the block size");
-	}
-	body {
-		cipher.init(true, params);
-
-		nonce[] = params.getIV[];
-		reset();
-	}
-
 	/// Params:
 	/// forEncryption = Does not matter for CTR because encryption and decryption is the same in this mode.
 	/// userKey = secret key
 	/// iv = initialisation vector
-	public void init(bool forEncryption, in ubyte[] userKey, in ubyte[] iv = null)
+	public void init(bool forEncryption, in ubyte[] userKey, in ubyte[] iv)
 	in {
 		assert(iv !is null, "CTR without IV is not supported.");
 		// does the IV match the block size?

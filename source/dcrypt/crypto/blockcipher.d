@@ -15,8 +15,7 @@ template isBlockCipher(T)
 						T bc = void; // Can define
 						string name = bc.name;
 						uint blockSize = T.blockSize;
-						bc.init(true, new KeyParameter([]));		// init with KeyParameter
-						bc.init(true, cast(const ubyte[]) block);	// init with secret key
+						bc.init(true, cast(const ubyte[]) block, cast(const ubyte[]) block);	// init with secret key and iv
 						uint len = bc.processBlock(cast (const ubyte[]) block, block);
 						bc.reset();
 					}));
@@ -32,14 +31,12 @@ public interface BlockCipher {
 	 * Initialize the cipher.
 	 *
 	 * Params:
-	 *	forEncryption	=	if true the cipher is initialised for
+	 * forEncryption	=	if true the cipher is initialised for
 	 *  encryption, if false for decryption.
-	 *  params	=	the key and other data required by the cipher.
-	 *
-	 * Throws: IllegalArgumentException if the params argument is
-	 * inappropriate.
+	 * userKey	=	A secret key.
+	 * iv = A nonce.
 	 */
-	void init(bool forEncryption, KeyParameter params) nothrow;
+	void init(bool forEncryption, in ubyte[] userKey, in ubyte[] iv = null) nothrow @nogc;
 
 	/**
 	 * Return the name of the algorithm the cipher implements.
@@ -96,8 +93,8 @@ public class BlockCipherWrapper(T) if(isBlockCipher!T): BlockCipher {
 	 * Throws: IllegalArgumentException if the params argument is
 	 * inappropriate.
 	 */
-	void init(bool forEncryption, KeyParameter params) nothrow {
-		cipher.init(forEncryption, params);
+	void init(bool forEncryption, in ubyte[] key, in ubyte[] iv = null) nothrow {
+		cipher.init(forEncryption, key, iv);
 	}
 	
 	/**

@@ -47,11 +47,11 @@ public struct AESOpenSSL
 
 	public nothrow {
 
-		void init(bool forEncryption, KeyParameter params) {
-			init(forEncryption, params.getKey());
-		}
-
-		void init(bool forEncryption, in ubyte[] userKey) @nogc {
+		/// Params:
+		/// forEncryption = `false`: decrypt, `true`: encrypt
+		/// userKey = Secret key.
+		/// iv = Not used.
+		void init(bool forEncryption, in ubyte[] userKey, in ubyte[] iv = null) nothrow @nogc {
 			this.forEncryption = forEncryption;
 			
 			if(forEncryption) {

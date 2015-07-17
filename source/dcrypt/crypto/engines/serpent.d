@@ -62,23 +62,11 @@ public struct Serpent
 		bool initialized = false;
 	}
 
-	
-	/// initialize a Serpent cipher.
-	///
 	/// Params:
-	/// forEncryption = whether or not we are for encryption.
-	/// params = the parameters required to set up the cipher.
-	public void init(bool forEncryption, KeyParameter keyParam) nothrow
-	{
-		init(forEncryption, keyParam.getKey);
-	}
-
-	/// initialize a Serpent cipher.
-	///
-	/// Params:
-	/// forEncryption = whether or not we are for encryption.
-	/// userKey = the key.
-	public void init(bool forEncryption, in ubyte[] userKey) nothrow @nogc
+	/// forEncryption = `false`: decrypt, `true`: encrypt
+	/// userKey = Secret key.
+	/// iv = Not used.
+	void init(bool forEncryption, in ubyte[] userKey, in ubyte[] iv = null) nothrow @nogc
 	{
 		this.encrypting = forEncryption;
 		makeWorkingKey(userKey);

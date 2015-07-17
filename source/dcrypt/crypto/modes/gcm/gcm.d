@@ -67,39 +67,13 @@ public struct GCM(T) if(is(T == void) || isBlockCipher!T)
 		bool initialized = false;		/// True if and only if GCM has been initialized
 	}
 
-	
-	/// Throws: IllegalArgumentException
-	public void init(bool forEncryption, ParametersWithIV params) nothrow {
 
-		if(AEADParameters aeadParams = cast(AEADParameters) params) {
-			init(forEncryption, 
-				aeadParams.getIV(),
-				new KeyParameter(aeadParams.getKey()),
-				aeadParams.getMacSize());
-		}else {
-			init(forEncryption, params.getIV(), new KeyParameter(params.getKey()), 128);
-		}
+	public void init(bool forEncryption, in ubyte[] key, in ubyte[] nonce = null, uint macSize = 128) nothrow {
+			start(forEncryption, key, nonce, 128);
 	}
 
 	public {
-
-		/**
-		 * initialize the underlying cipher.
-		 * Parameter can either be an AEADParameters or a ParametersWithIV object.
-		 * 
-		 * Params:
-		 * forEncryption = true if we are setting up for encryption, false otherwise.
-		 * params = the necessary parameters for the underlying cipher to be initialised.
-		 * 
-		 * Throws: IllegalArgumentException
-		 */
-		void init(bool forEncryption, AEADParameters aeadParams) nothrow {
-			init(forEncryption, aeadParams.getNonce(), 
-				new KeyParameter(aeadParams.getKey()), 
-				aeadParams.getMacSize());
-			processAADBytes(aeadParams.getAssociatedText());
-		}
-		
+	
 		/**
 		 * Returns: the algorithm name.
 		 */
@@ -333,7 +307,7 @@ public struct GCM(T) if(is(T == void) || isBlockCipher!T)
 	 * 
 	 * Throws: IllegalArgumentException
 	 */
-	private void init(bool forEncryption, in ubyte[] iv, KeyParameter key, uint macSize) nothrow
+	private void start(bool forEncryption, in ubyte[] key, in ubyte[] iv, uint macSize) nothrow @nogc
 	in {
 		assert(macSize >= 32, "macSize can't be lower than 32 bits.");
 		assert(macSize <= 128, "macSize can't be longer than 128 bits.");
@@ -749,6 +723,7 @@ unittest {
 }
 
 /// OOP Wrapper for GCM
+@safe
 public class GCMBlockCipher: AEADBlockCipher {
 
 	private GCM!void cipher = void;
@@ -761,14 +736,15 @@ public class GCMBlockCipher: AEADBlockCipher {
 		}
 		
 		/**
-		 * initialize the underlying cipher. Parameter can either be an AEADParameters or a ParametersWithIV object.
+		 * initialize the underlying cipher..
 		 * Params:
 		 * forEncryption = true if we are setting up for encryption, false otherwise.
-		 * params = the necessary parameters for the underlying cipher to be initialised.
-		 * Throws: IllegalArgumentException if the params argument is inappropriate.
+		 * key = Secret key.
+		 * iv = None.
+		 * macSize = Size of mac tag in bits.
 		 */
-		void init(bool forEncryption, ParametersWithIV params) {
-			cipher.init(forEncryption, params);
+		void init(bool forEncryption, in ubyte[] key, in ubyte[] iv, in uint macSize = 128) nothrow @nogc {
+			cipher.start(forEncryption, key, iv, macSize);
 		}
 		
 		/**

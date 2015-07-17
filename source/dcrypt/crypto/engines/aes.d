@@ -51,21 +51,20 @@ public struct AES
 	public enum blockSize = 16;
 
 	public {
-
-		void init(bool forEncryption, KeyParameter keyParams) nothrow
-		{
-			init(forEncryption, keyParams.getKey());
-		}
-
-		void init(bool forEncryption, in ubyte[] key) nothrow @nogc
+	
+		/// Params:
+		/// forEncryption = `false`: decrypt, `true`: encrypt
+		/// userKey = Secret key.
+		/// iv = Not used.
+		void init(bool forEncryption, in ubyte[] userKey, in ubyte[] iv = null) nothrow @nogc
 		in {
-			size_t len = key.length;
+			size_t len = userKey.length;
 			assert(len == 16 || len == 24 || len == 32, this.name~": Invalid key length (requires 16, 24 or 32 bytes)");
 		}
 		body {
 			this.forEncryption = forEncryption;
 			
-			generateWorkingKey(key, forEncryption);
+			generateWorkingKey(userKey, forEncryption);
 			
 			initialized = true;
 		}

@@ -20,11 +20,11 @@ public class BlockCipherBenchmark: Benchmark {
 	
 	override string[] benchmark(ulong length) {
 
-		cipher.init(true, new KeyParameter(new ubyte[16]));
+		cipher.init(true, new ubyte[16], new ubyte[16]);
 		
 		double encrSpeed = getSpeed(length)*1e-6;
 		
-		cipher.init(false, new KeyParameter(new ubyte[16]));
+		cipher.init(false, new ubyte[16], new ubyte[16]);
 		
 		double decrSpeed = getSpeed(length)*1e-6;
 

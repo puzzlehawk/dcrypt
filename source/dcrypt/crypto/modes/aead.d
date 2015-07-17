@@ -43,9 +43,9 @@ public interface AEADBlockCipher
 		 * Params:
 		 * forEncryption = true if we are setting up for encryption, false otherwise.
 		 * params = the necessary parameters for the underlying cipher to be initialised.
-		 * Throws: IllegalArgumentException if the params argument is inappropriate.
+		 * macSize = Size of mac tag in bits.
 		 */
-		void init(bool forEncryption, ParametersWithIV params);
+		void init(bool forEncryption, in ubyte[] key, in ubyte[] iv, in uint macSize = 0) nothrow @nogc;
 
 		/**
 		 * Return the name of the algorithm.

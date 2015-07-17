@@ -47,19 +47,13 @@ public struct RC6
 		enum name = "RC6";
 		enum blockSize = 4*bytesPerWord;
 
-		
-		/// Params:
-		/// forEncryption = whether or not we are for encryption.
-		/// Throws: Error if key has unsupported size.
-		void init(bool forEncryption, KeyParameter params) nothrow
-		{
-			init(forEncryption, params.getKey());
-		}
 
 		/// Params:
-		/// forEncryption = whether or not we are for encryption.
-		/// Throws: Error if key has unsupported size.
-		void init(bool forEncryption, in ubyte[] userKey) nothrow @nogc
+		/// forEncryption = `false`: decrypt, `true`: encrypt
+		/// userKey = Secret key.
+		/// iv = Not used.
+		/// Throws: Error if key has unsupported size.	
+		void init(bool forEncryption, in ubyte[] userKey, in ubyte[] iv = null) nothrow @nogc
 		{
 			this.forEncryption = forEncryption;
 			setKey(userKey);

@@ -13,7 +13,6 @@ template isStreamCipher(T)
 						ubyte[0] block;
 						T c = void; //Can define
 						string name = c.name;
-						c.init(true, new KeyParameter([]));
 						c.init(true, cast(const ubyte[]) block, cast(const ubyte[]) block); // init with key and IV
 						ubyte b = c.returnByte(cast(ubyte)0);
 						c.processBytes(cast(const ubyte[]) block, block);
@@ -33,7 +32,7 @@ public interface StreamCipher {
 	 * inappropriate.
 	 */
 	@safe
-	public void init(bool forEncryption, KeyParameter params);
+	public void init(bool forEncryption, in ubyte[] key, in ubyte[] iv);
 
 	/**
 	 * Returns: the name of the algorithm the cipher implements.
@@ -84,23 +83,17 @@ public class StreamCipherWrapper(T) if(isStreamCipher!T): StreamCipher {
 
 	private T cipher;
 
-	/**
-	 * Initialize the cipher.
-	 *
-	 * Params: forEncryption = if true the cipher is initialised for
-	 *  encryption, if false for decryption.
-	 *  params = the key and other data required by the cipher.
-	 * Throws: IllegalArgumentException if the params argument is
-	 * inappropriate.
-	 */
+	/// Params:
+	/// forEncryption = encrypt or decrypt
+	/// key = Secret key.
+	/// iv = Initialization vector.
 	@safe
-	public void init(bool forEncryption, KeyParameter params) {
-		cipher.init(forEncryption, params);
+	public void init(bool forEncryption, in ubyte[] key, in ubyte[] iv = null) {
+		cipher.init(forEncryption, key, iv);
 	}
 	
-	/**
-	 * Returns: the name of the algorithm the cipher implements.
-	 */
+
+	/// Returns: the name of the algorithm the cipher implements.
 	@safe @property
 	public string name() pure nothrow {
 		return cipher.name;
@@ -166,10 +159,9 @@ body {
 
 		if(ivs != null) {
 			const ubyte[] iv = cast(const ubyte[]) ivs[i];
-			ParametersWithIV ivparams = new ParametersWithIV(key, iv);
-			c.init(true, ivparams);
+			c.init(true, key, iv);
 		} else {
-			c.init(true, new KeyParameter(key));
+			c.init(true, key, null);
 		}
 		
 		buf.length = plain.length;

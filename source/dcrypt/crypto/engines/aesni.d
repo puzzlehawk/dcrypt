@@ -58,18 +58,14 @@ version (AESNI) {
 		
 		public {
 
+			/// Params:
+			/// forEncryption = `false`: decrypt, `true`: encrypt
+			/// userKey = Secret key.
+			/// iv = Not used.
+			/// 
 			/// Throws: Error if aes instruction set is not supported by CPU.
 			/// Use checkHardwareAES() to avoid running into this error.
-			/// 
-			void init(bool forEncryption, KeyParameter keyParams) nothrow
-			{
-				init(forEncryption, keyParams.getKey());
-			}
-
-			/// Throws: Error if aes instruction set is not supported by CPU.
-			/// Use checkHardwareAES() to avoid running into this error.
-			/// 
-			void init(bool forEncryption, in ubyte[] userKey) nothrow @nogc
+			void init(bool forEncryption, in ubyte[] userKey, in ubyte[] iv = null) nothrow @nogc
 			{
 				assertHardwareSupport();
 				

@@ -147,41 +147,6 @@ public struct Salsa20 {
 		setKey(key, iv);
 	}
 
-	/**
-	 * initialise a Salsa20 cipher.
-	 *
-	 * Params: forEncryption = whether or not we are for encryption.
-	 * params = the parameters required to set up the cipher.
-	 * Throws: IllegalArgumentException if the params argument is
-	 * inappropriate.
-	 */
-	public void init(bool forEncryption, KeyParameter params)
-	{
-		if(auto ivParams = cast(ParametersWithIV) params) {
-			init(ivParams);
-		} else {
-			assert(false, "Salsa20 needs a ParametersWithIV parameter");
-		}
-	}
-
-	/// initialize the cipher
-	/// Params:
-	/// ivParams = key and iv
-	/// 
-	/// Throws:
-	/// IllegalArgumentException = if iv length or key length are invalid
-	private void init(ParametersWithIV ivParams)
-	{
-		/* 
-		 * Salsa20 encryption and decryption is completely
-		 * symmetrical, so the 'forEncryption' is 
-		 * irrelevant. (Like 90% of stream ciphers)
-		 */
-		
-		init(true, ivParams.getKey(), ivParams.getIV());
-		
-	}
-
 	/// 
 	/// Throws: MaxBytesExceededException = if limit of 2^70 bytes is exceeded
 	///

@@ -122,18 +122,6 @@ public struct RC4 {
 		wipe(x, y);
 	}
 
-
-	/**
-	 * Initialize the cipher.
-	 *
-	 * Params:
-	 * forEncryption = if true the cipher is initialized for encryption, if false for decryption.
-	 * keyParams = the key and other data required by the cipher.
-	 */
-	public void init(bool forEncryption, KeyParameter keyParams) {
-		init(forEncryption, keyParams.getKey(), null);
-	}
-
 	/**
 	 * Initialize the cipher.
 	 *

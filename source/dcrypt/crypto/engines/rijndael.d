@@ -139,23 +139,12 @@ public struct Rijndael(uint blockBits) {
 	alias ulong[4][MAXROUNDS+1] workingkey_t;
 
 	public {
-
-		/// initialize a Rijndael cipher.
-		///
+	
 		/// Params:
-		/// forEncryption = whether or not we are for encryption.
-		/// params = the parameters required to set up the cipher.
-		void init(bool forEncryption, KeyParameter  keyParam) nothrow
-		{
-			init(forEncryption, keyParam.getKey);
-		}
-
-		/// initialize a Rijndael cipher.
-		///
-		/// Params:
-		/// forEncryption = whether or not we are for encryption.
-		/// userKey = The encryption or decryption key.
-		void init(bool forEncryption, in ubyte[] userKey) nothrow @nogc
+		/// forEncryption = `false`: decrypt, `true`: encrypt
+		/// userKey = Secret key.
+		/// iv = Not used.
+		void init(bool forEncryption, in ubyte[] userKey, in ubyte[] iv = null) nothrow @nogc
 		{
 			this.forEncryption = forEncryption;
 			workingKey = generateWorkingKey(userKey);
