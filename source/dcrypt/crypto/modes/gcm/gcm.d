@@ -319,7 +319,7 @@ public struct GCM(T) if(is(T == void) || isBlockCipher!T)
 		this.macBitLen = macSize;
 
 		// init underyling cipher
-		blockCipher.init(true, key);
+		blockCipher.start(true, key);
 		
 		// init gHash
 		ubyte[BLOCKSIZE] H;

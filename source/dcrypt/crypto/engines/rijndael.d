@@ -144,7 +144,7 @@ public struct Rijndael(uint blockBits) {
 		/// forEncryption = `false`: decrypt, `true`: encrypt
 		/// userKey = Secret key.
 		/// iv = Not used.
-		void init(bool forEncryption, in ubyte[] userKey, in ubyte[] iv = null) nothrow @nogc
+		void start(bool forEncryption, in ubyte[] userKey, in ubyte[] iv = null) nothrow @nogc
 		{
 			this.forEncryption = forEncryption;
 			workingKey = generateWorkingKey(userKey);

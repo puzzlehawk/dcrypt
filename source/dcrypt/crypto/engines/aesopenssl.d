@@ -51,7 +51,7 @@ public struct AESOpenSSL
 		/// forEncryption = `false`: decrypt, `true`: encrypt
 		/// userKey = Secret key.
 		/// iv = Not used.
-		void init(bool forEncryption, in ubyte[] userKey, in ubyte[] iv = null) nothrow @nogc {
+		void start(bool forEncryption, in ubyte[] userKey, in ubyte[] iv = null) nothrow @nogc {
 			this.forEncryption = forEncryption;
 			
 			if(forEncryption) {

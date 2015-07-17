@@ -65,7 +65,7 @@ version (AESNI) {
 			/// 
 			/// Throws: Error if aes instruction set is not supported by CPU.
 			/// Use checkHardwareAES() to avoid running into this error.
-			void init(bool forEncryption, in ubyte[] userKey, in ubyte[] iv = null) nothrow @nogc
+			void start(bool forEncryption, in ubyte[] userKey, in ubyte[] iv = null) nothrow @nogc
 			{
 				assertHardwareSupport();
 				

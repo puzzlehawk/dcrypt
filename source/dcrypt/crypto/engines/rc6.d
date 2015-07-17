@@ -53,7 +53,7 @@ public struct RC6
 		/// userKey = Secret key.
 		/// iv = Not used.
 		/// Throws: Error if key has unsupported size.	
-		void init(bool forEncryption, in ubyte[] userKey, in ubyte[] iv = null) nothrow @nogc
+		void start(bool forEncryption, in ubyte[] userKey, in ubyte[] iv = null) nothrow @nogc
 		{
 			this.forEncryption = forEncryption;
 			setKey(userKey);

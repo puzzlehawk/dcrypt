@@ -130,7 +130,7 @@ public struct RC4 {
 	 * keyParams = the key and other data required by the cipher.
 	 * iv = not used
 	 */
-	public void init(bool forEncryption, in ubyte[] userKey, in ubyte[] iv = null) {
+	public void start(bool forEncryption, in ubyte[] userKey, in ubyte[] iv = null) {
 		this.forEncryption = forEncryption;
 		
 		workingKey = userKey.dup;

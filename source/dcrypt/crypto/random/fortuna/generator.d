@@ -100,7 +100,7 @@ public struct FortunaGenerator(Cipher, Digest) if(isBlockCipher!Cipher && isDige
 
 		/// inits cipher with the current key
 		void updateKey () @nogc {
-			cipher.init(true, key);
+			cipher.start(true, key);
 		}
 
 		/// increment the counter by 1

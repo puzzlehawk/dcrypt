@@ -13,7 +13,7 @@ template isStreamCipher(T)
 						ubyte[0] block;
 						T c = void; //Can define
 						string name = c.name;
-						c.init(true, cast(const ubyte[]) block, cast(const ubyte[]) block); // init with key and IV
+						c.start(true, cast(const ubyte[]) block, cast(const ubyte[]) block); // init with key and IV
 						ubyte b = c.returnByte(cast(ubyte)0);
 						c.processBytes(cast(const ubyte[]) block, block);
 						c.reset();
@@ -32,7 +32,7 @@ public interface StreamCipher {
 	 * inappropriate.
 	 */
 	@safe
-	public void init(bool forEncryption, in ubyte[] key, in ubyte[] iv);
+	public void start(bool forEncryption, in ubyte[] key, in ubyte[] iv);
 
 	/**
 	 * Returns: the name of the algorithm the cipher implements.
@@ -88,8 +88,8 @@ public class StreamCipherWrapper(T) if(isStreamCipher!T): StreamCipher {
 	/// key = Secret key.
 	/// iv = Initialization vector.
 	@safe
-	public void init(bool forEncryption, in ubyte[] key, in ubyte[] iv = null) {
-		cipher.init(forEncryption, key, iv);
+	public void start(bool forEncryption, in ubyte[] key, in ubyte[] iv = null) {
+		cipher.start(forEncryption, key, iv);
 	}
 	
 
@@ -159,9 +159,9 @@ body {
 
 		if(ivs != null) {
 			const ubyte[] iv = cast(const ubyte[]) ivs[i];
-			c.init(true, key, iv);
+			c.start(true, key, iv);
 		} else {
-			c.init(true, key, null);
+			c.start(true, key, null);
 		}
 		
 		buf.length = plain.length;

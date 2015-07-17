@@ -56,7 +56,7 @@ public struct AES
 		/// forEncryption = `false`: decrypt, `true`: encrypt
 		/// userKey = Secret key.
 		/// iv = Not used.
-		void init(bool forEncryption, in ubyte[] userKey, in ubyte[] iv = null) nothrow @nogc
+		void start(bool forEncryption, in ubyte[] userKey, in ubyte[] iv = null) nothrow @nogc
 		in {
 			size_t len = userKey.length;
 			assert(len == 16 || len == 24 || len == 32, this.name~": Invalid key length (requires 16, 24 or 32 bytes)");

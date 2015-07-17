@@ -76,14 +76,14 @@ public struct CTR(Cipher) if(isBlockCipher!Cipher) {
 	/// forEncryption = Does not matter for CTR because encryption and decryption is the same in this mode.
 	/// userKey = secret key
 	/// iv = initialisation vector
-	public void init(bool forEncryption, in ubyte[] userKey, in ubyte[] iv)
+	public void start(bool forEncryption, in ubyte[] userKey, in ubyte[] iv)
 	in {
 		assert(iv !is null, "CTR without IV is not supported.");
 		// does the IV match the block size?
 		assert(iv.length == blockSize, "length of IV has to be the same as the block size");
 	}
 	body {
-		cipher.init(true, userKey);
+		cipher.start(true, userKey);
 		nonce[] = iv[];
 		reset();
 	}

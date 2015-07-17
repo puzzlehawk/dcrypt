@@ -138,7 +138,7 @@ public struct Salsa20 {
 	/// forEncryption = Not used because encryption and decryption is actually the same.
 	/// key = secret key
 	/// iv = Use a unique nonce per key.
-	public void init(bool forEncryption, in ubyte[] key, in ubyte[] iv) nothrow @nogc
+	public void start(bool forEncryption, in ubyte[] key, in ubyte[] iv) nothrow @nogc
 	in {
 		assert(key.length == 16 || key.length == 32, "Salsa20 needs 128 or 256 bit keys.");
 		assert(iv.length == 8, "Salsa20 needs a 8 byte IV.");

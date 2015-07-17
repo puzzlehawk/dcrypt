@@ -96,7 +96,7 @@ public struct CBC(Cipher) if(isBlockCipher!Cipher)
 	/// Params: 
 	/// forEncryption = if true the cipher is initialized for encryption, if false for decryption.
 	/// params = the key and other data required by the cipher.
-	public void init(bool forEncryption, KeyParameter keyParam) nothrow
+	public void start(bool forEncryption, KeyParameter keyParam) nothrow
 	body {
 		bool oldEncrypting = this.forEncryption;
 
@@ -104,11 +104,11 @@ public struct CBC(Cipher) if(isBlockCipher!Cipher)
 
 		if (ParametersWithIV ivParam = cast(ParametersWithIV) keyParam)
 		{
-			init(forEncryption, keyParam is null ? null: ivParam.getKey(), ivParam.getIV());
+			start(forEncryption, keyParam is null ? null: ivParam.getKey(), ivParam.getIV());
 		}
 		else
 		{
-			init(forEncryption, keyParam.getKey(), null);
+			start(forEncryption, keyParam.getKey(), null);
 		}
 	}
 
@@ -120,7 +120,7 @@ public struct CBC(Cipher) if(isBlockCipher!Cipher)
 	/// Params: 
 	/// forEncryption = if true the cipher is initialized for encryption, if false for decryption.
 	/// params = the key and other data required by the cipher.
-	public void init(bool forEncryption, in ubyte[] userKey, in ubyte[] iv = null) nothrow @nogc 
+	public void start(bool forEncryption, in ubyte[] userKey, in ubyte[] iv = null) nothrow @nogc 
 	in {
 		//assert(iv !is null, "CBC without IV not supported!");
 		assert(iv is null || iv.length == blockSize, "Length ov IV does not match block size!");
@@ -137,7 +137,7 @@ public struct CBC(Cipher) if(isBlockCipher!Cipher)
 			IV[] = iv[];
 		} else {
 			
-			cipher.init(forEncryption, userKey);
+			cipher.start(forEncryption, userKey);
 			
 			if(iv !is null) {
 				IV[] = iv[];
