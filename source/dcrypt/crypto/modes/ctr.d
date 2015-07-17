@@ -34,7 +34,7 @@ unittest {
 
 
 	// encryption mode
-	ctr.init(true, new ParametersWithIV(key, iv));
+	ctr.start(true, key, iv);
 
 	ubyte[plain.length] buf;
 	buf = plain;
@@ -46,7 +46,7 @@ unittest {
 	assert(buf == expected_ciphertext, text(ctr.name,": encryption failed"));
 
 	// decryption mode
-	ctr.init(false, new ParametersWithIV(key, iv));
+	ctr.start(false, key, iv);
 
 	foreach(block; chunks(buf[],16)) {
 		ctr.processBlock(block,block);
@@ -63,6 +63,7 @@ alias CTRBlockCipher(T) = BlockCipherWrapper!(CTR!T);
 public struct CTR(Cipher) if(isBlockCipher!Cipher) {
 
 	public enum blockSize = Cipher.blockSize;
+	public enum name = Cipher.name;
 
 	private {
 		ubyte[blockSize] counter;
@@ -116,17 +117,6 @@ public struct CTR(Cipher) if(isBlockCipher!Cipher) {
 		}
 
 		return blockSize;
-	}
-
-	/**
-	 * return the algorithm name and mode.
-	 *
-	 * @return the name of the underlying algorithm followed by "/CBC".
-	 */
-	@safe @property
-	public string name() pure nothrow
-	{
-		return cipher.name ~ "/CTR";
 	}
 
 }

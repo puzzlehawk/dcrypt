@@ -1,6 +1,8 @@
 
 module dcrypt.crypto.macs.mac;
 
+// TODO as output range
+
 /// Test if T is a message authentication code (MAC).
 template isMAC(T)
 {
@@ -10,10 +12,10 @@ template isMAC(T)
 					{
 						ubyte[] data;
 						T t = void; // can define
-						t.init(data); // set the mac key
+						t.start(data); // set the mac key
 						t.reset();  // can reset the digest
-						t.update(cast(ubyte)0); // can add a single byte
-						t.update(data);	// can add bytes
+						t.put(cast(ubyte)0); // can add a single byte
+						t.put(data);	// can add bytes
 						uint len = t.doFinal(data);
 
 						uint macSize = T.macSize;
@@ -37,22 +39,13 @@ public abstract class Mac {
     public abstract uint macSize() pure nothrow;
 
     /**
-     * update the MAC with a single byte.
-     *
-     * Params:
-     *	input	=	the input byte to be entered.
-     */
-    @safe
-    public abstract void update(ubyte input) nothrow;
-
-    /**
      * update the MAC with a block of bytes.
     *
     * Params:
      * input the ubyte slice containing the data.
      */
     @safe
-    public abstract void update(in ubyte[] input) nothrow;
+    public abstract void put(in ubyte[] input...) nothrow;
 
     /**
      * close the MAC, producing the final MAC value. The doFinal
@@ -94,6 +87,9 @@ public class WrapperMac(T) if(isMAC!T) {
 	public uint macSize() pure nothrow {
 		return mac.macSize;
 	}
+
+	@save
+	public void start(in ubyte[] key, in ubyte[] nonce = null);
 	
 	/**
      * update the MAC with a single byte.
@@ -102,8 +98,8 @@ public class WrapperMac(T) if(isMAC!T) {
      *	input	=	the input byte to be entered.
      */
 	@safe
-	public void update(ubyte input) nothrow {
-		mac.update(input);
+	public void put(ubyte input) nothrow {
+		mac.put(input);
 	}
 	
 	/**
@@ -113,8 +109,8 @@ public class WrapperMac(T) if(isMAC!T) {
      * input the ubyte slice containing the data.
      */
 	@safe
-	public void update(in ubyte[] input) nothrow {
-		mac.update(input);
+	public void put(in ubyte[] input) nothrow {
+		mac.put(input);
 	}
 	
 	/**

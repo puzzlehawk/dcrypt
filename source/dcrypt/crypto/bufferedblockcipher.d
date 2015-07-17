@@ -10,7 +10,7 @@ unittest {
 	import std.stdio;
 	
 	BufferedBlockCipher!AES bbc;
-	bbc.init(true, new KeyParameter(Hex.decode("2b7e151628aed2a6abf7158809cf4f3c")));
+	bbc.start(true, Hex.decode("2b7e151628aed2a6abf7158809cf4f3c"));
 	
 	ubyte[] plain = Hex.decode("6bc1bee22e409f96e93d7e117393172a");
 	plain ~= plain;
@@ -44,7 +44,6 @@ unittest {
 	import dcrypt.crypto.engines.aes;
 	import dcrypt.crypto.modes.ctr;
 	import dcrypt.crypto.modes.cbc;
-	import dcrypt.crypto.params.keyparameter;
 	import std.range;
 	import std.conv: text;
 
@@ -69,7 +68,7 @@ unittest {
 	
 	
 	// encryption mode
-	cipher.init(true, new ParametersWithIV(key, iv));
+	cipher.start(true, key, iv);
 
 	ubyte[plain.length] buf;
 
@@ -78,16 +77,16 @@ unittest {
 	len += cipher.doFinal(buf[len..$]);
 	assert(len == plain.length);
 	
-	assert(buf == expected_ciphertext, text(cipher.getAlgorithmName,": encryption failed"));
+	assert(buf == expected_ciphertext, text(cipher.name,": encryption failed"));
 	
 	// decryption mode
-	cipher.init(false, new ParametersWithIV(key, iv));
+	cipher.start(false, key, iv);
 	
 	len = cipher.processBytes(buf, buf);
 	len += cipher.doFinal(buf[len..$]);
 	assert(len == plain.length);
 	
-	assert(buf == plain, text(cipher.getAlgorithmName,": decryption failed"));
+	assert(buf == plain, text(cipher.name,": decryption failed"));
 	
 }
 
@@ -98,7 +97,6 @@ unittest {
 	import dcrypt.crypto.engines.aes;
 	import dcrypt.crypto.modes.ctr;
 	import dcrypt.crypto.modes.cbc;
-	import dcrypt.crypto.params.keyparameter;
 	import std.range;
 	import std.conv: text;
 	
@@ -123,7 +121,7 @@ unittest {
 	
 	
 	// encryption mode
-	cipher.init(true, new ParametersWithIV(key, iv));
+	cipher.start(true, key, iv);
 	
 	ubyte[plain.length] buf;
 	
@@ -132,16 +130,16 @@ unittest {
 	len += cipher.doFinal(buf[len..$]);
 	assert(len == plain.length);
 	
-	assert(buf == expected_ciphertext, text(cipher.getAlgorithmName,": encryption failed"));
+	assert(buf == expected_ciphertext, text(cipher.name,": encryption failed"));
 	
 	// decryption mode
-	cipher.init(false, new ParametersWithIV(key, iv));
+	cipher.start(false, key, iv);
 	
 	len = cipher.processBytes(buf, buf);
 	len += cipher.doFinal(buf[len..$]);
 	assert(len == plain.length);
 	
-	assert(buf == plain, text(cipher.getAlgorithmName,": decryption failed"));
+	assert(buf == plain, text(cipher.name,": decryption failed"));
 	
 }
 
@@ -159,7 +157,7 @@ template isBufferedBlockCipher(T)
 						T bc = void;
 						string name = bc.getAlgorithmName();
 						uint blockSize = T.blockSize;
-						bc.init(true, new KeyParameter([]));
+						bc.start(true, cast(const(ubyte)[]) block, cast(const(ubyte)[]) block); // init with key and iv
 						uint len = bc.processByte(cast(ubyte)0,block);
 						uint len = bc.processBytes(block, block);
 						uint len = bc.doFinal(block);
@@ -182,14 +180,10 @@ public struct BufferedBlockCipher(Cipher, bool permitPartialBlock = false) if(is
 	public {
 
 		enum blockSize = Cipher.blockSize;
+		enum name = Cipher.name;
 
-		void init(bool forEncryption, KeyParameter params) nothrow {
-			cipher.init(forEncryption, params);
-		}
-
-		@property
-		string getAlgorithmName() pure nothrow {
-			return cipher.name;
+		void start(bool forEncryption, in ubyte[] key, in ubyte[] iv = null) nothrow @nogc {
+			cipher.start(forEncryption, key, iv);
 		}
 
 		void reset() nothrow {

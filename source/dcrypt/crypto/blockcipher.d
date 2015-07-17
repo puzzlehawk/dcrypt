@@ -13,7 +13,7 @@ template isBlockCipher(T)
 					{
 						ubyte[0] block;
 						T bc = void; // Can define
-						string name = bc.name;
+						string name = T.name;
 						uint blockSize = T.blockSize;
 						bc.start(true, cast(const ubyte[]) block, cast(const ubyte[]) block);	// init with secret key and iv
 						uint len = bc.processBlock(cast (const ubyte[]) block, block);
@@ -158,32 +158,28 @@ version(unittest) {
 	@safe
 	public void blockCipherTest(BlockCipher bc, string[] keys, string[] plaintexts, string[] cipherTexts, string[] ivs = null) {
 		import dcrypt.util.encoders.hex;
-		import dcrypt.crypto.params.keyparameter;
 		import std.conv: text;
 		
 		foreach (uint i, string test_key; keys)
 		{
 			ubyte[] buffer = new ubyte[bc.blockSize];
-			
-			KeyParameter key;
-			
-			
-			if(ivs is null) {
-				key = new KeyParameter(cast(const ubyte[]) test_key);
-			}else {
-				// used for modes like CBC, CTR
-				key = new ParametersWithIV(cast(const ubyte[]) test_key, cast(const ubyte[]) ivs[i]);
+
+
+			const ubyte[] key = cast(const ubyte[]) test_key;
+			const (ubyte)[] iv = null;
+			if(ivs !is null) { 
+				iv = cast(const (ubyte)[]) ivs[i]; 
 			}
-			
+
 			// Encryption
-			bc.init(true, key);
+			bc.start(true, key, iv);
 			bc.processBlock(cast(const ubyte[]) plaintexts[i], buffer);
 			
 			assert(buffer == cipherTexts[i],
 				text(bc.name, " encrypt: (", Hex.encode(buffer), ") != (", Hex.encode(cipherTexts[i]), ")"));
 			
 			// Decryption
-			bc.init(false, key);
+			bc.start(false, key, iv);
 			bc.processBlock(cast(const ubyte[]) cipherTexts[i], buffer);
 			assert(buffer == plaintexts[i],
 				text(bc.name, " decrypt: (", Hex.encode(buffer),") != (", Hex.encode(plaintexts[i]), ")"));

@@ -70,9 +70,9 @@ public struct GHashGeneral(Multiplier) if(isGCMMultiplier!Multiplier)
 	/// add data to the AAD stream
 	/// Params:
 	/// aad = data to be authenticated only
-	public void updateAAD(in ubyte[] aad) nothrow @nogc
+	public void updateAAD(in ubyte[] aad...) nothrow @nogc
 	{
-		update(aad, stateAAD, stateAADOff);
+		update(stateAAD, stateAADOff, aad);
 		lenAAD += aad.length*8;
 	}
 
@@ -98,12 +98,12 @@ public struct GHashGeneral(Multiplier) if(isGCMMultiplier!Multiplier)
 	 * Params:
 	 * input = encrypted data
 	 */
-	public void updateCipherData(in ubyte[] input) nothrow @nogc 
+	public void updateCipherData(in ubyte[] input...) nothrow @nogc 
 	{
 		if(aadInput) {
 			finalizeAAD(); // sets aadInput = false
 		}
-		update(input, stateCipher, stateCipherOff);
+		update(stateCipher, stateCipherOff, input);
 		lenCipher += input.length*8;
 	}
 
@@ -183,7 +183,7 @@ public struct GHashGeneral(Multiplier) if(isGCMMultiplier!Multiplier)
 	/// input = incoming data
 	/// state = update this state
 	/// statePos = pointer to the location where the next byte gets written
-	private void update(in ubyte[] input, ubyte[] state, ref ubyte statePos) nothrow @nogc
+	private void update(ubyte[] state, ref ubyte statePos, in ubyte[] input...) nothrow @nogc
 	in {
 		assert(state.length == 16);
 	}

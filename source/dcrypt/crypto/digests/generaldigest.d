@@ -13,20 +13,7 @@ package class GeneralDigest : Digest
 
 public:
 
-	override void put(ubyte input) nothrow @nogc
-	{
-		xBuf[xBufOff++] = input;
-
-		if (xBufOff == xBuf.length)
-		{
-			processWord(xBuf);
-			xBufOff = 0;
-		}
-
-		byteCount++;
-	}
-
-	override void put(in ubyte[] input) nothrow @nogc
+	override void put(in ubyte[] input...) nothrow @nogc
 	{
 		uint inOff = 0;
 		size_t len = input.length;
@@ -35,7 +22,7 @@ public:
 		//
 		while ((xBufOff != 0) && (len > 0))
 		{
-			put(input[inOff]);
+			putSingleByte(input[inOff]);
 
 			inOff++;
 			len--;
@@ -58,7 +45,7 @@ public:
 		//
 		while (len > 0)
 		{
-			put(input[inOff]);
+			putSingleByte(input[inOff]);
 
 			inOff++;
 			len--;
@@ -121,6 +108,19 @@ public:
 		void processWord(in ubyte[] input);
 		void processLength(ulong bitLength);
 		void processBlock();
+	}
+
+	protected void putSingleByte(ubyte input) nothrow @nogc
+	{
+		xBuf[xBufOff++] = input;
+		
+		if (xBufOff == xBuf.length)
+		{
+			processWord(xBuf);
+			xBufOff = 0;
+		}
+		
+		byteCount++;
 	}
 	
 	private {

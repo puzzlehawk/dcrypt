@@ -121,10 +121,10 @@ private:
 	body {
 		if (S != null)
 		{
-			hMac.update(S);
+			hMac.put(S);
 		}
 
-		hMac.update(iBuf);
+		hMac.put(iBuf);
 		hMac.doFinal(state);
 
 		output[] = state[];
@@ -132,7 +132,7 @@ private:
 		if(iterCount > 0) { 
 			foreach (count; 1..iterCount)
 			{
-				hMac.update(state);
+				hMac.put(state);
 				hMac.doFinal(state);
 
 				assert(output.length >= state.length);
@@ -144,7 +144,7 @@ private:
 			sw.start();
 			uint count = 0;
 			do {
-				hMac.update(state);
+				hMac.put(state);
 				hMac.doFinal(state);
 
 				assert(output.length >= state.length);
@@ -165,7 +165,7 @@ private:
 		ubyte[]  outBytes = new ubyte[l * hLen];
 		uint     outPos = 0;
 
-		hMac.init(password);
+		hMac.start(password);
 
 		foreach (i; 1..l+1)
 		{

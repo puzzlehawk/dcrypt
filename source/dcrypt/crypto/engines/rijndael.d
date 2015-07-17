@@ -138,6 +138,8 @@ public struct Rijndael(uint blockBits) {
 
 	alias ulong[4][MAXROUNDS+1] workingkey_t;
 
+	enum name = text("Rijndael", blockBits);
+
 	public {
 	
 		/// Params:
@@ -149,12 +151,6 @@ public struct Rijndael(uint blockBits) {
 			this.forEncryption = forEncryption;
 			workingKey = generateWorkingKey(userKey);
 			initialized = true;
-		}
-
-		@property
-		string name() pure nothrow
-		{
-			return text("Rijndael-", blockBits);
 		}
 
 		uint processBlock(in ubyte[] input, ubyte[] output) nothrow @nogc

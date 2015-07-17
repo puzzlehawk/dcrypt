@@ -45,7 +45,7 @@ public interface AEADBlockCipher
 		 * params = the necessary parameters for the underlying cipher to be initialised.
 		 * macSize = Size of mac tag in bits.
 		 */
-		void init(bool forEncryption, in ubyte[] key, in ubyte[] iv, in uint macSize = 0) nothrow @nogc;
+		void start(bool forEncryption, in ubyte[] key, in ubyte[] iv, in uint macSize = 0) nothrow @nogc;
 
 		/**
 		 * Return the name of the algorithm.
@@ -343,7 +343,6 @@ version(unittest) {
 		
 		import dcrypt.crypto.modes.aead;
 		import dcrypt.util.encoders.hex;
-		import dcrypt.crypto.params.keyparameter;
 		import std.conv: text;
 		
 		foreach (uint i, string test_key; hexKeys)
@@ -353,15 +352,9 @@ version(unittest) {
 			ubyte[] ciphertext = Hex.decode(hexCipherTexts[i]);
 			
 			ubyte[] output = new ubyte[0];
-			
-			AEADParameters params = new AEADParameters(
-				new KeyParameter(Hex.decode(test_key)),
-				macSize[i],
-				Hex.decode(hexIVs[i])
-				);
-			
+						
 			// set to encryption mode
-			cipher.init(true, params);
+			cipher.start(true, Hex.decode(test_key), Hex.decode(hexIVs[i]), macSize[i]);
 			
 			// test reset()
 			cipher.processAADBytes([0,1,2,3]);

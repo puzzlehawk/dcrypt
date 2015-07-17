@@ -19,15 +19,15 @@ public class AEADBlockCipherBenchmark: Benchmark {
 	}
 
 	override string[] benchmark(ulong length) {
-		
-		cipher.init(true, new ubyte[16], new ubyte[16], 128);
+
+		cipher.start(true, new ubyte[16], new ubyte[16], 128);
 
 
 		double aadSpeed = getSpeed(length)*1e-6;
 
 		double encrSpeed = getSpeed(length)*1e-6;
 
-		cipher.init(true, new ubyte[16], new ubyte[16], 128);
+		cipher.start(true, new ubyte[16], new ubyte[16], 128);
 		
 		//double decrSpeed = getSpeed(length)*1e-6;
 

@@ -35,7 +35,7 @@ unittest {
 	
 	
 	// encryption mode
-	cbc.init(true, new ParametersWithIV(key, iv));
+	cbc.start(true, new ParametersWithIV(key, iv));
 	
 	ubyte[plain.length] buf;
 	buf = plain;
@@ -47,7 +47,7 @@ unittest {
 	assert(buf == expected_ciphertext, text(cbc.name,": encryption failed"));
 	
 	// decryption mode
-	cbc.init(false, new ParametersWithIV(key, iv));
+	cbc.start(false, new ParametersWithIV(key, iv));
 	
 	foreach(block; chunks(buf[],16)) {
 		cbc.processBlock(block,block);
@@ -97,6 +97,9 @@ public struct CBC(Cipher) if(isBlockCipher!Cipher)
 	/// forEncryption = if true the cipher is initialized for encryption, if false for decryption.
 	/// params = the key and other data required by the cipher.
 	public void start(bool forEncryption, KeyParameter keyParam) nothrow
+	in {
+		assert(keyParam !is null, "Nullpointer!");
+	}
 	body {
 		bool oldEncrypting = this.forEncryption;
 
@@ -104,7 +107,7 @@ public struct CBC(Cipher) if(isBlockCipher!Cipher)
 
 		if (ParametersWithIV ivParam = cast(ParametersWithIV) keyParam)
 		{
-			start(forEncryption, keyParam is null ? null: ivParam.getKey(), ivParam.getIV());
+			start(forEncryption, ivParam.getKey(), ivParam.getIV());
 		}
 		else
 		{

@@ -15,7 +15,7 @@ template isBlockCipherPadding(T)
 					{
 						ubyte[] block;
 						T padding = void; //Can define
-						string name = padding.name;
+						string name = T.name;
 						padding.addPadding(block, cast(uint) 0);
 						uint padcount = padding.padCount(block);
 					}));
@@ -97,7 +97,7 @@ unittest {
 		
 		output.length = ((plainTextLength/c.blockSize)+2)*c.blockSize; // next even block size
 		
-		c.init(true, new KeyParameter(key));
+		c.start(true, key);
 		
 		size_t len = c.processBytes(plain, output);
 		len += c.doFinal(output[len..$]);
@@ -105,7 +105,7 @@ unittest {
 		
 		ubyte[] cipher = output.dup;
 		output[] = 0;
-		c.init(false, new KeyParameter(key));
+		c.start(false, key);
 		len = c.processBytes(cipher, output);
 		len += c.doFinal(output[len..$]);
 		
@@ -126,18 +126,14 @@ public struct PaddedBufferedBlockCipher(C, Padding, bool permitPartialBlock = fa
 {
 
 	public enum blockSize = C.blockSize;
+	public enum name = C.name ~ "/" ~ Padding.name;
 
 	public {
 		
-		void init(bool forEncryption, KeyParameter params) nothrow {
+		void start(bool forEncryption, in ubyte[] key, in ubyte[] iv = null) nothrow @nogc {
 			this.forEncryption = forEncryption;
-			cipher.init(forEncryption, params);
+			cipher.start(forEncryption, key, iv);
 			reset();
-		}
-		
-		@property
-		string name() pure nothrow {
-			return cipher.name~"/"~padding.name;
 		}
 		
 		/**

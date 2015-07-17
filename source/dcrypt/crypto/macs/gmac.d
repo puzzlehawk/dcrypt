@@ -16,22 +16,15 @@ public class GMac(T) if(isBlockCipher!T): Mac
 
 	private {
 		GCM!T gcm;
-		uint macSizeBits = 128;
+		uint macSizeBits;
 		bool initialized = false;
 	}
 
 	public {
 	
-		void init(ParametersWithIV params) {
-			init(params, 128);
-		}
-
-		void init(ParametersWithIV params, uint macSizeBits) {
-			this.macSizeBits = macSizeBits;
-			gcm.init(true, new AEADParameters(
-					new KeyParameter(params.getKey),
-					macSizeBits, 
-					params.getIV()));
+		void start(in ubyte[] key, in ubyte[] nonce, in uint macSize = 128) {
+			gcm.init(true, key, nonce, macSize);
+			macSizeBits = macSize;
 			initialized = true;
 		}
 	}
@@ -54,29 +47,14 @@ public class GMac(T) if(isBlockCipher!T): Mac
 		uint macSize() pure nothrow {
 			return macSizeBits / 8;
 		}
-		
-		/**
-		 * update the MAC with a single byte.
-		 *
-		 * Params:
-		 *	input	=	the input byte to be entered.
-		 */
-		void update(ubyte input) nothrow
-		in {
-			assert(initialized, "GMac not initialized. call init() first.");
-		}
-		body {
-			ubyte[1] oneByte = [input];
-			gcm.processAADBytes(oneByte);
-		}
-		
+
 		/**
 		 * update the MAC with a block of bytes.
 		 *
 		 * Params:
 		 * input the ubyte slice containing the data.
 		 */
-		void update(in ubyte[] input) nothrow 
+		void put(in ubyte[] input...) nothrow @nogc
 		in {
 			assert(initialized, "GMac not initialized. call init() first.");
 		}
@@ -136,7 +114,7 @@ unittest {
 	octets iv = cast(octets)x"12153524C0895E81B2C28465"; 
 
 	auto gmac = new GMac!AES();
-	gmac.init(new ParametersWithIV(key, iv));
+	gmac.start(key, iv);
 	
 	
 	octets aad = cast(octets)(
@@ -147,7 +125,7 @@ unittest {
           313233340001"
 		);
 
-	gmac.update(aad);
+	gmac.put(aad);
 	
 	ubyte[] outbuf = new ubyte[gmac.macSize];
 

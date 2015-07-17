@@ -64,15 +64,6 @@ public abstract class Digest {
 	 */
 	@safe
 	public uint blockSize() pure nothrow @nogc;
-	
-	/**
-	 * update the message digest with a single byte.
-	 *
-	 * Params:
-	 *	input	=	the input byte to be entered.
-	 */
-	@safe
-	public void put(ubyte input) nothrow;
 
 	/**
 	 * update the message digest with a block of bytes.
@@ -81,7 +72,7 @@ public abstract class Digest {
 	 * input the ubyte slice containing the data.
 	 */
 	@safe
-	public void put(in ubyte[] input) nothrow;
+	public void put(in ubyte[] input...) nothrow;
 
 	/**
 	 * close the digest, producing the final digest value. The doFinal
@@ -118,19 +109,8 @@ public abstract class Digest {
 public class WrapperDigest(T): Digest
 if(isDigest!T) {
 
-	T digest;
+	private T digest;
 
-	/**
-	 * update the message digest with a single byte.
-	 *
-	 * Params:
-	 *	input	=	the input byte to be entered.
-	 */
-	@safe
-	override public void put(ubyte input) nothrow @nogc {
-		digest.put(input);
-	}
-	
 	/**
 	 * update the message digest with a block of bytes.
 	 *
@@ -138,7 +118,7 @@ if(isDigest!T) {
 	 * input = the ubyte slice containing the data.
 	 */
 	@safe
-	override public void put(in ubyte[] input) nothrow @nogc {
+	override public void put(in ubyte[] input...) nothrow @nogc {
 		digest.put(input);
 	}
 

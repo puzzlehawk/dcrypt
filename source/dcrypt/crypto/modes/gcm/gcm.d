@@ -106,7 +106,7 @@ public struct GCM(T) if(is(T == void) || isBlockCipher!T)
 		 * 
 		 * Params: in = the input byte array.
 		 */
-		void processAADBytes(in ubyte[] aad) nothrow @nogc 
+		void processAADBytes(in ubyte[] aad...) nothrow @nogc 
 		in {
 			assert(initialized, "not initialized");
 		}
@@ -414,7 +414,7 @@ unittest {
 	octets iv = cast(octets)x"12153524C0895E81B2C28465"; // 96 bits
 
 	auto gcm = new GCMBlockCipher(new AESEngine);
-	gcm.init(true, new ParametersWithIV(key, iv));
+	gcm.start(true, key, iv);
 
 	ubyte[] output = new ubyte[64];
 	ubyte[] oBuf = output;
@@ -451,7 +451,7 @@ unittest {
 	octets iv = cast(octets)x"12153524C0895E81B2C28465"; // 96 bits
 	
 	GCMBlockCipher gcm = new GCMBlockCipher(new AESEngine());
-	gcm.init(false, new ParametersWithIV(key, iv));
+	gcm.start(false, key, iv);
 	
 	ubyte[] output = new ubyte[48];
 	ubyte[] oBuf = output;
@@ -492,7 +492,7 @@ unittest {
 	octets iv = cast(octets)x"12153524C0895E81B2C28465"; // 96 bits
 	
 	GCMBlockCipher gcm = new GCMBlockCipher(new AESEngine());
-	gcm.init(false, new ParametersWithIV(key, iv));
+	gcm.start(false, key, iv);
 	
 	ubyte[] output = new ubyte[48];
 	ubyte[] oBuf = output;
@@ -534,7 +534,7 @@ unittest {
 	octets iv = cast(octets)x"12153524C0895E81B2C28465"; // 96 bits
 	
 	GCMBlockCipher gcm = new GCMBlockCipher(new AESEngine());
-	gcm.init(false, new ParametersWithIV(key, iv));
+	gcm.start(false, key, iv);
 	
 	ubyte[] output = new ubyte[48];
 	ubyte[] oBuf = output;
@@ -578,8 +578,7 @@ unittest {
 	      16aedbf5a0de6a57a637b39b"; // more than 96 bits
 
 	GCMBlockCipher gcm = new GCMBlockCipher(new AESEngine());
-	gcm.init(true, new ParametersWithIV(key, iv));
-
+	gcm.start(true, key, iv);
 	
 	octets aad = cast(octets)(
 		x"feedfacedeadbeeffeedfacedeadbeef
@@ -743,7 +742,7 @@ public class GCMBlockCipher: AEADBlockCipher {
 		 * iv = None.
 		 * macSize = Size of mac tag in bits.
 		 */
-		void init(bool forEncryption, in ubyte[] key, in ubyte[] iv, in uint macSize = 128) nothrow @nogc {
+		void start(bool forEncryption, in ubyte[] key, in ubyte[] iv, in uint macSize = 128) nothrow @nogc {
 			cipher.start(forEncryption, key, iv, macSize);
 		}
 		

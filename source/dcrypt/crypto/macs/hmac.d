@@ -5,6 +5,12 @@ import dcrypt.crypto.digest;
 
 // TODO optimize reset()
 
+static {
+	import dcrypt.crypto.digests.sha2: SHA256;
+
+	static assert(isMAC!(HMac!SHA256), "HMac is not a valid MAC");
+}
+
 
 @safe
 public struct HMac(D) if(isDigest!D) {
@@ -20,7 +26,7 @@ public:
 	 * Params: keyParam = the HMac key
 	 */
 	@safe
-	void init(in ubyte[] macKey)
+	void start(in ubyte[] macKey)
 	in {
 		assert(macKey !is null, "mac key can't be null!");
 	}
@@ -45,21 +51,6 @@ public:
 		reset();
 	}
 
-	
-	/**
-	 * update the MAC with a single byte.
-	 *
-	 * Params:
-	 *	input	=	the input byte to be entered.
-	 */
-	@safe
-	public void update(ubyte input) nothrow @nogc
-	in{
-		assert(initialized, "HMac not initialized! Call init() first");
-	}
-	body {
-		digest.update(input);
-	}
 
 	/**
 	 * update the MAC with a block of bytes.
@@ -68,12 +59,12 @@ public:
 	 * input = the ubyte slice containing the data.
 	 */
 	@safe
-	void update(in ubyte[] input) nothrow @nogc
+	void put(in ubyte[] input...) nothrow @nogc
 	in {
 		assert(initialized, "HMac not initialized! Call init() first");
 	}
 	body{
-		digest.update(input);
+		digest.put(input);
 	}
 
 	/**
@@ -82,10 +73,10 @@ public:
 	@safe
 	uint doFinal(ubyte[] output) nothrow @nogc {
 		digest.doFinal(iHash);
-		digest.update(oPad);
+		digest.put(oPad);
 		//		initDigest(digest, key, opadByte);
 		//		digest = oPaddedDigest.dup;
-		digest.update(iHash);
+		digest.put(iHash);
 
 		digest.doFinal(output);
 		
@@ -224,10 +215,10 @@ version(unittest) {
 			ubyte[] key = Hex.decode(hexKeys[i]);
 			ubyte[] data = Hex.decode(hexData[i]);
 			ubyte[] expectedHash = Hex.decode(hexHashes[i]);
+
+			mac.start(key);
 			
-			mac.init(key);
-			
-			mac.update(data);
+			mac.put(data);
 			
 			//            ubyte[] hash = mac.doFinal();
 			ubyte[] hash = new ubyte[mac.macSize];
