@@ -20,7 +20,7 @@ public class DigestBenchmark: Benchmark {
 	
 	override string[] benchmark(ulong length) {
 		StopWatch sw;
-		digest.reset();
+		digest.start();
 		ubyte[32] block;
 		
 		sw.start();

@@ -17,12 +17,10 @@ alias WrapperDigest!SHA256 SHA256Digest;
 alias WrapperDigest!SHA384 SHA384Digest;
 alias WrapperDigest!SHA512 SHA512Digest;
 
-@safe
-unittest {
-	static assert(isDigest!SHA256, "SHA256 does not fullfill requirements of isDigest.");
-	static assert(isDigest!SHA384, "SHA384 does not fullfill requirements of isDigest.");
-	static assert(isDigest!SHA512, "SHA512 does not fullfill requirements of isDigest.");
-}
+static assert(isDigest!SHA256, "SHA256 does not fullfill requirements of isDigest.");
+static assert(isDigest!SHA384, "SHA384 does not fullfill requirements of isDigest.");
+static assert(isDigest!SHA512, "SHA512 does not fullfill requirements of isDigest.");
+
 
 @safe
 public struct SHA(uint bitLength)
@@ -32,14 +30,8 @@ if(bitLength == 256 || bitLength == 384 || bitLength == 512) {
 	public enum digestLength = bitLength / 8;
 
 	
-	static if(bitLength == 256) {
-		alias uint Word;
-	} else {
-		alias ulong Word;
-	}
-
-	/// resed the digest to its initial state
-	public void reset() nothrow @nogc {
+	/// Reset the digest to its initial state. It is not necessary to call start after finish or doFinal.
+	public void start() nothrow @nogc {
 
 		H1 = initH1;
 		H2 = initH2;
@@ -65,7 +57,76 @@ if(bitLength == 256 || bitLength == 384 || bitLength == 512) {
 
 	alias put update; /// ensure compatibility to older code
 
-	void put(ubyte input) nothrow @nogc
+	void put(const (ubyte)[] input...) nothrow @nogc
+	{
+		// fill the current word
+		while(xBufOff != 0 && input.length > 0) {
+			putSingleByte(input[0]);
+			input = input[1..$];
+		}
+		
+		// process whole words
+		while(input.length > xBuf.length) {
+			processWord(input);
+			byteCount1 += xBuf.length;
+			input = input[xBuf.length..$];
+		}
+		
+		// process remainder
+		foreach(ubyte b; input) {
+			putSingleByte(b);
+		}
+	}
+
+	/// Calculate the final hash value.
+	/// Params:
+	/// output = buffer for hash value.
+	/// Returns: length of hash value in bytes.
+	uint doFinal(ubyte[] output) nothrow @nogc
+	{
+		
+		_finish();
+		
+		// pack the integers into a byte array
+		// toBigEndian!ulong([H1,H2,H3,H4,H5,H6,H7,H8], output);
+		
+		enum wordBytes = Word.sizeof;
+		
+		toBigEndian!Word(H1, output[0*wordBytes..1*wordBytes]);
+		toBigEndian!Word(H2, output[1*wordBytes..2*wordBytes]);
+		toBigEndian!Word(H3, output[2*wordBytes..3*wordBytes]);
+		toBigEndian!Word(H4, output[3*wordBytes..4*wordBytes]);
+		toBigEndian!Word(H5, output[4*wordBytes..5*wordBytes]);
+		toBigEndian!Word(H6, output[5*wordBytes..6*wordBytes]);
+		
+		static if(bitLength == 256 || bitLength == 512) {
+			toBigEndian!Word(H7, output[6*wordBytes..7*wordBytes]);
+			toBigEndian!Word(H8, output[7*wordBytes..8*wordBytes]);
+		}
+		
+		start();
+		
+		return digestLength;
+	}
+
+	/// Calculate the final hash value.
+	/// Returns: the hash value
+	ubyte[digestLength] finish() nothrow @nogc {
+		ubyte[digestLength] buf;
+		doFinal(buf);
+		return buf;
+	}
+
+	
+private:
+
+	static if(bitLength == 256) {
+		alias uint Word;
+	} else {
+		alias ulong Word;
+	}
+
+	void putSingleByte(ubyte input) nothrow @nogc
 	{
 		xBuf[xBufOff++] = input;
 		
@@ -76,29 +137,6 @@ if(bitLength == 256 || bitLength == 384 || bitLength == 512) {
 		}
 		
 		byteCount1++;
-	}
-	
-	void put(in ubyte[]  input) nothrow @nogc
-	{
-		const (ubyte)[] inBuf = input;
-		
-		// fill the current word
-		while(xBufOff != 0 && inBuf.length > 0) {
-			put(inBuf[0]);
-			inBuf = inBuf[1..$];
-		}
-		
-		// process whole words
-		while(inBuf.length > xBuf.length) {
-			processWord(inBuf);
-			byteCount1 += xBuf.length;
-			inBuf = inBuf[xBuf.length..$];
-		}
-		
-		// process remainder
-		foreach(ubyte b; inBuf) {
-			put(b);
-		}
 	}
 
 	/// process one word of input (4 bytes for sha256, 8 bytes for longer hashes)
@@ -224,7 +262,7 @@ if(bitLength == 256 || bitLength == 384 || bitLength == 512) {
 		X[] = 0;
 	}
 
-	protected void finish() nothrow @nogc
+	private void _finish() nothrow @nogc
 	{
 		static if(bitLength == 256) {
 			ulong bitlen = byteCount1 << 3;
@@ -258,36 +296,6 @@ if(bitLength == 256 || bitLength == 384 || bitLength == 512) {
 		
 		processBlock();
 	}
-
-	
-	uint doFinal(ubyte[] output) nothrow @nogc
-	{
-		
-		finish();
-		
-		// pack the integers into a byte array
-		// toBigEndian!ulong([H1,H2,H3,H4,H5,H6,H7,H8], output);
-
-		enum wordBytes = Word.sizeof;
-
-		toBigEndian!Word(H1, output[0*wordBytes..1*wordBytes]);
-		toBigEndian!Word(H2, output[1*wordBytes..2*wordBytes]);
-		toBigEndian!Word(H3, output[2*wordBytes..3*wordBytes]);
-		toBigEndian!Word(H4, output[3*wordBytes..4*wordBytes]);
-		toBigEndian!Word(H5, output[4*wordBytes..5*wordBytes]);
-		toBigEndian!Word(H6, output[5*wordBytes..6*wordBytes]);
-
-		static if(bitLength == 256 || bitLength == 512) {
-			toBigEndian!Word(H7, output[6*wordBytes..7*wordBytes]);
-			toBigEndian!Word(H8, output[7*wordBytes..8*wordBytes]);
-		}
-		
-		reset();
-		
-		return digestLength;
-	}
-
-private:
 
 	pure nothrow @nogc {
 
@@ -385,7 +393,7 @@ private:
 		 * (represent the first 32 bits of the fractional parts of the
 		 * cube roots of the first sixty-four prime numbers)
 		 */
-		static immutable uint[64] K = [
+		enum uint[64] K = [
 			0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
 			0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
 			0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
@@ -406,7 +414,7 @@ private:
 		 * (represent the first 64 bits of the fractional parts of the
 		 * cube roots of the first sixty-four prime numbers)
 		 */
-		static immutable ulong[80] K = [
+		enum ulong[80] K = [
 			0x428a2f98d728ae22L, 0x7137449123ef65cdL, 0xb5c0fbcfec4d3b2fL, 0xe9b5dba58189dbbcL,
 			0x3956c25bf348b538L, 0x59f111f1b605d019L, 0x923f82a4af194f9bL, 0xab1c5ed5da6d8118L,
 			0xd807aa98a3030242L, 0x12835b0145706fbeL, 0x243185be4ee4b28cL, 0x550c7dc3d5ffb4e2L,
@@ -495,7 +503,7 @@ unittest {
 	
 	immutable string[] plaintexts = [
 		x"",
-		x"",	// twice the same to test reset()
+		x"",	// twice the same to test start()
 		x"616263",
 		"abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu"
 		
@@ -516,7 +524,7 @@ unittest {
 
 	immutable string[] plaintexts = [
 		x"",
-		x"",	// twice the same to test reset()
+		x"",	// twice the same to test start()
 		x"616263",
 		"abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu",
 		
@@ -538,7 +546,7 @@ unittest {
 
 	immutable string[] plaintexts = [
 		x"",
-		x"",	// twice the same to test reset()
+		x"",	// twice the same to test start()
 		x"616263",
 		"abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu"
 	];
@@ -550,6 +558,6 @@ unittest {
 		x"8e959b75dae313da8cf4f72814fc143f8f7779c6eb9f7fa17299aeadb6889018501d289e4900f7e4331b99dec4b5433ac7d329eeb6dd26545e96e55b874be909"
 	];
 
-
+	
 	testDigest(new SHA512Digest, plaintexts, hexHashes);
 }

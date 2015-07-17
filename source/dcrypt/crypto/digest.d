@@ -1,4 +1,3 @@
-
 module dcrypt.crypto.digest;
 
 import std.range: isOutputRange;
@@ -8,17 +7,24 @@ import std.range: OutputRange;
 
 template isDigest(T)
 {
+	import std.digest.digest: isStdDigest = isDigest;
+
 	enum bool isDigest =
+		isStdDigest!T &&
 		is(T == struct) &&
 			isOutputRange!(T, ubyte) && isOutputRange!(T, const(ubyte)[]) &&
 			is(typeof(
 					{
 						ubyte[] data;
 						T dig = void;								// can define
-						dig.reset();								// can reset the digest
-						dig.update(cast(ubyte)0);					// can add a single byte
-						dig.update(cast(const (ubyte)[]) data);		// can add bytes
+						dig.start();								// can reset the digest
+
+						dig.put(cast(ubyte)0);						// can add a single byte
+						dig.put(cast(ubyte)0, cast(ubyte)0);		// variadic function
+						dig.put(cast(const (ubyte)[]) data);		// can add bytes
+
 						uint len = dig.doFinal(data);				// can extract the hash value
+						auto value = dig.finish();					// has finish
 
 						uint digestSize = T.digestLength;			// knows the length of the hash value in bytes
 						uint byteLength = T.byteLength;				// knows the length of its internal state
@@ -99,7 +105,7 @@ public abstract class Digest {
 	 * reset the digest back to it's initial state.
 	 */
 	@safe
-	public void reset() nothrow;
+	public void start() nothrow;
 	
 	/// create an independant copy of this Digest and it's full state
 	@safe @property
@@ -186,8 +192,8 @@ if(isDigest!T) {
 	 * reset the digest back to it's initial state.
 	 */
 	@safe
-	public override void reset() nothrow @nogc {
-		digest.reset();
+	public override void start() nothrow @nogc {
+		digest.start();
 	}
 	
 	/// Create an independant copy of this Digest and it's full state.
@@ -224,7 +230,7 @@ version(unittest) {
 			const ubyte[] data = cast(const ubyte[])plaintext[i];
 			const ubyte[] expectedHash = cast(const ubyte[])hashes[i];
 			
-			d.reset();
+			d.start();
 			
 			Digest clone = null;
 			

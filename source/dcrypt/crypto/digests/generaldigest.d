@@ -84,7 +84,7 @@ public:
 		processBlock();
 	}
 
-	override void reset() nothrow @nogc
+	override void start() nothrow @nogc
 	{
 		byteCount = 0;
 

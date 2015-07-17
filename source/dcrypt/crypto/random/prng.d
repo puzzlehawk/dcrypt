@@ -1,7 +1,6 @@
 module dcrypt.crypto.random.prng;
 
 import std.range;
-//import dcrypt.crypto.random.urandom;
 import dcrypt.crypto.random.fortuna.fortuna;
 
 // TODO implement PRNGs as input ranges
@@ -11,9 +10,9 @@ import dcrypt.crypto.random.fortuna.fortuna;
 /// Returns: Returns $(D true) if T can be used as a PRNG.
 /// 
 @safe
-template isPRNG(T)
+template isRNG(T)
 {
-	enum bool isPRNG = 
+	enum bool isRNG = 
 		is(T == struct) &&
 			is(typeof(
 					{
@@ -26,18 +25,19 @@ template isPRNG(T)
 }
 
 @safe
-public abstract class PRNG {
+public abstract class RNG {
 
-	/**
-	 * Creates a default PRNG. Type depends on your system.
-	 */
-	public static PRNG getInstance() nothrow
-	out (result) {
-		assert(result !is null, "failed to initialize PRNG instance");
-	}
-	body {
-		return new Fortuna();
-	}
+// TODO: default RNG
+//	/**
+//	 * Creates a default PRNG. Type depends on your system.
+//	 */
+//	public static PRNG getInstance() nothrow
+//	out (result) {
+//		assert(result !is null, "failed to initialize PRNG instance");
+//	}
+//	body {
+//		return new Fortuna();
+//	}
 	
 	/// Fill the buffer with random bytes.
 	/// Params:
@@ -61,7 +61,7 @@ public abstract class PRNG {
 ///	Wrapper class for PRNGs.
 ///
 @safe
-public class WrapperPRNG(R) if(isPRNG!R): PRNG {
+public class WrapperPRNG(R) if(isRNG!R): RNG {
 
 	private R rng;
 

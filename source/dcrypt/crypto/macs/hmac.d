@@ -29,7 +29,7 @@ public:
 
 		// replace key by hash(key) if key length > block length of hash function
 		if(key.length > digest.blockSize) {
-			digest.reset();
+			digest.start();
 			digest.update(key);
 			uint len = digest.doFinal(key);
 			key.length = len;
@@ -104,7 +104,7 @@ public:
 		assert(key !is null || key.length == 0, "HMac not initialized!");
 	}
 	body {
-		digest.reset();
+		digest.start();
 		digest.update(iPad);
 
 		initialized = true;

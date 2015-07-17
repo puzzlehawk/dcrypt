@@ -37,7 +37,7 @@ public:
 	 */
 	this() nothrow
 	{
-		reset();
+		start();
 	}
 
 	@property
@@ -64,7 +64,7 @@ public:
 		toBigEndian!uint(H4, output[12..16]);
 		toBigEndian!uint(H5, output[16..20]);
 
-		reset();
+		start();
 
 		return 20;
 	}
@@ -72,9 +72,9 @@ public:
 	/**
 	 * reset the chaining variables
 	 */
-	override void reset() nothrow @nogc
+	override void start() nothrow @nogc
 	{
-		super.reset();
+		super.start();
 
 		H1 = 0x67452301;
 		H2 = 0xefcdab89;

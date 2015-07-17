@@ -53,10 +53,11 @@ version (Benchmark) {
 		digests ~= new SHA256Digest();
 		digests ~= new SHA384Digest();
 		digests ~= new SHA512Digest();
-		digests ~= new KeccakDigest(224);
-		digests ~= new KeccakDigest(256);
-		digests ~= new KeccakDigest(384);
-		digests ~= new KeccakDigest(512);
+		digests ~= new Keccak224Digest;
+		digests ~= new Keccak256Digest;
+		digests ~= new Keccak288Digest;
+		digests ~= new Keccak384Digest;
+		digests ~= new Keccak512Digest;
 		
 		Benchmark.doBenchmark(len, digests);
 		

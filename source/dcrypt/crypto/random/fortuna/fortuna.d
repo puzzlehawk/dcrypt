@@ -71,7 +71,7 @@ shared static this() {
 	globalAcc = new shared Accumulator;
 }
 
-static assert(isPRNG!(FortunaCore!(AES, SHA256)), "Fortuna does not meet requirements for PRNGs.");
+static assert(isRNG!(FortunaCore!(AES, SHA256)), "Fortuna does not meet requirements for PRNGs.");
 
 private shared Accumulator globalAcc;
 

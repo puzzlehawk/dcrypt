@@ -8,8 +8,6 @@ import dcrypt.crypto.digest;
 import dcrypt.crypto.params.keyparameter;
 
 
-alias PRNGWithInput(C, D) = WrapperRNG!(FortunaGenerator!(C,D));
-
 ///	generate a deterministic PRNG sequence
 @safe unittest {
 	import dcrypt.crypto.engines.aes;
@@ -35,8 +33,9 @@ alias PRNGWithInput(C, D) = WrapperRNG!(FortunaGenerator!(C,D));
 static {
 	import dcrypt.crypto.engines.aes;
 	import dcrypt.crypto.digests.sha2;
-	static assert(isPRNG!(FortunaGenerator!(AES, SHA256)), "FortunaGenerator violates requirements of isPRNG!");
+	static assert(isRNG!(FortunaGenerator!(AES, SHA256)), "FortunaGenerator violates requirements of isPRNG!");
 }
+
 
 /// This PRNG forms a base component of the Fortuna PRNG as proposed by Bruce Schneier & Niels Ferguson.
 /// The Generator can be used stand alone as deterministic PRNG. It won't gather entropy on its own and
@@ -52,6 +51,7 @@ public struct FortunaGenerator(Cipher, Digest) if(isBlockCipher!Cipher && isDige
 	// PRNG interface implementation
 	public nothrow {
 
+		enum isDeterministic = true;
 		enum name = "FortunaGenerator/"~Cipher.name~"-"~Digest.name; /// Name of the PRNG algorithm.
 
 		/// Fill an arbitrary-size buffer with random data.
