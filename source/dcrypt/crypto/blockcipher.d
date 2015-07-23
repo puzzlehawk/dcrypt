@@ -1,8 +1,5 @@
 module dcrypt.crypto.blockcipher;
 
-public import dcrypt.crypto.params.keyparameter;
-
-
 /// Use this to check if type is a block cipher.
 @safe
 template isBlockCipher(T)
@@ -12,7 +9,7 @@ template isBlockCipher(T)
 			is(typeof(
 					{
 						ubyte[0] block;
-						T bc = void; // Can define
+						T bc = T.init; // Can define
 						string name = T.name;
 						uint blockSize = T.blockSize;
 						bc.start(true, cast(const ubyte[]) block, cast(const ubyte[]) block);	// init with secret key and iv

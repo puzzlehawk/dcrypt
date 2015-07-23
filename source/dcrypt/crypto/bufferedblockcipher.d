@@ -9,7 +9,7 @@ unittest {
 	import dcrypt.util.encoders.hex;
 	import std.stdio;
 	
-	BufferedBlockCipher!AES bbc;
+	IBufferedBlockCipher bbc = new BufferedBlockCipherWrapper!AES;
 	bbc.start(true, Hex.decode("2b7e151628aed2a6abf7158809cf4f3c"));
 	
 	ubyte[] plain = Hex.decode("6bc1bee22e409f96e93d7e117393172a");
@@ -341,8 +341,8 @@ public interface IBufferedBlockCipher
 {
 	
 	public {
-		
-		void init(bool forEncryption, KeyParameter params) nothrow;
+
+		void start(bool forEncryption, in ubyte[] userKey, in ubyte[] iv = null) nothrow @nogc;
 		
 		@property
 		string name() pure nothrow;
@@ -384,25 +384,25 @@ public interface IBufferedBlockCipher
 
 /// wrapper class for BufferedBlockCipher
 @safe
-public class BufferedBlockCipherWrapper(T) if(isBlockCipher!T): IBufferedBlockCipher
+public class BufferedBlockCipherWrapper(Cipher) if(isBlockCipher!Cipher): IBufferedBlockCipher
 {
 
-	private BufferedBlockCipher!T cipher;
+	private BufferedBlockCipher!Cipher cipher;
 
 	public {
-		
-		void init(bool forEncryption, KeyParameter params) nothrow {
-			cipher.init(forEncryption, params);
+
+		void start(bool forEncryption, in ubyte[] userKey, in ubyte[] iv = null) nothrow @nogc {
+			cipher.start(forEncryption, userKey, iv);
 		}
 		
 		@property
-		string getAlgorithmName() pure nothrow {
-			return cipher.getAlgorithmName();
+		string name() pure nothrow {
+			return Cipher.name;
 		}
 		
 		@property
 		uint blockSize() pure nothrow {
-			return cipher.blockSize();
+			return Cipher.blockSize;
 		}
 		
 		void reset() nothrow {
@@ -422,7 +422,7 @@ public class BufferedBlockCipherWrapper(T) if(isBlockCipher!T): IBufferedBlockCi
 		@nogc
 		uint processByte(in ubyte b, ubyte[] output) nothrow
 		{
-			return cipher.processByte(b,output);
+			return cipher.processByte(b, output);
 		}
 		
 		/**
@@ -435,7 +435,7 @@ public class BufferedBlockCipherWrapper(T) if(isBlockCipher!T): IBufferedBlockCi
 		@nogc
 		uint processBytes(in ubyte[] i, ubyte[] output) nothrow
 		{
-			return processBytes(i, output);
+			return cipher.processBytes(i, output);
 		}
 		
 		/**
@@ -443,14 +443,7 @@ public class BufferedBlockCipherWrapper(T) if(isBlockCipher!T): IBufferedBlockCi
 		 */
 		uint doFinal(ubyte[] output)
 		{
-			cipher.doFinal(output);
-		}
-		
-		/**
-		 * Returns: the BlockCipher passed once to the constructor.
-		 */
-		ref T getUnderlyingCipher() nothrow @nogc {
-			return cipher.getUnderlyingCipher();
+			return cipher.doFinal(output);
 		}
 	}
 
