@@ -85,6 +85,8 @@ version (Benchmark) {
 			new GCMBlockCipher(new SerpentEngine())
 		];
 		Benchmark.doBenchmark(len, aeadCiphers);
+
+		Benchmark.doCurve25519Benchmark(256);
 		
 		//	PKCS5S2ParametersGenerator[] gen = [
 		//		new PKCS5S2ParametersGenerator(new SHA1Digest),

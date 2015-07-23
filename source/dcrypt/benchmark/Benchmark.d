@@ -52,6 +52,18 @@ public class Benchmark {
 		}
 	}
 
+	public static void doCurve25519Benchmark(ulong length) {
+		import dcrypt.benchmark.curve25519;
+
+		writeln();
+		printTabbed(Curve25519Benchmark.header);
+		writeln();
+		auto bench = new Curve25519Benchmark;
+		printTabbed(bench.benchmark(length));
+		stdout.flush();
+		
+	}
+
 	//	public static void doBenchmark(T)(PKCS5S2ParametersGenerator!T[] gen...) {
 	//		writeln();
 	//		writeln(tabbed(padding, "algorithm", "iterations/s"));

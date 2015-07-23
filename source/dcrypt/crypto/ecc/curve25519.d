@@ -176,15 +176,12 @@ void fsum(limb[] output, in limb[] input)
 void fdifference(limb[] output, in limb[] input)
 {
 	output[0..10] = input[0..10] - output[0..10];
-	//	for (uint i = 0; i < 10; ++i) {
-	//		output[i] = input[i] - output[i];
-	//	}
 }
 
 /* Multiply a number by a scalar: output = in * scalar */
 void fscalar_product(limb[] output, in limb[] input, in limb scalar)
 {
-	output[] = input[] * scalar;
+	output[0..10] = input[0..10] * scalar;
 }
 
 /* Multiply two numbers: output = in2 * in
@@ -305,7 +302,7 @@ in {
  *
  * On entry: |output[i]| < 14*2^54
  * On exit: |output[0..8]| < 280*2^54 */
-void freduce_degree(limb[] output) {
+void freduce_degree(ref limb[19] output) {
 	/* Each of these shifts and adds ends up multiplying the value by 19.
 	 *
 	 * For output[0..8], the absolute entry value is < 14*2^54 and we add, at
@@ -424,14 +421,8 @@ void freduce_coefficients(ref limb[19] output)
  * output must be distinct to both inputs. The output is reduced degree
  * (indeed, one need only provide storage for 10 limbs) and |output[i]| < 2^26. */
 
-void fmul(limb[] output, in limb[] in1, in limb[] in2)
-in {
-	// TODO check assertions
-	assert(output.length >= 10);
-	assert(in1.length >= 10);
-	assert(in2.length >= 10);
-}
-body {
+void fmul(ref limb[10] output, in ref limb[10] in1, in ref limb[10] in2)
+{
 	limb[19] t;
 	fproduct(t, in1, in2);
 	/* |t[i]| < 14*2^54 */
@@ -573,7 +564,7 @@ int int_gte(int a, int b) {
  * little-endian, 32-byte array.
  *
  * On entry: |input_limbs[i]| < 2^26 */
-void fcontract(ubyte[] output, in limb[] input_limbs) 
+void fcontract(ref ubyte[32] output, in ref limb[10] input_limbs) 
 in {
 	assert(output.length == 32);
 	assert(input_limbs.length == 10);
@@ -899,7 +890,7 @@ void cmult(ref limb[10] resultx, ref limb[10] resultz, in ref ubyte[32] n, in re
 // -----------------------------------------------------------------------------
 // Shamelessly copied from djb's code :-)
 // -----------------------------------------------------------------------------
-void crecip(limb[] output, in limb[] z) {
+void crecip(ref limb[10] output, in ref limb[10] z) {
 	limb[10] z2, z9, z11, z2_5_0, z2_10_0, z2_20_0, z2_50_0, z2_100_0, t0, t1;
 
 	/* 2 */ fsquare(z2,z);

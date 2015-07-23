@@ -4,6 +4,7 @@ public import dcrypt.crypto.macs.mac;
 import dcrypt.crypto.digest;
 
 // TODO optimize reset()
+// TODO wipe sensitive data in destructor
 
 static {
 	import dcrypt.crypto.digests.sha2: SHA256;
