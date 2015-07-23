@@ -23,8 +23,7 @@ unittest {
 	assert(padding.padCount(block) == 16, "PKCS7Padding failed");
 }
 
-// OOP API wrapper
-alias PKCS7Padding = BlockCipherPaddingWrapper!PKCS7Pad;
+static assert(isBlockCipherPadding!PKCS7Pad, "PKCS7Pad violates isBlockCipherPadding.");
 
 ///
 /// PKCS7Pad is an implementation of the PKCS7 block cipher padding scheme.

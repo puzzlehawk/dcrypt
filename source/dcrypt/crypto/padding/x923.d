@@ -4,49 +4,14 @@ import dcrypt.crypto.padding.padding;
 import dcrypt.exceptions;
 import std.exception: enforce;
 
+
+static assert(isBlockCipherPadding!X923Pad, "X923Pad violates isBlockCipherPadding.");
+
 /// 
 /// A ANSI X.923 block cipher padding implementation.
 /// This code does not support random padding anymore,
 /// because the author thinks its more susceptible to padding oracle attacks than deterministic zero padding.
 /// 
-
-/// OOP API wrapper for X923Pad
-@safe
-public class X923Padding: BlockCipherPadding {
-
-	private {
-		X923Pad padding;
-	}
-	
-	public {
-
-		@property
-		string name() pure nothrow {
-			return X923Pad.name;
-		}
-		
-		/**
-		 * pad with zeros or random bytes if SecureRandom is specified in constructor.
-		 * Params: block = the block to pad
-		 * len = the number of data bytes in this block. has to be smaller than block.length.
-		 */
-		void addPadding(ubyte[] block, in uint len) nothrow
-		{
-			padding.addPadding(block, len);	
-			
-		}
-		
-		/**
-		 * Returns: the number of padding bytes appended to this block
-		 * Throws: InvalidCipherTextException if the padding is corrupted
-		 */
-		uint padCount(in ubyte[] block) pure
-		{
-			return padding.padCount(block);
-		}
-	}
-}
-
 @safe
 public struct X923Pad { 
 
@@ -97,7 +62,7 @@ public struct X923Pad {
 
 /// Test X923 padding scheme.
 unittest {
-	X923Padding padding = new X923Padding();
+	X923Pad padding;
 	ubyte[] block = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15];
 	padding.addPadding(block, 15);
 	assert(block == [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,1], "X923Padding failed");

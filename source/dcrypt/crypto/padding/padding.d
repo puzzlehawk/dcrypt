@@ -21,59 +21,6 @@ template isBlockCipherPadding(T)
 					}));
 }
 
-/// OOP interface for block cipher padding schemes.
-@safe
-public interface BlockCipherPadding {
-	
-	@property
-	public string name() pure nothrow;
-
-	/**
-	 * padds a block with len bytes content
-	 * Params:
-	 * block = the block to be padded
-	 * len = the number of data bytes in this block. BLOCKSIZE - len pad bytes will be added.
-	*/
-	public void addPadding(ubyte[] block, in uint len) nothrow;
-	
-	/**
-	 * Returns: the number of padding bytes appended to this block
-	 * Throws: InvalidCipherTextException if the padding is corrupted
-	*/
-	public uint padCount(in ubyte[] block) pure;
-}
-
-/// OOP API wrapper class for block cipher paddings
-@safe
-public class BlockCipherPaddingWrapper(T) if(isBlockCipherPadding!T): BlockCipherPadding {
-
-	private T padding;
-
-	@property
-	public string name() nothrow {
-		return padding.name;
-	}
-
-	/**
-	 * padds a block with len bytes content
-	 * Params:
-	 * block = the block to be padded
-	 * len = the number of data bytes in this block. BLOCKSIZE - len pad bytes will be added.
-	*/
-	public void addPadding(ubyte[] block, in uint len) nothrow {
-		padding.addPadding(block, len);
-	}
-
-	/**
-	 * Returns: the number of padding bytes appended to this block
-	 * Throws: InvalidCipherTextException if the padding is corrupted
-	*/
-	public uint padCount(in ubyte[] block) pure {
-		return padding.padCount(block);
-	}
-}
-
-
 // TODO test vectors, doFinal() require minimal output buffer length
 /// Test PaddedBufferedBlockCipher with AES and PKCS7 padding.
 @safe

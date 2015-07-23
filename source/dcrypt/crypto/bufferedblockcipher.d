@@ -382,7 +382,7 @@ public interface IBufferedBlockCipher
 	
 }
 
-/// wrapper class for BufferedBlockCipher
+/// OOP API wrapper class for BufferedBlockCipher
 @safe
 public class BufferedBlockCipherWrapper(Cipher) if(isBlockCipher!Cipher): IBufferedBlockCipher
 {
