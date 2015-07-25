@@ -60,16 +60,16 @@ unittest {
 	
 	for(size_t i = 0; i < plaintexts.length; ++i) {
 		Digest digest = digests[i];
-		ubyte[] plain = Hex.decode(plaintexts[i]);
-		ubyte[] expectedHash = Hex.decode(hexHashes[i]);
+		ubyte[] plain = hexDecode(plaintexts[i]);
+		ubyte[] expectedHash = hexDecode(hexHashes[i]);
 		
 		digest.start();
 		digest.put(plain);
 		
 		ubyte[] actualHash = digest.doFinal();
 		
-		assert(expectedHash == actualHash, "produced wrong hash: " ~ Hex.encode(actualHash)
-			~ " instead of " ~ Hex.encode(expectedHash));
+		assert(expectedHash == actualHash, "produced wrong hash: " ~ toHexStr(actualHash)
+			~ " instead of " ~ toHexStr(expectedHash));
 	}
 }
 

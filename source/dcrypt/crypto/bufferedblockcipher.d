@@ -10,11 +10,11 @@ unittest {
 	import std.stdio;
 	
 	IBufferedBlockCipher bbc = new BufferedBlockCipherWrapper!AES;
-	bbc.start(true, Hex.decode("2b7e151628aed2a6abf7158809cf4f3c"));
+	bbc.start(true, hexDecode("2b7e151628aed2a6abf7158809cf4f3c"));
 	
-	ubyte[] plain = Hex.decode("6bc1bee22e409f96e93d7e117393172a");
+	ubyte[] plain = hexDecode("6bc1bee22e409f96e93d7e117393172a");
 	plain ~= plain;
-	ubyte[] cipher = Hex.decode("3ad77bb40d7a3660a89ecaf32466ef97");
+	ubyte[] cipher = hexDecode("3ad77bb40d7a3660a89ecaf32466ef97");
 	cipher ~= cipher;
 	
 	ubyte[] output = new ubyte[32];

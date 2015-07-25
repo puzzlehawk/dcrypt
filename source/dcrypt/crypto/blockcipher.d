@@ -173,13 +173,13 @@ version(unittest) {
 			bc.processBlock(cast(const ubyte[]) plaintexts[i], buffer);
 			
 			assert(buffer == cipherTexts[i],
-				text(bc.name, " encrypt: (", Hex.encode(buffer), ") != (", Hex.encode(cipherTexts[i]), ")"));
+				text(bc.name, " encrypt: (", hexEncode(buffer), ") != (", hexEncode(cipherTexts[i]), ")"));
 			
 			// Decryption
 			bc.start(false, key, iv);
 			bc.processBlock(cast(const ubyte[]) cipherTexts[i], buffer);
 			assert(buffer == plaintexts[i],
-				text(bc.name, " decrypt: (", Hex.encode(buffer),") != (", Hex.encode(plaintexts[i]), ")"));
+				text(bc.name, " decrypt: (", hexEncode(buffer),") != (", hexEncode(plaintexts[i]), ")"));
 		}
 	}
 }

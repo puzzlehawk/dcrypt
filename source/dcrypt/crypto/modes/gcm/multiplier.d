@@ -411,7 +411,7 @@ struct GCMPCLMULQDQMultiplier
 					movdqu c[EBP], XMM3;
 				}
 				
-				assert(c == x"12345678000000000000000000000000", text("c = ", Hex.encode(c)));
+				assert(c == x"12345678000000000000000000000000", text("c = ", hexEncode(c)));
 			}
 		}
 	}
@@ -500,7 +500,7 @@ struct GCMPCLMULQDQMultiplier
 //		
 //		mult.multiply(X1);
 //		
-//		assert(X1 == x"0388dace60b6a392f328c2b971b2fe78", text("GF128 multiplication with pclmulqdq failed!: ", Hex.encode(X1)));
+//		assert(X1 == x"0388dace60b6a392f328c2b971b2fe78", text("GF128 multiplication with pclmulqdq failed!: ", hexEncode(X1)));
 //	}
 	
 	/// test hardware accelerated multiplication (pclmulqdq)
@@ -524,7 +524,7 @@ struct GCMPCLMULQDQMultiplier
 		
 		mult.multiply(X1);
 		
-		assert(X1 == expected, text("GF128 multiplication with pclmulqdq failed!: ", Hex.encode(X1)));
+		assert(X1 == expected, text("GF128 multiplication with pclmulqdq failed!: ", hexEncode(X1)));
 	}
 
 //	/// test hardware accelerated multiplication (pclmulqdq)
@@ -542,7 +542,7 @@ struct GCMPCLMULQDQMultiplier
 //		
 //		mult.multiply(cast(ubyte[16])X1);
 //		
-//		assert(X1 == expected, text("GF128 multiplication with pclmulqdq failed!: ", Hex.encode(cast(ubyte[16])X1)));
+//		assert(X1 == expected, text("GF128 multiplication with pclmulqdq failed!: ", hexEncode(cast(ubyte[16])X1)));
 //	}
 	
 }

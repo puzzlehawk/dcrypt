@@ -213,9 +213,9 @@ version(unittest) {
 		{
 			HMac!Digest mac;
 			
-			ubyte[] key = Hex.decode(hexKeys[i]);
-			ubyte[] data = Hex.decode(hexData[i]);
-			ubyte[] expectedHash = Hex.decode(hexHashes[i]);
+			ubyte[] key = hexDecode(hexKeys[i]);
+			ubyte[] data = hexDecode(hexData[i]);
+			ubyte[] expectedHash = hexDecode(hexHashes[i]);
 
 			mac.start(key);
 			
@@ -225,7 +225,7 @@ version(unittest) {
 			ubyte[] hash = new ubyte[mac.macSize];
 			mac.doFinal(hash);
 			
-			assert(hash == expectedHash, text(mac.name," failed: ",Hex.encode(hash), " != ", hexHashes[i]));
+			assert(hash == expectedHash, text(mac.name," failed: ",hexEncode(hash), " != ", hexHashes[i]));
 		}
 	}
 }

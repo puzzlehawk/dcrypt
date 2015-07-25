@@ -347,14 +347,14 @@ version(unittest) {
 		
 		foreach (uint i, string test_key; hexKeys)
 		{
-			ubyte[] plain = Hex.decode(hexPlaintexts[i]);
-			ubyte[] aad = Hex.decode(hexAAD[i]);
-			ubyte[] ciphertext = Hex.decode(hexCipherTexts[i]);
+			ubyte[] plain = hexDecode(hexPlaintexts[i]);
+			ubyte[] aad = hexDecode(hexAAD[i]);
+			ubyte[] ciphertext = hexDecode(hexCipherTexts[i]);
 			
 			ubyte[] output = new ubyte[0];
 						
 			// set to encryption mode
-			cipher.start(true, Hex.decode(test_key), Hex.decode(hexIVs[i]), macSize[i]);
+			cipher.start(true, hexDecode(test_key), hexDecode(hexIVs[i]), macSize[i]);
 			
 			// test reset()
 			cipher.processAADBytes([0,1,2,3]);
@@ -372,7 +372,7 @@ version(unittest) {
 			//output = output[0..len];
 			
 			assert(output == ciphertext,
-				text(cipher.getAlgorithmName()~" encrypt: (",Hex.encode(output),") != ("~hexCipherTexts[i]~")"));
+				text(cipher.getAlgorithmName()~" encrypt: (",hexEncode(output),") != ("~hexCipherTexts[i]~")"));
 			
 		}
 	}

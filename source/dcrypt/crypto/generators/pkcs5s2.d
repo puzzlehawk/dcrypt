@@ -36,7 +36,7 @@ public class PKCS5S2ParametersGenerator(D) : PBEParametersGenerator
 	//		
 	//		gen.init(pass, salt, 2);
 	//		KeyParameter key = gen.generateDerivedParameters(20*8);
-	//		assert(key.getKey() == Hex.decode("ea6c014dc72d6f8ccd1ed92ace1d41f0d8de8957"), "PKCS5S2 PBKDF2 failed!");
+	//		assert(key.getKey() == hexDecode("ea6c014dc72d6f8ccd1ed92ace1d41f0d8de8957"), "PKCS5S2 PBKDF2 failed!");
 	//		
 	//		uint iterTime = 10; // milli seconds
 	//		gen.init(pass, salt, 0, iterTime);

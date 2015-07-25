@@ -167,8 +167,8 @@ body {
 		buf.length = plain.length;
 		
 		c.processBytes(plain, buf);
-		//debug writeln(Hex.encode(buf));
-		assert(buf == ciphertext, text(c.name(), " encryption failed: ", Hex.encode(buf),
-				" != ", Hex.encode(ciphertext)));
+		//debug writeln(hexEncode(buf));
+		assert(buf == ciphertext, text(c.name(), " encryption failed: ", hexEncode(buf),
+				" != ", hexEncode(ciphertext)));
 	}
 }
