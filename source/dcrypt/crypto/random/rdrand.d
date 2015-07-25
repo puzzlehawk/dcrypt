@@ -45,27 +45,69 @@ public struct RDRand {
 	/// Dummy function. Has no effect at all.
 	public void addSeed(in ubyte[]) nothrow @nogc pure {}
 
-
+	
 	/// Generate random data with rdrand instruction.
 	/// Params:
 	/// buf = Buffer for random data.
-	public void nextBytes(ubyte[] buf) nothrow @nogc 
+	/// 
+	/// Throws: Throws an Error if your platform does not support the RDRAND instruction.
+	@trusted
+	public static void nextBytes(ubyte[] buf) nothrow @nogc
 	{
-
+		
 		if(!isSupported) {
 			assert(false, "RDRAND is not supported by your platform!");
 		}
-
-		while(buf.length > 0) {
-			long r = nextLong();
-			for(uint i = 0; i < 8 && buf.length > 0; ++i) {
-				buf[0] = cast(ubyte) r & 0xFF;
+		
+		size_t len = buf.length / 8;
+		
+		asm nothrow @nogc {
+			
+			mov RDI, buf+8;	// load pointer to destination buffer
+			mov RCX, len;	// set counter to len
+			
+			// fill buf with random data
+		fillLoop:
+			rdrand	R8;
+			mov	R8, RAX;
+			mov		[RDI], R8;
+			add		RDI, 8;
+			
+			loop fillLoop;
+		}
+		
+		
+		if(buf.length % 8 > 0) {
+			
+			assert(buf.length-len*8 < 8);
+			
+			// fill remainder with random bytes
+			ulong r = nextLong();
+			
+			foreach(ref b; buf[len*8 .. $]) {
+				b = cast(ubyte) r;
 				r >>= 8;
 			}
 		}
 	}
 
-	/// Returns: a uniformly random long.
+//	public void nextBytes(ubyte[] buf) nothrow @nogc 
+//	{
+//
+//		if(!isSupported) {
+//			assert(false, "RDRAND is not supported by your platform!");
+//		}
+//
+//		while(buf.length > 0) {
+//			long r = nextLong();
+//			for(uint i = 0; i < 8 && buf.length > 0; ++i) {
+//				buf[0] = cast(ubyte) r & 0xFF;
+//				r >>= 8;
+//			}
+//		}
+//	}
+
+	/// Returns: A uniformly random ulong.
 	/// 
 	// TODO: optimize to fill an array
 	@trusted
@@ -79,6 +121,7 @@ public struct RDRand {
 
 		return r;
 	}
+
 
 	unittest {
 		if(isSupported) {
