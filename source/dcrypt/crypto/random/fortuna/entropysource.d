@@ -30,15 +30,22 @@ public abstract class EntropySource
 	}
 
 	private void run() {
+		bool running = true;
 
-		while(true) {
+		while(running) {
 			ubyte[32] buf;
 
 			getEntropy(buf);
 
 			sendEntropyEvent(buf);
 
-			trustedSleep!"msecs"(100);
+			uint delay = scheduleNext();
+
+			if(delay > 0) {
+				trustedSleep!"msecs"(delay);
+			} else {
+				running = false;
+			}
 
 		}
 
@@ -57,6 +64,9 @@ public abstract class EntropySource
 	/// 
 	/// Returns: Slice pointing to the new data in the buffer.
 	public abstract ubyte[] getEntropy(ubyte[] buf);
+
+	@safe @nogc nothrow
+	public abstract uint scheduleNext();
 
 	@property @nogc nothrow
 	public abstract string name();

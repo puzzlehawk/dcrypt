@@ -32,6 +32,7 @@ public class RebootEntropySource: EntropySource
 	private Fortuna rng;
 	private uint blockCounter = 0;
 	private File inputFile;
+	private uint delay = 1;
 
 	/// Params:
 	/// seedFile = The file to load the seed from and to store new seed.
@@ -52,11 +53,20 @@ public class RebootEntropySource: EntropySource
 	/// Read entropy from file.
 	@trusted
 	override public ubyte[] getEntropy(ubyte[] buf) nothrow {
-		if(exists(seedFile)) {
+		if(inputFile.isOpen) {
 			// get entropy
 			try {
 
-				return inputFile.rawRead(buf);
+				ubyte[] slice = inputFile.rawRead(buf);
+
+				if(slice.length < buf.length) {
+					// No remaining data in file
+					// disable scheduling
+
+					delay = 0;
+				}
+
+				return slice;
 
 			} catch (Exception e) {
 				// TODO
@@ -64,12 +74,18 @@ public class RebootEntropySource: EntropySource
 			}
 		}
 
+		delay = 0; // disable scheduling
 		return buf[0..0];
 	}
 
 	@nogc @property nothrow
 	override public string name() {
 		return "RebootSource";
+	}
+
+	@safe @nogc nothrow
+	override uint scheduleNext() {
+		return delay;
 	}
 
 	/// Get random data from Fortuna and store it to a file for use at next program start.

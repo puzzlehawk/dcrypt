@@ -10,7 +10,7 @@ import dcrypt.crypto.random.fortuna.fortuna: addEntropy;
 /// 
 
 unittest {
-	auto stick = new SystemTickEntropySource;
+	auto sTick = new SystemTickEntropySource;
 }
 
 @safe
@@ -27,6 +27,11 @@ public class SystemTickEntropySource: EntropySource
 	@nogc @property nothrow
 	override public string name() {
 		return "SystemTickSource";
+	}
+
+	@safe @nogc nothrow
+	override uint scheduleNext() {
+		return 250;
 	}
 
 	/// Fill the buffer with timing measurements.
