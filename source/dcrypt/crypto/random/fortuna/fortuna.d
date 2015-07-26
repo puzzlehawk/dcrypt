@@ -14,7 +14,8 @@ import std.datetime;
 
 
 /// OOP wrapper
-alias WrapperPRNG!(FortunaCore!(AES, SHA256)) Fortuna;
+public alias WrapperPRNG!(FortunaCore!(AES, SHA256)) FortunaRNG;
+public alias FortunaCore!(AES, SHA256) Fortuna;
 
 /// Get some random bytes from Fortuna.
 unittest {
@@ -40,7 +41,7 @@ unittest {
 /// sourceID =	The ID of the entropy source. Can actually be any number.
 /// seed	=	Random data.
 @safe
-public void addEntropy(in ubyte sourceID, in ubyte[] seed) nothrow @nogc {
+public void addEntropy(in ubyte sourceID, in ubyte[] seed...) nothrow @nogc {
 	assert(globalAcc !is null, "Accumulator not initialized!");
 	globalAcc.addEntropy(sourceID, seed);
 	
@@ -57,7 +58,7 @@ public void addEntropy(in ubyte sourceID, in ubyte[] seed) nothrow @nogc {
 /// Throws:
 /// Error = if buffer has wrong size.
 @safe
-public void getSeed(ubyte[] buf) nothrow @nogc
+private void getSeed(ubyte[] buf) nothrow @nogc
 in {
 	assert(buf.length == 32, "buf must be 32 bytes long.");
 }
@@ -67,13 +68,13 @@ body {
 }
 
 /// initialize the global accumulator
-shared static this() {
+private shared static this() {
 	globalAcc = new shared Accumulator;
 }
 
-static assert(isRNG!(FortunaCore!(AES, SHA256)), "Fortuna does not meet requirements for PRNGs.");
+private shared Accumulator globalAcc;	/// The entropy accumulator is used globally.
 
-private shared Accumulator globalAcc;
+static assert(isRNG!(FortunaCore!(AES, SHA256)), "Fortuna does not meet requirements for PRNGs.");
 
 /// FortunaCore is meant to be the mothership of the PRNGs. It should run as a singleton -
 /// one instance per application that handles the accumulator and entropy sources.

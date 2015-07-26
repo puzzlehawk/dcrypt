@@ -112,7 +112,7 @@ package class Accumulator
 	/// Params:
 	/// sourceID = A number assigned to the source.
 	/// data = Entropy data.
-	void addEntropy(in ubyte sourceID, in ubyte[] data)
+	void addEntropy(in ubyte sourceID, in ubyte[] data...)
 	{
 		ubyte[5] iBuf; // contains sourceID and length of event data
 
@@ -206,7 +206,7 @@ if(isDigest!Digest && Digest.digestLength == bufferSize) {
 	/// accumulate some bytes in the entropy pool
 	/// Params:
 	/// b = the entropy to add
-	void addEntropy(in ubyte[] b) {
+	void addEntropy(in ubyte[] b...) {
 		accumulator.put(b);
 		freshEntropyBytes += b.length;
 	}

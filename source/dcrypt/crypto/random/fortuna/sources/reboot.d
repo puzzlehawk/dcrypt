@@ -17,8 +17,10 @@ enum blocksPerFile = 16;
 version (linux) {
 	unittest {
 		RebootEntropySource rbs = new RebootEntropySource("/tmp/reboot.seed");
-		rbs.start();
-		//rbs.stop();
+		ubyte[32] buf;
+
+		ubyte[] slice = rbs.getEntropy(buf);
+
 	}
 }
 
@@ -27,45 +29,50 @@ public class RebootEntropySource: EntropySource
 {
 
 	private string seedFile;
-	private Fortuna rng = new Fortuna;
+	private Fortuna rng;
 	private uint blockCounter = 0;
+	private File inputFile;
 
 	/// Params:
 	/// seedFile = The file to load the seed from and to store new seed.
-	this(string seedFile)
+	this(string seedFile) nothrow
 	{
 		this.seedFile = seedFile;
+		if(exists(seedFile)) {
+			try {
+				inputFile = File(seedFile, "rb");
+			} catch (Exception e) {
+				
+				// TODO
+				assert(false, "error opening entropy file");
+			}
+		}
 	}
 
-	public override void start() nothrow {
-		getEntropy();
-		storeEntropy();
-	}
-
-	public override void stop() nothrow {
-		storeEntropy();
-	}
-
+	/// Read entropy from file.
 	@trusted
-	private void getEntropy() nothrow {
+	override public ubyte[] getEntropy(ubyte[] buf) nothrow {
 		if(exists(seedFile)) {
 			// get entropy
 			try {
-				File f = File(seedFile, "rb");
 
-				foreach(c; f.byChunk(4096)) {
-					sendEntropyEvent(c);
-				}
-				
-				f.close();
+				return inputFile.rawRead(buf);
 
 			} catch (Exception e) {
 				// TODO
 				assert(false, "error reading entropy file");
 			}
 		}
+
+		return buf[0..0];
 	}
 
+	@nogc @property nothrow
+	override public string name() {
+		return "RebootSource";
+	}
+
+	/// Get random data from Fortuna and store it to a file for use at next program start.
 	@trusted
 	private void storeEntropy() nothrow {
 		try {
@@ -92,6 +99,7 @@ public class RebootEntropySource: EntropySource
 	}
 
 	~this() {
+		inputFile.close();
 		storeEntropy();
 	}
 }
