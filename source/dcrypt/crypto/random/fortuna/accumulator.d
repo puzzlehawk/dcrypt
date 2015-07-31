@@ -4,8 +4,8 @@ import dcrypt.crypto.digests.sha2;
 import dcrypt.crypto.digest;
 import dcrypt.util.pack;
 
-package enum MINPOOLSIZE = 64; /// return empty entropy if pool0's size is < MINPOOLSIZE
-private enum bufferSize = 32; /// size of the output buffer and internal state
+private enum minPoolSize = 64;	/// return empty entropy if pool0's size is < MINPOOLSIZE
+private enum bufferSize = 32;	/// size of the output buffer and internal state
 
 // Test shared and non-shared Accumulator
 unittest {
@@ -50,8 +50,26 @@ package class Accumulator
 	nothrow @nogc:
 
 	/// Returns: Amount of new seed bytes in pool0.
-	uint freshEntropyLenth() {
+	@property
+	uint freshEntropyLength() {
 		return entropyPools[0].freshEntropy;
+	}
+
+	
+	/// Multithreading aware version of `extractEntropy()`
+	@safe
+	synchronized void extractEntropy(ubyte[] buf)
+	in {
+		assert(buf.length == Digest.digestLength, "buffer size does not match digest size");
+	}
+	body {
+		transaction(0, null, buf);
+	}
+	
+	/// Multithreading aware version of `addEntropy()`
+	@safe
+	synchronized void addEntropy(in ubyte sourceID, in ubyte[] data) {
+		transaction(sourceID, data, null);
 	}
 
 	/**
@@ -69,14 +87,13 @@ package class Accumulator
 			counter++;
 		}
 
-		Digest digest;
-		
-		ubyte[digest.digestLength] iBuf;
+		ubyte[Digest.digestLength] iBuf;
 
 		foreach(i, pool; entropyPools) {
 			if(counter % (1<<i) == 0) { // reseedCount divisible by 2^i ?
 				pool.extractEntropy(iBuf);
-				digest.put(iBuf);
+				masterPool.addEntropy(iBuf);
+				//digest.put(iBuf);
 			}else {
 				// won't be divisible by 2^(i+1) either
 				break;
@@ -86,27 +103,23 @@ package class Accumulator
 		/// check if `iBuf` is changed. `iBuf` beeing filled with 0s means that very likely something went wrong.
 		assert(std.algorithm.any!"a != 0"(iBuf[]), "No fresh entropy from pools!");
 
-		// TODO simplify
-		digest.doFinal(iBuf);
-		digest.put(iBuf[16..32]);
-		digest.put(iBuf[0..16]);
-		digest.put(0x01);
-		digest.doFinal(buf);	// this is the new seed
-		digest.put(iBuf);		// feed back to conserve entropy
+//		// TODO simplify
+//		digest.doFinal(iBuf);	// extracted entropy from pools
+//
+//		// Hash twice to avoid leaking accumulator state.
+//		// This is important if more than one Fortuna instance get their entropy from this accumulator.
+//		// `iBuf` does not get leaked.
+//		digest.put(0x01);
+//		digest.put(iBuf);
+//		digest.put(0x01);
+//		digest.doFinal(buf);	// this is the new seed / output
+//
+//		digest.put(iBuf);		// feed back to conserve entropy
+
+		masterPool.extractEntropy(buf);
 		
 	}
 
-	/// Multithreading aware version of `extractEntropy`
-	@safe
-	synchronized void extractEntropy(ubyte[] buf)
-	in {
-		assert(buf.length == Digest.digestLength, "buffer size does not match digest size");
-	}
-	body {
-		transaction(0, null, buf);
-	}
-
-	
 	/// Accumulate an entropy event.
 	/// 
 	/// Params:
@@ -131,13 +144,6 @@ package class Accumulator
 		}
 	}
 
-	
-	/// Multithreading aware version of `addEntropy`
-	@safe
-	synchronized void addEntropy(in ubyte sourceID, in ubyte[] data) {
-		transaction(sourceID, data, null);
-	}
-
 	/// Provides synchronized access to the accumulator.
 	/// Used to add entropy or to extract entropy or both at the same time.
 	/// 
@@ -158,6 +164,7 @@ package class Accumulator
 	private {
 		enum POOLS = 32; // TODO 32 might be overkill
 		EntropyPool!Digest[POOLS] entropyPools;
+		EntropyPool!Digest masterPool;
 		uint pool = 0;
 		uint counter = 0; // count how many times extractEntropy() has been called
 	}
