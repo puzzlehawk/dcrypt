@@ -42,17 +42,13 @@ public:
 			key.length = len;
 		}
 
-		// prepare those digests for faster PBKDF2
-		//		initDigest(iPaddedDigest, key, ipadByte);
-		//		initDigest(oPaddedDigest, key, opadByte);
-
 		iPad = genPadBytes(key, ipadByte, digest.blockSize);
 		oPad = genPadBytes(key, opadByte, digest.blockSize);
 
 		reset();
 	}
 
-
+	
 	/**
 	 * update the MAC with a block of bytes.
 	 *
@@ -75,8 +71,7 @@ public:
 	uint doFinal(ubyte[] output) nothrow @nogc {
 		digest.doFinal(iHash);
 		digest.put(oPad);
-		//		initDigest(digest, key, opadByte);
-		//		digest = oPaddedDigest.dup;
+
 		digest.put(iHash);
 
 		digest.doFinal(output);
@@ -85,7 +80,13 @@ public:
 		
 		return macSize;
 	}
-	
+
+	@safe @nogc nothrow
+	ubyte[macSize] finish() {
+		ubyte[macSize] buf;
+		doFinal(buf);
+		return buf;
+	}
 	
 	/**
 	 * reset the digest back to it's initial state.
@@ -113,23 +114,7 @@ private:
 	
 	enum ubyte opadByte = 0x5c;
 	enum ubyte ipadByte = 0x36;
-	//	
-	//	/**
-	//	 init the digest with key and padding
-	//	 */
-	//	void initDigest(Digest d, in ubyte[] key, in ubyte padByte) nothrow {
-	////		ubyte[] paddedKey = key.dup;
-	////		paddedKey[] ^= padByte;
-	//		ubyte[] paddedKey = genPadBytes(key, padByte, d.blockSize());
-	//		d.reset();
-	//		d.update(paddedKey);
-	////		uint blockSize = d.blockSize();
-	////		size_t padLength = blockSize - (key.length%blockSize);
-	////		
-	////		ubyte[] pad = new ubyte[padLength];
-	////		pad[] = padByte;
-	////		d.update(pad);
-	//	}
+
 
 	ubyte[] genPadBytes(in ubyte[] key, in ubyte padByte, in uint blockSize) nothrow {
 		ubyte[] paddedKey = key.dup;

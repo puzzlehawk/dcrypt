@@ -17,9 +17,13 @@ public abstract class EntropySource
 	private ubyte sourceID;
 	private Thread worker;
 
-	@trusted
+
 	final this() nothrow {
 		this.sourceID = idCounter++; // give each source another ID (as long as there are less than 256 sources)
+	}
+
+	@trusted
+	public final void start() nothrow {
 		try {
 			worker = new Thread(&run);
 			worker.isDaemon = true;
@@ -35,18 +39,18 @@ public abstract class EntropySource
 		while(running) {
 			ubyte[32] buf;
 
-			getEntropy(buf);
+			ubyte[] recvEntropy = getEntropy(buf);	// Get the entropy.
 
-			sendEntropyEvent(buf);
+			sendEntropyEvent(recvEntropy);	// Send the entropy to the global accumulator.
 
-			uint delay = scheduleNext();
+			uint delay = scheduleNext();	// Ask the source when it wants to be invoked.
 
 			if(delay > 0) {
 				trustedSleep!"msecs"(delay);
 			} else {
+				// delay == 0 means the source wants to be closed
 				running = false;
 			}
-
 		}
 
 	}
@@ -78,8 +82,8 @@ public abstract class EntropySource
 
 		addEntropy(sourceID, buf);
 
-		import std.stdio;
-		debug writeln(sourceID, " ",  name, ":\t", dcrypt.util.encoders.hex.toHexStr(buf));
+//		import std.stdio;
+//		debug writeln(sourceID, " ",  name, ":\t", dcrypt.util.encoders.hex.toHexStr(buf));
 	}
 
 }

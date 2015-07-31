@@ -9,8 +9,16 @@ import dcrypt.crypto.random.fortuna.fortuna: addEntropy;
 /// Generate entropy data with the system clock.
 /// 
 
+
 unittest {
 	auto sTick = new SystemTickEntropySource;
+	ubyte[32] buf1;
+	ubyte[32] buf2;
+	sTick.getEntropy(buf1);
+	sTick.getEntropy(buf2);
+
+	assert(buf1 != buf2, "Measurements are not at all random!");
+
 }
 
 @safe

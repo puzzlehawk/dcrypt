@@ -34,6 +34,17 @@ template isDigest(T)
 					}));
 }
 
+/// Calculate the final hash value.
+/// Returns: the hash value
+mixin template finish() {
+	@safe @nogc nothrow
+	ubyte[digestLength] finish() {
+		ubyte[digestLength] buf;
+		doFinal(buf);
+		return buf;
+	}
+}
+
 @safe
 public abstract class Digest {
 

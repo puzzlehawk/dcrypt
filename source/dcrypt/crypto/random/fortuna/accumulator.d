@@ -1,5 +1,6 @@
 ﻿module dcrypt.crypto.random.fortuna.accumulator;
 
+
 import dcrypt.crypto.digests.sha2;
 import dcrypt.crypto.digest;
 import dcrypt.util.pack;
@@ -93,28 +94,11 @@ package class Accumulator
 			if(counter % (1<<i) == 0) { // reseedCount divisible by 2^i ?
 				pool.extractEntropy(iBuf);
 				masterPool.addEntropy(iBuf);
-				//digest.put(iBuf);
 			}else {
 				// won't be divisible by 2^(i+1) either
 				break;
 			}
 		}
-
-		/// check if `iBuf` is changed. `iBuf` beeing filled with 0s means that very likely something went wrong.
-		assert(std.algorithm.any!"a != 0"(iBuf[]), "No fresh entropy from pools!");
-
-//		// TODO simplify
-//		digest.doFinal(iBuf);	// extracted entropy from pools
-//
-//		// Hash twice to avoid leaking accumulator state.
-//		// This is important if more than one Fortuna instance get their entropy from this accumulator.
-//		// `iBuf` does not get leaked.
-//		digest.put(0x01);
-//		digest.put(iBuf);
-//		digest.put(0x01);
-//		digest.doFinal(buf);	// this is the new seed / output
-//
-//		digest.put(iBuf);		// feed back to conserve entropy
 
 		masterPool.extractEntropy(buf);
 		
@@ -125,6 +109,7 @@ package class Accumulator
 	/// Params:
 	/// sourceID = A number assigned to the source.
 	/// data = Entropy data.
+	@trusted
 	void addEntropy(in ubyte sourceID, in ubyte[] data...)
 	{
 		ubyte[5] iBuf; // contains sourceID and length of event data
@@ -198,14 +183,15 @@ if(isDigest!Digest && Digest.digestLength == bufferSize) {
 	body {
 		ubyte[bufferSize] iBuf;
 
-		accumulator.doFinal(iBuf);
-		accumulator.put(iBuf);
+		Digest temp = accumulator;
+
+		accumulator.put(0x01, 0x02, 0x03, 0x04);
+
 		uint len = accumulator.doFinal(oBuf); // write to output buffer
 
-		accumulator.put(iBuf); // seed with old state (which is newer leaked outside of EntropyPool)
-		accumulator.put(0x01);
-
 		freshEntropyBytes = 0; // out of fresh entropy
+
+		accumulator = temp;	// reset to previous state
 
 		return len;
 	}
@@ -223,4 +209,28 @@ if(isDigest!Digest && Digest.digestLength == bufferSize) {
 	uint freshEntropy() {
 		return freshEntropyBytes;
 	}
+}
+
+
+// Test cloning of a digest.
+private unittest {
+
+	SHA256 d1;
+	SHA256 d2;
+
+	ubyte[d1.digestLength] buf1;
+	ubyte[d2.digestLength] buf2;
+
+	d1.put(0x01);
+	d2.put(0x02);
+	d2 = d1;
+	d1.doFinal(buf1);
+
+	d1 = d2;
+
+	d1.doFinal(buf1);
+	d2.doFinal(buf2);
+
+	assert(buf1 == buf2, "Cloning digests does not work properly.");
+
 }

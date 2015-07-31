@@ -20,12 +20,14 @@ template isMAC(T)
 						t.put(cast(ubyte)0, cast(ubyte)0); // has variadic put
 
 						uint len = t.doFinal(data);
+						auto macTag = t.finish();
 
 						uint macSize = T.macSize;
 						string name = T.name;
 						
 					}));
 }
+
 
 @safe
 public abstract class Mac {

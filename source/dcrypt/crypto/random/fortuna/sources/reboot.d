@@ -17,10 +17,9 @@ enum blocksPerFile = 16;
 version (linux) {
 	unittest {
 		RebootEntropySource rbs = new RebootEntropySource("/tmp/reboot.seed");
+
 		ubyte[32] buf;
-
 		ubyte[] slice = rbs.getEntropy(buf);
-
 	}
 }
 
@@ -94,7 +93,7 @@ public class RebootEntropySource: EntropySource
 		try {
 			ubyte[32] buf;
 
-			File f = File(seedFile, "a+b");
+			File f = File(seedFile, "wb");
 
 			f.seek(blockSize*blockCounter, SEEK_SET); // FIXME seek does not work as intended
 
