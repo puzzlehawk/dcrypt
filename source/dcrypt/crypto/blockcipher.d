@@ -18,6 +18,7 @@ template isBlockCipher(T)
 					}));
 }
 
+/// OOP API for block ciphers
 @safe
 public interface BlockCipher {
 
@@ -72,6 +73,7 @@ public interface BlockCipher {
 	void reset() nothrow;
 }
 
+/// Wraps block ciphers into the OOP API
 @safe
 public class BlockCipherWrapper(T) if(isBlockCipher!T): BlockCipher {
 
