@@ -26,7 +26,7 @@ public class SystemTickEntropySource: EntropySource
 {
 
 	override ubyte[] getEntropy(ubyte[] buf) {
-		getTimingData(buf);
+		getTimingEntropy(buf);
 
 		
 		return buf;
@@ -42,24 +42,24 @@ public class SystemTickEntropySource: EntropySource
 		return 250;
 	}
 
-	/// Fill the buffer with timing measurements.
-	/// Params:
-	/// buf = The buffer to fill.
-	@safe @nogc nothrow
-	private static void getTimingData(ubyte[] buf) {
-		foreach(ref b; buf) {
-			ulong ticks = MonoTime.currTime.ticks;
-			b = cast(ubyte) (ticks^(ticks>>8)^(ticks>>16)); // Combine three bytes of ticks for the case if the system clock has low resolution.
-		}
-	}
+}
 
-	unittest {
-		ubyte[32] buf1, buf2;
-		
-		getTimingData(buf1);
-		getTimingData(buf2);
-		
-		assert(buf1 != buf2, "Measurements are not at all random!");
+/// Fill the buffer with timing measurements.
+/// Params:
+/// buf = The buffer to fill.
+@safe @nogc nothrow
+static void getTimingEntropy(ubyte[] buf) {
+	foreach(ref b; buf) {
+		ulong ticks = MonoTime.currTime.ticks;
+		b = cast(ubyte) (ticks^(ticks>>8)^(ticks>>16)); // Combine three bytes for the case if the system clock has low resolution.
 	}
+}
 
+unittest {
+	ubyte[32] buf1, buf2;
+	
+	getTimingEntropy(buf1);
+	getTimingEntropy(buf2);
+	
+	assert(buf1 != buf2, "Measurements are not at all random!");
 }
