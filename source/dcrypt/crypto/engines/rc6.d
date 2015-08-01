@@ -47,7 +47,7 @@ public struct RC6
 		enum name = "RC6";
 		enum blockSize = 4*bytesPerWord;
 
-
+		
 		/// Params:
 		/// forEncryption = `false`: decrypt, `true`: encrypt
 		/// userKey = Secret key.
@@ -73,19 +73,53 @@ public struct RC6
 		{
 		}
 
+		
+		private nothrow @nogc:
+
+		private {
+			enum wordSize = 32;
+			enum bytesPerWord = wordSize / 8;
+
+			/*
+			 * the number of rounds to perform
+			 */
+			enum _noRounds = 20;
+
+			/*
+			 * our "magic constants" for wordSize 32
+			 *
+			 * Pw = Odd((e-2) * 2^wordsize)
+			 * Qw = Odd((o-2) * 2^wordsize)
+			 *
+			 * where e is the base of natural logarithms (2.718281828...)
+			 * and o is the golden ratio (1.61803398...)
+			 */
+			enum uint    P32 = 0xb7e15163;
+			enum uint    Q32 = 0x9e3779b9;
+
+			enum    LGW = 5;        // log2(32)
+
+			/*
+			 * the expanded key array of size 2*(rounds + 1)
+			 */
+			uint[2+2*_noRounds+2] _S;
+			bool forEncryption;
+			bool initialized = false; // set to true in setKey()
+
+		}
 		/**
 		 * Re-key the cipher.
 		 * Params:  key  the key to be used
 		 */
-		void setKey(in ubyte[] key) nothrow @nogc
+		private void setKey(in ubyte[] key) nothrow @nogc
 		in {
 			size_t len = key.length;
 			assert(len == 16 || len == 24 || len == 32, "RC6: Unsupported key length. Should be 128, 192, or 256 bits."); 
 		}
 		body {
-
+			
 			enum maxKeyLength = 32;
-
+			
 			//
 			// KEY EXPANSION:
 			//
@@ -104,16 +138,16 @@ public struct RC6
 			{
 				c = 1;
 			}
-
+			
 			uint[(maxKeyLength + bytesPerWord - 1) / bytesPerWord] L;	///	Static length is hight enough to support 256 bit keys.
 			immutable size_t Llength = (key.length + bytesPerWord - 1) / bytesPerWord;	/// Holds the actual length of L.
-
+			
 			// load all key bytes into array of key dwords
-
+			
 			foreach(size_t i; 0..key.length) {
 				L[i / bytesPerWord] += key[i] << (8*i);
 			}
-
+			
 			//
 			// Phase 2:
 			//   Key schedule is placed in a array of 2+2*ROUNDS+2 = 44 dwords.
@@ -122,20 +156,20 @@ public struct RC6
 			//   by the magic numbers, Pw & Qw.
 			//
 			//        _S            = new uint[2+2*_noRounds+2];
-
+			
 			_S[0] = P32;
 			foreach (size_t i; 1.._S.length)
 			{
 				_S[i] = (_S[i-1] + Q32);
 			}
-
+			
 			//
 			// Phase 3:
 			//   Mix in the user's secret key in 3 passes over the arrays S & L.
 			//   The max of the arrays sizes is used as the loop control
 			//
 			size_t iter;
-
+			
 			if (Llength > _S.length)
 			{
 				iter = 3 * Llength;
@@ -144,11 +178,11 @@ public struct RC6
 			{
 				iter = 3 * _S.length;
 			}
-
+			
 			uint A = 0;
 			uint B = 0;
 			uint i = 0, j = 0;
-
+			
 			foreach (k; 0..iter)
 			{
 				A = _S[i] = rotateLeft(_S[i] + A + B, 3);
@@ -160,37 +194,6 @@ public struct RC6
 			initialized = true;
 		}
 	}
-
-	private nothrow @nogc:
-
-	enum wordSize = 32;
-	enum bytesPerWord = wordSize / 8;
-
-	/*
-	 * the number of rounds to perform
-	 */
-	enum _noRounds = 20;
-
-	/*
-	 * our "magic constants" for wordSize 32
-	 *
-	 * Pw = Odd((e-2) * 2^wordsize)
-	 * Qw = Odd((o-2) * 2^wordsize)
-	 *
-	 * where e is the base of natural logarithms (2.718281828...)
-	 * and o is the golden ratio (1.61803398...)
-	 */
-	enum uint    P32 = 0xb7e15163;
-	enum uint    Q32 = 0x9e3779b9;
-
-	enum    LGW = 5;        // log2(32)
-
-	/*
-	 * the expanded key array of size 2*(rounds + 1)
-	 */
-	private uint[2+2*_noRounds+2] _S;
-	private bool forEncryption;
-	private bool initialized = false; // set to true in setKey()
 
 	@nogc
 	private uint encryptBlock(in ubyte[]  input, ubyte[]  output) nothrow
