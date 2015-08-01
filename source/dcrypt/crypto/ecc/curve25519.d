@@ -55,16 +55,11 @@
  * from the sample implementation.
  */
 
-
-@safe pure nothrow @nogc:
-
-public enum publicBasePoint = cast(const ubyte[32]) x"0900000000000000000000000000000000000000000000000000000000000000";
-
 /// Generate a public key from a secret. 
 /// Test vectors from http://cr.yp.to/highspeed/naclcrypto-20090310.pdf
 unittest {
 	alias ubyte[32] key_t;
-
+	
 	key_t secretKey = cast(key_t) x"77076d0a7318a57d3c16c17251b26645df4c2f87ebc0992ab177fba51db92c2a";
 	
 	key_t publicKey = curve25519(secretKey);
@@ -80,11 +75,11 @@ unittest {
 	alias ubyte[32] key_t;
 	
 	key_t secretKey = cast(key_t) x"5dab087e624a8a4b79e17f8b83800ee66f3bb1292618b6fd1c2f8b27ff88e0eb";
-
+	
 	key_t publicKey = curve25519(secretKey);
 	
 	auto expectedPublic = x"de9edb7d7b7dc1b4d35b61c2ece435373f8343c85b78674dadfc7e146f882b4f";
-
+	
 	assert(publicKey == expectedPublic, "curve25519 public key generation failed!");
 }
 
@@ -105,12 +100,42 @@ unittest {
 	// Generate the shared keys. Both should be equal.
 	shared1 = curve25519(priv1, pub2);
 	shared2 = curve25519(priv2, pub1);
-
+	
 	auto expectedSharedSecret = x"4a5d9d5ba4ce2de1728e3bf480350f25e07e21c947d19e3376f09b3c1e161742";
-
+	
 	assert(shared1 == expectedSharedSecret, "curve25519 DH key agreement failed!");
 	assert(shared1 == shared2, "curve25519 DH key agreement failed!");
 }
+
+// Test key agreement with random secrets.
+unittest {
+	import dcrypt.crypto.random.prng;
+	import std.algorithm: any;
+	
+	DRNG drng = DRNG(0);
+	
+	ubyte[32] secret1, secret2, pub1, pub2, shared1, shared2;
+	
+	foreach(i;0..32) {
+		drng.nextBytes(secret1);
+		drng.nextBytes(secret2);
+		
+		pub1 = curve25519(secret1);
+		pub2 = curve25519(secret2);
+		
+		shared1 = curve25519(secret1, pub2);
+		shared2 = curve25519(secret2, pub1);
+		
+		assert(shared1 == shared2, "DH key agreement with curve25519 failed!");
+		assert(any!"a != 0"(shared1[]), "DH key agreement with curve25519 failed!");
+	}
+	
+}
+
+@safe pure nothrow @nogc:
+
+public enum publicBasePoint = cast(immutable (ubyte[32]) ) x"0900000000000000000000000000000000000000000000000000000000000000";
+
 
 /// 
 /// 

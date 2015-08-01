@@ -132,7 +132,7 @@ version (AESNI) {
 
 			ubyte rounds = this.rounds;
 			
-			asm {
+			asm @nogc nothrow {
 
 				// XMM0:	round key
 				// XMM1:	data block
@@ -192,7 +192,7 @@ version (AESNI) {
 
 			ubyte rounds = rounds;
 
-			asm {
+			asm @nogc nothrow {
 
 				// XMM0:	round key
 				// XMM1:	data block
@@ -272,7 +272,7 @@ version (AESNI) {
 				assert(false, "Invalid key schedule size. Should be 'rounds*16' .");
 			}
 
-			asm  {
+			asm @nogc nothrow {
 				
 				// pointer to key schedule: RDI
 				// user key length: RDX
@@ -445,7 +445,7 @@ version (AESNI) {
 			}
 			
 			if(!forEncryption) {
-				asm {
+				asm @nogc nothrow {
 					
 					// This section generates the decryption key schedule by
 					// calling AESIMC on all except the first and the last round key.
@@ -470,7 +470,7 @@ version (AESNI) {
 			}
 			
 			
-			asm {
+			asm @nogc nothrow {
 				// clear registers to ensure that no key data is at unexpected locations
 				pxor XMM0, XMM0;
 				pxor XMM1, XMM1;

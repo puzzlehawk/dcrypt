@@ -63,7 +63,7 @@ alias CTRBlockCipher(T) = BlockCipherWrapper!(CTR!T);
 public struct CTR(Cipher) if(isBlockCipher!Cipher) {
 
 	public enum blockSize = Cipher.blockSize;
-	public enum name = Cipher.name;
+	public enum name = Cipher.name ~ "/CTR";
 
 	private {
 		ubyte[blockSize] counter;

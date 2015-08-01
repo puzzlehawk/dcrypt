@@ -307,7 +307,7 @@ struct GCMPCLMULQDQMultiplier
 		revB[] = b[];
 		reverse(revB[]);
 
-		asm {
+		asm @nogc nothrow {
 			//xmm0 holds operand a (128 bits)
 			//xmm1 holds operand b (128 bits)
 			//rdi holds the pointer to output (128 bits)

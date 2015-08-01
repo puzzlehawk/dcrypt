@@ -7,7 +7,6 @@ import dcrypt.crypto.blockcipher;
 import dcrypt.crypto.digest;
 import dcrypt.crypto.params.keyparameter;
 
-
 ///	generate a deterministic PRNG sequence
 @safe unittest {
 	import dcrypt.crypto.engines.aes;
@@ -51,6 +50,10 @@ public struct FortunaGenerator(Cipher, Digest) if(isBlockCipher!Cipher && isDige
 	// PRNG interface implementation
 	public nothrow {
 
+		this(ubyte[] seed...) @nogc {
+			addSeed(seed);
+		}
+
 		enum isDeterministic = true;
 		enum name = "FortunaGenerator/"~Cipher.name~"-"~Digest.name; /// Name of the PRNG algorithm.
 
@@ -63,7 +66,7 @@ public struct FortunaGenerator(Cipher, Digest) if(isBlockCipher!Cipher && isDige
 		}
 		
 		/// add entropy to the generator
-		void addSeed(in ubyte[] seed) @nogc {
+		void addSeed(in ubyte[] seed...) @nogc {
 			reseed(seed);
 		}
 
@@ -86,7 +89,7 @@ public struct FortunaGenerator(Cipher, Digest) if(isBlockCipher!Cipher && isDige
 	private nothrow {
 
 		/// compute a new key: newKey = Hash(oldKey | seed)
-		void reseed(in ubyte[] seed) @nogc {
+		void reseed(in ubyte[] seed...) @nogc {
 			digest.put(key);
 			digest.put(seed);
 			digest.doFinal(key);
@@ -123,7 +126,7 @@ public struct FortunaGenerator(Cipher, Digest) if(isBlockCipher!Cipher && isDige
 		in {
 			assert(buffer.length % blockSize == 0, 
 				"invalid input buffer size, multiple of blockSize required");
-			assert(initialized, "PRNG not yet initalized");
+			assert(initialized, "PRNG not yet initalized. Call `addSeed()` first.");
 		}
 		body {
 			foreach(chunk; chunks(buffer, blockSize)) {
