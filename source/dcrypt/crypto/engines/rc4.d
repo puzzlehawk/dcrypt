@@ -2,6 +2,8 @@ module dcrypt.crypto.engines.rc4;
 
 public import dcrypt.crypto.streamcipher;
 
+deprecated("RC4 is considered insecure. Avoid using it"):
+
 // test RC4
 unittest
 {
