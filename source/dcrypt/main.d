@@ -30,7 +30,7 @@ import dcrypt.crypto.modes.gcm.gcm;
 import dcrypt.benchmark.Benchmark;
 import dcrypt.benchmark.DigestBenchmark;
 import dcrypt.benchmark.BlockCipherBenchmark;
-import dcrypt.benchmark.AEADBlockCipherBenchmark;
+import dcrypt.benchmark.AEADCipherBenchmark;
 
 version (Benchmark) {
 
@@ -79,10 +79,10 @@ version (Benchmark) {
 		
 		Benchmark.doBenchmark(len, ciphers);
 		
-		AEADBlockCipher[] aeadCiphers = [
-			new GCMBlockCipher(new AESEngine()),
-			new GCMBlockCipher(new AESNIEngine()),
-			new GCMBlockCipher(new SerpentEngine())
+		AEADCipher[] aeadCiphers = [
+			new GCMCipher(new AESEngine()),
+			new GCMCipher(new AESNIEngine()),
+			new GCMCipher(new SerpentEngine())
 		];
 		Benchmark.doBenchmark(len, aeadCiphers);
 

@@ -4,8 +4,9 @@ public import dcrypt.crypto.macs.mac;
 
 import dcrypt.crypto.modes.gcm.gcm;
 
+
 /**
- * Special case of GCMBlockCipher where no data gets encrypted
+ * Special case of GCMCipher where no data gets encrypted
  * but all processed as AAD.
  * 
  * Standards: NIST Special Publication 800-38D
@@ -23,7 +24,7 @@ public class GMac(T) if(isBlockCipher!T): Mac
 	public {
 	
 		void start(in ubyte[] key, in ubyte[] nonce, in uint macSize = 128) {
-			gcm.init(true, key, nonce, macSize);
+			gcm.start(true, key, nonce, macSize);
 			macSizeBits = macSize;
 			initialized = true;
 		}
@@ -36,7 +37,7 @@ public class GMac(T) if(isBlockCipher!T): Mac
 			static if(is(T == void)) {
 				return gcm.getUnderlyingCipher.getAlgorithmName()~"-GMAC";
 			} else {
-				return gcm.getAlgorithmName()~"GMAC";
+				return T.name~"/GMAC";
 			}
 		}
 		

@@ -17,49 +17,56 @@ public import dcrypt.exceptions: InvalidCipherTextException, IllegalArgumentExce
 // TODO Shoup tables
 // TODO support for uneven macSize
 
-//alias GCMBlockCipher(T) = AEADBlockCipherWrapper!(GCM!T); // would be nice but does not yet work
+//alias GCMCipher(T) = AEADCipherWrapper!(GCM!T); // would be nice but does not yet work
+
+import dcrypt.crypto.engines.aes;
+static assert(isAEADCipher!(GCM!AES), "GCM ist not a AEADCipher.");
 
 ///
 ///	usage of OOP API:
-///	auto aes_gcm = new AEADBlockCipherWrapper!(GCM!AES)();
+///	auto aes_gcm = new AEADCipherWrapper!(GCM!AES)();
 ///
 @safe
-public struct GCM(T) if(is(T == void) || isBlockCipher!T)
+public struct GCM(T) if(is(T == void) || (isBlockCipher!T && T.blockSize == 16))
 {
+
+	private enum OOP = is(T == void); // use OOP API
+
+	public enum blockSize = 16;
+
 	// if T == void: use OOP API for underlying block cipher
-	static if(is(T == void)) {
+	static if(OOP) {
 		/**
 		 * Params:
 		 * c = underlying BlockCipher
 		 */
 		public this(BlockCipher c)
 		in {
-			assert(c.blockSize() == BLOCKSIZE, "GCM: block size of underlying cipher must be 128 bits!");	
+			assert(c.blockSize() == blockSize, "GCM: block size of underlying cipher must be 128 bits!");	
 		}
 		body {
 			blockCipher = c;
 		}
 	} else {
-		static assert(T.blockSize == BLOCKSIZE, "GCM: block size of underlying cipher must be 128 bits!");
+		static assert(T.blockSize == blockSize, "GCM: block size of underlying cipher must be 128 bits!");
 	}
 
 	private {
 
-		enum BLOCKSIZE = 16;
-
-		static if(is(T == void)) {
+		static if(OOP) {
 			BlockCipher blockCipher;
 		} else {
 			T blockCipher;	/// underlying BlockCipher
 		}
-		GHash gHash;					/// provides the multiplication in GF(2^128) by H
-		CircularBlockBuffer!BLOCKSIZE buf;	/// stores input data before processing
 
-		ubyte[BLOCKSIZE] Y;				/// counter
-		ubyte[BLOCKSIZE] E0;			/// E(key, Y0), needed to derive AuthTag from GHASH
-		ubyte[BLOCKSIZE] mac;			/// used to store the encrypted ghash TODO: use other buffer, e.g. E0 itself
+		GHash gHash;					/// provides the multiplication in GF(2^128) by H
+		CircularBlockBuffer!blockSize buf;	/// stores input data before processing
+
+		ubyte[blockSize] Y;				/// counter
+		ubyte[blockSize] E0;			/// E(key, Y0), needed to derive AuthTag from GHASH
+		ubyte[blockSize] mac;			/// used to store the encrypted ghash TODO: use other buffer, e.g. E0 itself
 		
-		ubyte[BLOCKSIZE] initialY;		/// used to reset Y
+		ubyte[blockSize] initialY;		/// used to reset Y
 
 		uint macBitLen = 128;			/// length of token
 		
@@ -67,25 +74,69 @@ public struct GCM(T) if(is(T == void) || isBlockCipher!T)
 		bool initialized = false;		/// True if and only if GCM has been initialized
 	}
 
-
-	public void init(bool forEncryption, in ubyte[] key, in ubyte[] nonce = null, uint macSize = 128) nothrow {
-			start(forEncryption, key, nonce, 128);
-	}
-
 	public {
-	
+
 		/**
-		 * Returns: the algorithm name.
+		 * init cipher, H, Y0, E0
+		 * 
+		 * Params:
+		 * forEncryption = encrypt (true) or decrypt (false)
+		 * iv = Initialization vector. Length of 96 bits is most efficient.
+		 * key = encryption key
+		 * macSize = length of authentication tag in bits. 32 <= macSize <= 128. Only multiples of 8 supported.
+		 * 
 		 */
-		string getAlgorithmName() pure nothrow {
-			return blockCipher.name ~ "/GCM";
+		void start(bool forEncryption, in ubyte[] key, in ubyte[] iv, uint macSize = 128) nothrow @nogc
+		in {
+			assert(macSize >= 32, "macSize can't be lower than 32 bits.");
+			assert(macSize <= 128, "macSize can't be longer than 128 bits.");
+			assert(macSize % 8 == 0, "macSize must be a multiple of 8. Uneven length is not yet supported.");
+			assert(iv !is null, "Must provide an IV.");
+		}
+		body {
+			
+			this.forEncryption = forEncryption;
+			this.macBitLen = macSize;
+			
+			// init underyling cipher
+			blockCipher.start(true, key);
+			
+			// init gHash
+			ubyte[blockSize] H;
+			H[] = 0;
+			blockCipher.processBlock(H,H); // calculate H=E(K,0^128);
+			
+			gHash.init(H);
+			
+			// init IV
+			if(iv.length == 12) { // 96 bit IV is optimal
+				Y[0..iv.length] = iv[];
+				Y[$-1] = 1;
+			}else {
+				gHash.updateCipherData(iv);
+				gHash.doFinal(Y);
+			}
+			
+			// generate key stream used later to encrypt ghash
+			genNextKeyStreamBlock(E0);
+			
+			initialY = Y; // remember this to reset the cipher
+			
+			initialized = true;
+		}
+		
+		static if(OOP) {
+			/**
+			 * Returns: the algorithm name.
+			 */
+			string name() pure nothrow {
+				return blockCipher.name ~ "/GCM";
+			}
+		} else {
+			public enum name = T.name~"/GCM";
 		}
 
-		static uint blockSize() pure nothrow @nogc {
-			return BLOCKSIZE;
-		}
-
-		static if(is(T == void)) {
+		static if(OOP) {
 			/**
 			 * Returns: the cipher this object wraps.
 			 */
@@ -138,8 +189,8 @@ public struct GCM(T) if(is(T == void) || isBlockCipher!T)
 				if(buf.isFull()) {
 					// encrypt one block
 					outputBlock(output);
-					output = output[BLOCKSIZE..$];
-					processedBytes += BLOCKSIZE;
+					output = output[blockSize..$];
+					processedBytes += blockSize;
 				}
 
 				// copy max one block to the buffer
@@ -177,7 +228,7 @@ public struct GCM(T) if(is(T == void) || isBlockCipher!T)
 
 			size_t partialBlockLen = forEncryption ? buf.length : buf.length - macLen;
 
-			ubyte[2*BLOCKSIZE] lastBlocks; // last two blocks. probably not full. last few bytes are the token.
+			ubyte[2*blockSize] lastBlocks; // last two blocks. probably not full. last few bytes are the token.
 
 			
 			// copy partial cipher data block
@@ -185,11 +236,11 @@ public struct GCM(T) if(is(T == void) || isBlockCipher!T)
 
 			assert(output.length >= partialBlockLen, "output buffer too short");
 			// encrypt last partial block
-			ubyte[2*BLOCKSIZE] keyStream;
+			ubyte[2*blockSize] keyStream;
 
 			// generate two blocks of key stream
-			genNextKeyStreamBlock(keyStream[0..BLOCKSIZE]);
-			genNextKeyStreamBlock(keyStream[BLOCKSIZE..2*BLOCKSIZE]);
+			genNextKeyStreamBlock(keyStream[0..blockSize]);
+			genNextKeyStreamBlock(keyStream[blockSize..2*blockSize]);
 
 			output[0..partialBlockLen] = lastBlocks[0..partialBlockLen] ^ keyStream[0..partialBlockLen];
 
@@ -209,7 +260,7 @@ public struct GCM(T) if(is(T == void) || isBlockCipher!T)
 				// append token
 				assert(output.length >= macLen, "output buffer too short for MAC");
 
-				assert(macLen <= BLOCKSIZE);
+				assert(macLen <= blockSize);
 
 				output[0..macLen] = mac[0..macLen];
 				output = output[macLen..$];
@@ -245,10 +296,10 @@ public struct GCM(T) if(is(T == void) || isBlockCipher!T)
 		void getMac(ubyte[] buf) nothrow @nogc 
 		in {
 			assert(initialized, "not initialized");
-			assert(buf.length >= BLOCKSIZE, "output buffer too short for MAC");
+			assert(buf.length >= blockSize, "output buffer too short for MAC");
 		}
 		body {
-			buf[0..BLOCKSIZE] = mac[];
+			buf[0..blockSize] = mac[];
 		}
 		
 		/**
@@ -261,7 +312,7 @@ public struct GCM(T) if(is(T == void) || isBlockCipher!T)
 		 */
 		size_t getUpdateOutputSize(size_t len) nothrow @nogc {
 			size_t total = len + buf.length;
-			return (total + BLOCKSIZE - 1) && (~BLOCKSIZE+1);
+			return (total + blockSize - 1) && (~blockSize+1);
 		}
 		
 		/**
@@ -296,54 +347,6 @@ public struct GCM(T) if(is(T == void) || isBlockCipher!T)
 		}
 	}
 
-	/**
-	 * init cipher, H, Y0, E0
-	 * 
-	 * Params:
-	 * forEncryption = encrypt (true) or decrypt (false)
-	 * iv = initialization vector
-	 * key = encryption key
-	 * macSize = length of authentication tag in bits. 32 <= macSize <= 128
-	 * 
-	 * Throws: IllegalArgumentException
-	 */
-	private void start(bool forEncryption, in ubyte[] key, in ubyte[] iv, uint macSize) nothrow @nogc
-	in {
-		assert(macSize >= 32, "macSize can't be lower than 32 bits.");
-		assert(macSize <= 128, "macSize can't be longer than 128 bits.");
-		assert(macSize % 8 == 0, "macSize must be a multiple of 8. uneven length not yet supported");
-	}
-	body {
-
-		this.forEncryption = forEncryption;
-		this.macBitLen = macSize;
-
-		// init underyling cipher
-		blockCipher.start(true, key);
-		
-		// init gHash
-		ubyte[BLOCKSIZE] H;
-		H[] = 0;
-		blockCipher.processBlock(H,H); // calculate H=E(K,0^128);
-		
-		gHash.init(H);
-		
-		// init IV
-		if(iv.length == 12) { // 96 bit IV is optimal
-			Y[0..iv.length] = iv[];
-			Y[$-1] = 1;
-		}else {
-			gHash.updateCipherData(iv);
-			gHash.doFinal(Y);
-		}
-
-		// generate key stream used later to encrypt ghash
-		genNextKeyStreamBlock(E0);
-
-		initialY = Y; // remember this to reset the cipher
-
-		initialized = true;
-	}
 	
 	private nothrow @safe @nogc {
 
@@ -355,7 +358,7 @@ public struct GCM(T) if(is(T == void) || isBlockCipher!T)
 		 */
 		void genNextKeyStreamBlock(ubyte[] buf)
 		in {
-			assert(buf.length == BLOCKSIZE);
+			assert(buf.length == blockSize);
 			//assert(keyStreamBufOff == BLOCKSIZE, "not yet ready to generate next block");
 		}
 		body {
@@ -369,21 +372,21 @@ public struct GCM(T) if(is(T == void) || isBlockCipher!T)
 		 */
 		void outputBlock(ubyte[] output)
 		in {
-			assert(output.length >= BLOCKSIZE, "output buffer too short");
-			assert(buf.length >= BLOCKSIZE, "not enough data in buffer");
+			assert(output.length >= blockSize, "output buffer too short");
+			assert(buf.length >= blockSize, "not enough data in buffer");
 		}
 		body {
-			ubyte[BLOCKSIZE] keyStream;
-			ubyte[BLOCKSIZE] inputBuf;
+			ubyte[blockSize] keyStream;
+			ubyte[blockSize] inputBuf;
 			genNextKeyStreamBlock(keyStream);
 
 			buf.drainBlock(inputBuf);
 
 			// encrypt the buffer
-			output[0..BLOCKSIZE] = keyStream[0..BLOCKSIZE] ^ inputBuf[0..BLOCKSIZE];
+			output[0..blockSize] = keyStream[0..blockSize] ^ inputBuf[0..blockSize];
 
 			// update gHash
-			gHash.updateCipherData(forEncryption ? output[0..BLOCKSIZE] : inputBuf[0..BLOCKSIZE]);
+			gHash.updateCipherData(forEncryption ? output[0..blockSize] : inputBuf[0..blockSize]);
 		}
 
 		/** 
@@ -391,7 +394,7 @@ public struct GCM(T) if(is(T == void) || isBlockCipher!T)
 		 * treats rightmost 32 bits as uint, lsb on the right
 		 */
 		void incrCounter() {
-			for(uint i = BLOCKSIZE -1; i >= BLOCKSIZE-4; --i) {
+			for(uint i = blockSize -1; i >= blockSize-4; --i) {
 				if(++Y[i] != 0) {
 					break;
 				}
@@ -402,7 +405,7 @@ public struct GCM(T) if(is(T == void) || isBlockCipher!T)
 	}
 }
 
-/// test vectors from
+/// Test OOP API with test vectors from
 /// http://www.ieee802.org/1/files/public/docs2011/bn-randall-test-vectors-0511-v1.pdf
 /// section 2.2.1
 unittest {
@@ -413,7 +416,7 @@ unittest {
 	octets key = cast(octets)x"AD7A2BD03EAC835A6F620FDCB506B345";
 	octets iv = cast(octets)x"12153524C0895E81B2C28465"; // 96 bits
 
-	auto gcm = new GCMBlockCipher(new AESEngine);
+	auto gcm = new GCMCipher(new AESEngine);
 	gcm.start(true, key, iv);
 
 	ubyte[] output = new ubyte[64];
@@ -449,8 +452,8 @@ unittest {
 	
 	octets key = cast(octets)x"AD7A2BD03EAC835A6F620FDCB506B345";
 	octets iv = cast(octets)x"12153524C0895E81B2C28465"; // 96 bits
-	
-	GCMBlockCipher gcm = new GCMBlockCipher(new AESEngine());
+
+	GCM!AES gcm;
 	gcm.start(false, key, iv);
 	
 	ubyte[] output = new ubyte[48];
@@ -491,7 +494,7 @@ unittest {
 	octets key = cast(octets)x"AD7A2BD03EAC835A6F620FDCB506B345";
 	octets iv = cast(octets)x"12153524C0895E81B2C28465"; // 96 bits
 	
-	GCMBlockCipher gcm = new GCMBlockCipher(new AESEngine());
+	GCM!AES gcm;
 	gcm.start(false, key, iv);
 	
 	ubyte[] output = new ubyte[48];
@@ -533,7 +536,7 @@ unittest {
 	octets key = cast(octets)x"AD7A2BD03EAC835A6F620FDCB506B345";
 	octets iv = cast(octets)x"12153524C0895E81B2C28465"; // 96 bits
 	
-	GCMBlockCipher gcm = new GCMBlockCipher(new AESEngine());
+	GCM!AES gcm;
 	gcm.start(false, key, iv);
 	
 	ubyte[] output = new ubyte[48];
@@ -577,7 +580,7 @@ unittest {
           c3c0c95156809539fcf0e2429a6b5254
 	      16aedbf5a0de6a57a637b39b"; // more than 96 bits
 
-	GCMBlockCipher gcm = new GCMBlockCipher(new AESEngine());
+	GCM!AES gcm;
 	gcm.start(true, key, iv);
 	
 	octets aad = cast(octets)(
@@ -711,19 +714,20 @@ unittest {
 		128,
 	];
 
-	AEADBlockCipherTest(
-		new GCMBlockCipher(new AESEngine()), 
+	AEADCipherTest(
+		new GCMCipher(new AESEngine()), 
 		keys,
 		ivs,
 		plains,
 		aads,
 		ciphers,
 		macSizes);
+
 }
 
 /// OOP Wrapper for GCM
 @safe
-public class GCMBlockCipher: AEADBlockCipher {
+public class GCMCipher: AEADCipher {
 
 	private GCM!void cipher = void;
 	
@@ -751,8 +755,9 @@ public class GCMBlockCipher: AEADBlockCipher {
 		 * 
 		 * Returns: the algorithm name.
 		 */
-		string getAlgorithmName() pure nothrow {
-			return cipher.getAlgorithmName();
+		@property
+		string name() pure nothrow {
+			return cipher.name;
 		}
 		
 		/**

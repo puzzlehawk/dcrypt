@@ -4,24 +4,21 @@ public import dcrypt.crypto.blockcipher;
 import dcrypt.crypto.params.keyparameter;
 
 ///
-/// test if T is a AEAD block cipher
+/// test if T is a AEAD cipher
 ///
 @safe
-template isAEADBlockCipher(T)
+template isAEADCipher(T)
 {
-	enum bool isAEADBlockCipher =
+	enum bool isAEADCipher =
 		is(T == struct) &&
 			is(typeof(
 					{
 						ubyte[0] block;
 						T bc = void; //Can define
 
-						bc.init(true, new AEADParameters(
-								new KeyParameter([]), 
-								cast(uint) 0, 
-								cast(ubyte[]) [0]));
+						bc.start(true, block, block); //  start with key, iv
 
-						string name = bc.getAlgorithmName();
+						string name = T.name;
 						//BlockCipher c = bc.getUnderlyingCipher();
 						bc.processAADBytes(cast (const ubyte[])block);
 						bc.processBytes(cast(const ubyte[]) [0], cast(ubyte[]) [0]);
@@ -34,7 +31,7 @@ template isAEADBlockCipher(T)
 }
 
 @safe
-public interface AEADBlockCipher
+public interface AEADCipher
 {
 
 	public {
@@ -52,7 +49,8 @@ public interface AEADBlockCipher
 		 * 
 		 * Returns: the algorithm name.
 		 */
-		string getAlgorithmName() pure nothrow;
+		@property
+		string name() pure nothrow;
 		
 		/**
 		 * return the cipher this object wraps.
@@ -129,7 +127,7 @@ public interface AEADBlockCipher
 //// TODO AEAD cipher wrapper
 ///// Wrapper class for AEAD ciphers
 //@safe
-//public class AEADBlockCipherWrapper(T) if(isAEADBlockCipher!T): AEADBlockCipher
+//public class AEADCipherWrapper(T) if(isAEADCipher!T): AEADCipher
 //{
 //
 //	private T cipher = void;
@@ -250,68 +248,6 @@ public interface AEADBlockCipher
 //}
 
 
-@safe
-public class AEADParameters: ParametersWithIV
-{
-	alias getKey = KeyParameter.getKey;
-	
-	private { 
-		ubyte[] associatedText;
-		uint macSize;
-	}
-	
-	/**
-	 * Base constructor.
-	 *
-	 * Params:
-	 * key = key to be used by underlying cipher
-	 * macSize = macSize in bits
-	 * nonce = nonce to be used
-	 */
-	public this(KeyParameter key, uint macSize, in ubyte[] nonce) nothrow
-	{
-		this(key, macSize, nonce, null);
-	}
-	
-	/**
-	 * Base constructor.
-	 * 
-	 * Params:
-	 * key = key to be used by underlying cipher
-	 * macSize = macSize in bits
-	 * nonce = nonce to be used
-	 * associatedText = initial associated text, if any
-	 */
-	public this(KeyParameter key, uint macSize, in ubyte[] nonce, in ubyte[] associatedText) nothrow
-	{
-		super(key.getKey(), nonce);
-		this.macSize = macSize;
-		this.associatedText = associatedText.dup;
-	}
-	
-	public ParametersWithIV getKeyParameter() nothrow
-	{
-		return this;
-	}
-	
-	/**
-	 * Returns: MAC size in bits
-	 */
-	public uint getMacSize() nothrow
-	{
-		return macSize;
-	}
-	
-	public ubyte[] getAssociatedText() nothrow
-	{
-		return associatedText;
-	}
-	
-	public ubyte[] getNonce() nothrow
-	{
-		return getIV();
-	}
-}
 
 version(unittest) {
 	
@@ -331,8 +267,8 @@ version(unittest) {
 	/// Throws:
 	/// AssertionError	if encryption or decryption failed
 	@safe
-	public void AEADBlockCipherTest(
-		AEADBlockCipher cipher, 
+	public void AEADCipherTest(
+		AEADCipher cipher, 
 		in string[] hexKeys, 
 		in string[] hexIVs,
 		in string[] hexPlaintexts,
@@ -372,7 +308,7 @@ version(unittest) {
 			//output = output[0..len];
 			
 			assert(output == ciphertext,
-				text(cipher.getAlgorithmName()~" encrypt: (",hexEncode(output),") != ("~hexCipherTexts[i]~")"));
+				text(cipher.name~" encrypt: (",hexEncode(output),") != ("~hexCipherTexts[i]~")"));
 			
 		}
 	}

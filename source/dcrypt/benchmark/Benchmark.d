@@ -3,7 +3,7 @@ module dcrypt.benchmark.Benchmark;
 public import std.datetime: StopWatch;
 import std.conv;
 import dcrypt.benchmark.BlockCipherBenchmark;
-import dcrypt.benchmark.AEADBlockCipherBenchmark;
+import dcrypt.benchmark.AEADCipherBenchmark;
 import dcrypt.benchmark.DigestBenchmark;
 //import dcrypt.benchmark.PKSS52ParameterGeneratorBenchmark;
 import dcrypt.crypto.blockcipher;
@@ -30,12 +30,12 @@ public class Benchmark {
 		}
 	}
 
-	public static void doBenchmark(ulong length, AEADBlockCipher[] ciphers...) {
+	public static void doBenchmark(ulong length, AEADCipher[] ciphers...) {
 		writeln();
-		printTabbed(AEADBlockCipherBenchmark.header);
+		printTabbed(AEADCipherBenchmark.header);
 		writeln();
 		foreach(c; ciphers) {
-			auto bench = new AEADBlockCipherBenchmark(c);
+			auto bench = new AEADCipherBenchmark(c);
 			printTabbed(bench.benchmark(length));
 			stdout.flush();
 		}
