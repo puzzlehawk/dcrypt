@@ -229,7 +229,7 @@ public struct GHashGeneral(Multiplier) if(isGCMMultiplier!Multiplier)
 		const(ubyte)[] EK0 = cast(const(ubyte)[])x"58e2fccefa7e3061367f1d57a4e7455a";
 		token[] ^= EK0[];
 
-		assert(token == cast(const(ubyte)[])x"58e2fccefa7e3061367f1d57a4e7455a");
+		assert(token == x"58e2fccefa7e3061367f1d57a4e7455a");
 	}
 
 	unittest {
@@ -244,7 +244,7 @@ public struct GHashGeneral(Multiplier) if(isGCMMultiplier!Multiplier)
 		ubyte[16] hash;
 		gHash.doFinal(hash);
 
-		assert(hash == cast(const(ubyte[]))x"f38cbb1ad69223dcc3457ae5b6b0f885");
+		assert(hash == x"f38cbb1ad69223dcc3457ae5b6b0f885");
 	}
 
 	// test vectors from
@@ -263,7 +263,7 @@ public struct GHashGeneral(Multiplier) if(isGCMMultiplier!Multiplier)
 		ubyte[16] token;
 		gHash.doFinal(token);
 
-		assert(token == cast(const(ubyte)[])x"1BDA7DB505D8A165264986A703A6920D");
+		assert(token == x"1BDA7DB505D8A165264986A703A6920D");
 	}
 
 	// test vectors from
@@ -283,7 +283,7 @@ public struct GHashGeneral(Multiplier) if(isGCMMultiplier!Multiplier)
 		ubyte[16] ghash;
 		gHash.doFinal(ghash);
 		
-		assert(ghash == cast(const(ubyte)[])x"2A807BDE4AF8A462D467D2FFA3E1D868");
+		assert(ghash == x"2A807BDE4AF8A462D467D2FFA3E1D868");
 	}
 
 	// test vectors from
@@ -304,7 +304,7 @@ public struct GHashGeneral(Multiplier) if(isGCMMultiplier!Multiplier)
 		ubyte[16] ghash;
 		gHash.doFinal(ghash);
 		
-		assert(ghash == cast(const(ubyte)[])x"5AAA6FD11F06A18BE6E77EF2BC18AF93");
+		assert(ghash == x"5AAA6FD11F06A18BE6E77EF2BC18AF93");
 	}
 
 	/// http://csrc.nist.gov/groups/ST/toolkit/BCM/documents/proposedmodes/gcm/gcm-spec.pdf
@@ -328,7 +328,7 @@ public struct GHashGeneral(Multiplier) if(isGCMMultiplier!Multiplier)
 		ubyte[16] ghash;
 		gHash.doFinal(ghash);
 		
-		assert(ghash == cast(const(ubyte)[])x"8bd0c4d8aacd391e67cca447e8c38f65");
+		assert(ghash == x"8bd0c4d8aacd391e67cca447e8c38f65");
 	}
 
 	// http://csrc.nist.gov/groups/ST/toolkit/BCM/documents/proposedmodes/gcm/gcm-spec.pdf
@@ -367,7 +367,7 @@ public struct GHashGeneral(Multiplier) if(isGCMMultiplier!Multiplier)
 
 		gHash.doFinal(ghash);
 		
-		assert(ghash == cast(const(ubyte)[])x"8bd0c4d8aacd391e67cca447e8c38f65");
+		assert(ghash == x"8bd0c4d8aacd391e67cca447e8c38f65");
 	}
 
 }
