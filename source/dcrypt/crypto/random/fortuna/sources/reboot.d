@@ -11,15 +11,13 @@ import dcrypt.crypto.random.fortuna.fortuna;
 import std.stdio;
 import std.file;
 
-enum blockSize = 32*32;
-enum blocksPerFile = 16;
+private enum blockSize = 32*32;
+private enum blocksPerFile = 16;
 
 version (linux) {
 	unittest {
 		RebootEntropySource rbs = new RebootEntropySource("/tmp/reboot.seed");
-
-		ubyte[32] buf;
-		ubyte[] slice = rbs.getEntropy(buf);
+		rbs.start();
 	}
 }
 
@@ -30,7 +28,6 @@ public class RebootEntropySource: EntropySource
 	private string seedFile;
 	private Fortuna rng;
 	private uint blockCounter = 0;
-	private File inputFile;
 	private uint delay = 1;
 
 	/// Params:
@@ -38,43 +35,34 @@ public class RebootEntropySource: EntropySource
 	this(string seedFile) nothrow
 	{
 		this.seedFile = seedFile;
+	}
+
+	/// Read entropy from file.
+	@trusted
+	override public void collectEntropy() nothrow {
+
+		delay = 0; // one shot
+
 		if(exists(seedFile)) {
 			try {
-				inputFile = File(seedFile, "rb");
+				// read whole file and send it to the accumulator
+				File inputFile = File(seedFile, "rb");
+
+				scope(exit) {
+					inputFile.close();
+				}
+
+				foreach(ubyte[] c; inputFile.chunks(32)) {
+					sendEntropyEvent(c);
+				}
+
+
 			} catch (Exception e) {
 				
 				// TODO
 				assert(false, "error opening entropy file");
 			}
 		}
-	}
-
-	/// Read entropy from file.
-	@trusted
-	override public ubyte[] getEntropy(ubyte[] buf) nothrow {
-		if(inputFile.isOpen) {
-			// get entropy
-			try {
-
-				ubyte[] slice = inputFile.rawRead(buf);
-
-				if(slice.length < buf.length) {
-					// No remaining data in file
-					// disable scheduling
-
-					delay = 0;
-				}
-
-				return slice;
-
-			} catch (Exception e) {
-				// TODO
-				assert(false, "error reading entropy file");
-			}
-		}
-
-		delay = 0; // disable scheduling
-		return buf[0..0];
 	}
 
 	@nogc @property nothrow
@@ -95,7 +83,7 @@ public class RebootEntropySource: EntropySource
 
 			File f = File(seedFile, "wb");
 
-			f.seek(blockSize*blockCounter, SEEK_SET); // FIXME seek does not work as intended
+			//f.seek(blockSize*blockCounter, SEEK_SET); // FIXME seek does not work as intended
 
 			foreach(i; 0..32) {
 				rng.nextBytes(buf);
@@ -114,7 +102,6 @@ public class RebootEntropySource: EntropySource
 	}
 
 	~this() {
-		inputFile.close();
 		storeEntropy();
 	}
 }

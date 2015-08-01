@@ -23,12 +23,12 @@ unittest {
 
 		assert(buf1 == buf2, "Accumulator does not behave deterministically!");
 
-		acc.addEntropy(0,buf1);
-		accShared.addEntropy(0,buf2);
+		acc.addEntropy(0, i%Accumulator.pools, buf1);
+		accShared.addEntropy(0, i%Accumulator.pools, buf2);
 	}
 
 	// change only one accumulator
-	acc.addEntropy(0, buf1);
+	acc.addEntropy(0, 0, buf1);
 
 	acc.extractEntropy(buf1);
 	accShared.extractEntropy(buf2);
@@ -45,6 +45,8 @@ unittest {
 @safe
 package class Accumulator
 {
+
+	public enum pools = 32; // TODO 32 might be overkill
 
 	alias SHA256 Digest; /// use SHA256 as digest
 	
@@ -64,13 +66,13 @@ package class Accumulator
 		assert(buf.length == Digest.digestLength, "buffer size does not match digest size");
 	}
 	body {
-		transaction(0, null, buf);
+		transaction(0, 0, null, buf);
 	}
 	
 	/// Multithreading aware version of `addEntropy()`
 	@safe
-	synchronized void addEntropy(in ubyte sourceID, in ubyte[] data) {
-		transaction(sourceID, data, null);
+	synchronized void addEntropy(in ubyte sourceID, in size_t pool, in ubyte[] data) {
+		transaction(sourceID, pool, data, null);
 	}
 
 	/**
@@ -108,25 +110,22 @@ package class Accumulator
 	/// 
 	/// Params:
 	/// sourceID = A number assigned to the source.
+	/// pool = The pool to add the entropy. 0 <= pool < Accumulator.pools
 	/// data = Entropy data.
-	@trusted
-	void addEntropy(in ubyte sourceID, in ubyte[] data...)
-	{
+	@safe
+	void addEntropy(in ubyte sourceID, in size_t pool, in ubyte[] data...)
+	in {
+		assert(pool < pools, "Pool ID out of range.");
+	}
+	body {
 		ubyte[5] iBuf; // contains sourceID and length of event data
 
 		// pack sourceID and data.length in buffer
 		iBuf[0] = sourceID;
 		toLittleEndian(cast(uint)data.length, iBuf[1..5]);
 
-		import std.range: chain, chunks;
-
 		entropyPools[pool].addEntropy(iBuf);
-
-		// Distribute the event onto multiple pools.
-		foreach(c; data.chunks(8)) {
-			entropyPools[pool].addEntropy(c); // write a chunk into a pool
-			pool = (pool+1) % POOLS; // FIXME fill pool in random order not round robin
-		}
+		entropyPools[pool].addEntropy(data);
 	}
 
 	/// Provides synchronized access to the accumulator.
@@ -134,12 +133,13 @@ package class Accumulator
 	/// 
 	/// Params:
 	/// sourceID = the ID of the entropy source.
+	/// pool = The pool to add the entropy.
 	/// data = Entropy data. Can be `null`.
 	/// buf = 32 bytes buffer for random data. Can also be `null`.
 	@trusted
-	private synchronized void transaction(in ubyte sourceID, in ubyte[] data, ubyte[] buf = null) {
+	private synchronized void transaction(in ubyte sourceID, in size_t pool, in ubyte[] data, ubyte[] buf = null) {
 		if(data !is null) {
-			(cast(Accumulator) this).addEntropy(sourceID, data);
+			(cast(Accumulator) this).addEntropy(sourceID, pool, data);
 		}
 		if(buf !is null) {
 			(cast(Accumulator) this).extractEntropy(buf);
@@ -147,15 +147,9 @@ package class Accumulator
 	}
 
 	private {
-		enum POOLS = 32; // TODO 32 might be overkill
-		EntropyPool!Digest[POOLS] entropyPools;
+		EntropyPool!Digest[pools] entropyPools;
 		EntropyPool!Digest masterPool;
-		uint pool = 0;
 		uint counter = 0; // count how many times extractEntropy() has been called
-	}
-
-	invariant {
-		assert(pool < POOLS);
 	}
 
 	

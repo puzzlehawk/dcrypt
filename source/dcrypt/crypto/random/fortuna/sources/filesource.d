@@ -8,19 +8,19 @@ import dcrypt.crypto.random.fortuna.fortuna;
 import std.stdio;
 import std.file;
 
-version (linux) {
-	/// Get entropy from /dev/urandom
-	unittest {
-		import std.algorithm: any;
-		FileEntropySource fs = new FileEntropySource("/dev/urandom");
-
-		ubyte[32] buf;
-		ubyte[] slice = fs.getEntropy(buf);
-
-		assert(slice.length == buf.length, "No data read from /dev/urandom");
-		assert(any!"a != 0"(slice), "Got only zeros from /dev/urandom");
-	}
-}
+//version (linux) {
+//	/// Get entropy from /dev/urandom
+//	unittest {
+//		import std.algorithm: any;
+//		FileEntropySource fs = new FileEntropySource("/dev/urandom");
+//
+//		ubyte[32] buf;
+//		ubyte[] slice = fs.getEntropy(buf);
+//
+//		assert(slice.length == buf.length, "No data read from /dev/urandom");
+//		assert(any!"a != 0"(slice), "Got only zeros from /dev/urandom");
+//	}
+//}
 
 @safe
 public class FileEntropySource: EntropySource
@@ -28,7 +28,7 @@ public class FileEntropySource: EntropySource
 
 	private string seedFile;
 	private File inputFile;
-	private uint delay = 500;
+	private uint delay = 250;
 
 	/// Params:
 	/// seedFile = The file to load the seed from and to store new seed.
@@ -41,12 +41,16 @@ public class FileEntropySource: EntropySource
 
 	/// Read entropy from file.
 	@trusted
-	override public ubyte[] getEntropy(ubyte[] buf) nothrow {
+	override public void collectEntropy() nothrow {
+
+		ubyte[32] buf;
+		ubyte[] slice = buf[0..0];
+
 		if(inputFile.isOpen) {
 			// get entropy
 			try {
 
-				ubyte[] slice = inputFile.rawRead(buf);
+				slice = inputFile.rawRead(buf);
 
 				if(slice.length < buf.length) {
 					// No remaining data in file
@@ -55,16 +59,15 @@ public class FileEntropySource: EntropySource
 					delay = 0;
 				}
 
-				return slice;
-
 			} catch (Exception e) {
 				// TODO
 				assert(false, "error reading entropy file");
 			}
+		} else {
+			delay = 0; // disable scheduling
 		}
 
-		delay = 0; // disable scheduling
-		return buf[0..0];
+		sendEntropyEvent(slice);
 	}
 
 	@nogc @property nothrow

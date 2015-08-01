@@ -9,27 +9,21 @@ import dcrypt.crypto.random.fortuna.fortuna: addEntropy;
 /// Generate entropy data with the system clock.
 /// 
 
-
 unittest {
-	auto sTick = new SystemTickEntropySource;
-	ubyte[32] buf1;
-	ubyte[32] buf2;
-	sTick.getEntropy(buf1);
-	sTick.getEntropy(buf2);
-
-	assert(buf1 != buf2, "Measurements are not at all random!");
-
+	auto st = new SystemTickEntropySource;
+	st.start();
 }
 
 @safe
 public class SystemTickEntropySource: EntropySource
 {
 
-	override ubyte[] getEntropy(ubyte[] buf) {
+	override void collectEntropy() nothrow {
+		ubyte[64] buf;
+
 		getTimingEntropy(buf);
 
-		
-		return buf;
+		sendEntropyEvent(buf);
 	}
 
 	@nogc @property nothrow

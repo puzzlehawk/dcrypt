@@ -15,17 +15,18 @@ public class RDRandEntropySource: EntropySource
 		RDRand rdrand;
 	}
 
-	override ubyte[] getEntropy(ubyte[] buf) {
+	override void collectEntropy() nothrow {
+
+		ubyte[32] buf;
 
 		if(rdrand.isSupported) {
 			rdrand.nextBytes(buf);
-			return buf;
 		} else {
 			// not supported
 			delay = 0;
-			return buf[0..0];
 		}
 
+		sendEntropyEvent(buf);
 	}
 
 	@nogc @property nothrow

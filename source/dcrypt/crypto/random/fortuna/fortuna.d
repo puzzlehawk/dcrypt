@@ -39,11 +39,16 @@ unittest {
 /// 
 /// Params:
 /// sourceID =	The ID of the entropy source. Can actually be any number.
+/// pool = The ID of the pool to add the entropy.
 /// seed	=	Random data.
 @safe
-public void addEntropy(in ubyte sourceID, in ubyte[] seed...) nothrow @nogc {
+public void addEntropy(in ubyte sourceID, in size_t pool, in ubyte[] seed...) nothrow @nogc 
+in {
+	assert(pool < Accumulator.pools, "Pool ID out of range.");
+}
+body {
 	assert(globalAcc !is null, "Accumulator not initialized!");
-	globalAcc.addEntropy(sourceID, seed);
+	globalAcc.addEntropy(sourceID, pool, seed);
 	
 }
 
@@ -67,12 +72,23 @@ body {
 	globalAcc.extractEntropy(buf);
 }
 
-/// initialize the global accumulator
+private shared Accumulator globalAcc;	/// The entropy accumulator is used globally.
+
+/// initialize and seed the global accumulator
 private shared static this() {
 	globalAcc = new shared Accumulator;
+
+	// seed the accumulator
+	ubyte[32] buf;
+	foreach(i;0..4096/buf.length) {
+		import dcrypt.crypto.random.fortuna.sources.systemtick;
+
+		getTimingEntropy(buf);
+		addEntropy(0, i%Accumulator.pools, buf);
+
+	}
 }
 
-private shared Accumulator globalAcc;	/// The entropy accumulator is used globally.
 
 static assert(isRNG!(FortunaCore!(AES, SHA256)), "Fortuna does not meet requirements for PRNGs.");
 
@@ -90,12 +106,11 @@ nothrow:
 
 		enum name = "FortunaCore";
 
-		/// Add entropy to generators state and to the accumulator.
+		/// Add entropy to generators state but not to the accumulator.
 		@safe
 		void addSeed(in ubyte[] seed) nothrow @nogc {
 			// pass this call directly to the generator
 			prng.addSeed(seed);
-			addEntropy(0, seed);
 		}
 
 		/// Fill the buffer with random bytes.
@@ -110,15 +125,9 @@ nothrow:
 
 		FortunaGenerator!(Cipher, Digest) prng;
 
-		uint reseedCount = 0; /// used to determine which pools should be used to generate seed
+		size_t reseedCount = 0; /// increment each time reseed() is called
 		ulong lastReseed = 0; /// time of the last reseed in ms
 
-		/// initialize Fortuna
-		void init() nothrow @nogc
-		{
-			reseedCount = 0;
-		}
-		
 		@safe
 		void randomData(ubyte[] buffer) nothrow @nogc
 		{
@@ -131,7 +140,9 @@ nothrow:
 
 			}
 
-			assert(lastReseed > 0 || reseedCount > 0, "PRNG not seeded yet");
+			if(lastReseed == 0 && reseedCount == 0) {
+				assert(false, "PRNG not seeded yet");
+			}
 
 			// ready to generate the random data
 			prng.nextBytes(buffer);

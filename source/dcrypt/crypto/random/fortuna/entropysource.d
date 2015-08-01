@@ -15,9 +15,11 @@ public abstract class EntropySource
 {
 	private static ubyte idCounter = 0;
 	private ubyte sourceID;
+	private size_t pool = 0; // ID of the pool where the entropy gets sent to.
+	private bool calledSendEntropyEvent; /// Used to control wether the source calls sendEntropyEvent or not.
 	private Thread worker;
 
-
+	
 	final this() nothrow {
 		this.sourceID = idCounter++; // give each source another ID (as long as there are less than 256 sources)
 	}
@@ -37,11 +39,11 @@ public abstract class EntropySource
 		bool running = true;
 
 		while(running) {
-			ubyte[32] buf;
 
-			ubyte[] recvEntropy = getEntropy(buf);	// Get the entropy.
+			calledSendEntropyEvent = false;
+			collectEntropy();
 
-			sendEntropyEvent(recvEntropy);	// Send the entropy to the global accumulator.
+			assert(calledSendEntropyEvent, name~" did not call sendEntropyEvent().");
 
 			uint delay = scheduleNext();	// Ask the source when it wants to be invoked.
 
@@ -65,9 +67,8 @@ public abstract class EntropySource
 	}
 
 	/// Collect entropy.
-	/// 
-	/// Returns: Slice pointing to the new data in the buffer.
-	public abstract ubyte[] getEntropy(ubyte[] buf);
+	/// Note: Implementation must call `sendEntropyEvent(in ubyte[] buf)` to send data to the accumulator.
+	public abstract void collectEntropy();
 
 	@safe @nogc nothrow
 	public abstract uint scheduleNext();
@@ -77,13 +78,27 @@ public abstract class EntropySource
 
 	/// use this method to send entropy to the accumulator
 	@safe
-	private void sendEntropyEvent(in ubyte[] buf) {
-		import dcrypt.crypto.random.fortuna.fortuna;
+	protected final void sendEntropyEvent(in ubyte[] buf) nothrow {
+		import dcrypt.crypto.random.fortuna.fortuna: addEntropy;
 
-		addEntropy(sourceID, buf);
+		calledSendEntropyEvent = true;
 
-//		import std.stdio;
-//		debug writeln(sourceID, " ",  name, ":\t", dcrypt.util.encoders.hex.toHexStr(buf));
+		scope(exit) {
+			pool = (pool + 1) % Accumulator.pools;
+		}
+
+		addEntropy(sourceID, pool, buf);
+
+//		debug {
+//			try {
+//				import std.stdio;
+//				writeln(sourceID, " ", pool, " ",  name, ":\t", dcrypt.util.encoders.hex.toHexStr(buf[0..$/4]));
+//			} catch(Exception e) {}
+//		}
+	}
+
+	invariant {
+		assert(pool < Accumulator.pools);
 	}
 
 }
