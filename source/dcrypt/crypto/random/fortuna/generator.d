@@ -29,17 +29,18 @@ import dcrypt.crypto.params.keyparameter;
 }
 
 // Test if FortunaGenerator fullfills requirements to be a PRNG.
-static {
-	import dcrypt.crypto.engines.aes;
-	import dcrypt.crypto.digests.sha2;
-	static assert(isRNG!(FortunaGenerator!(AES, SHA256)), "FortunaGenerator violates requirements of isPRNG!");
-}
+import dcrypt.crypto.engines.aes;
+import dcrypt.crypto.digests.sha2;
+static assert(isRNG!(FortunaGenerator!(AES, SHA256)), "FortunaGenerator violates requirements of isPRNG!");
 
 
-/// This PRNG forms a base component of the Fortuna PRNG as proposed by Bruce Schneier & Niels Ferguson.
-/// The Generator can be used stand alone as deterministic PRNG. It won't gather entropy on its own and
-/// without calling `addSeed()` it will always generate the same sequence of bytes for the same underlying 
+
+/// This PRNG forms a base component of the Fortuna PRNG as proposed by Bruce Schneier & Niels Ferguson (PRNG with input).
+/// The Generator can be used stand alone as deterministic PRNG (DRNG). It won't gather entropy on its own and
+/// provided with the same seed it will always generate the same sequence of bytes for the same underlying 
 /// block cipher and hash algorithm.
+/// 
+/// Note: Generator MUST be seeded before generating pseudo random data either with `addSeed()` or by passing the seed to the constructor.
 /// 
 /// Params:
 /// Cipher = defines the underlying block cipher algorithm.
@@ -73,12 +74,12 @@ public struct FortunaGenerator(Cipher, Digest) if(isBlockCipher!Cipher && isDige
 	}
 
 	private {
-		enum reseedLimit = 1<<20;
+		enum reseedLimit = 1<<20;			/// Force a reseed after generating this amount of bytes.
 		enum blockSize = Cipher.blockSize;
 		
-		ubyte[blockSize] counter;
-		ubyte[blockSize] internalBuffer;
-		ubyte[32] key;
+		ubyte[blockSize] counter;			/// Counter for CTR mode.
+		ubyte[blockSize] internalBuffer;	
+		ubyte[32] key;						/// Secret encryption key.
 		
 		Cipher cipher;
 		Digest digest;
@@ -163,5 +164,13 @@ public struct FortunaGenerator(Cipher, Digest) if(isBlockCipher!Cipher && isDige
 				buffer[$-remaining..$] = internalBuffer[0..remaining];
 			}
 		}
+	}
+
+	~this() {
+		import dcrypt.util.util: wipe;
+
+		wipe(key);
+		wipe(counter);
+		wipe(internalBuffer);
 	}
 }

@@ -41,8 +41,6 @@ unittest {
 	}
 }
 
-
-
 ///
 ///	URandomRNG provides an interface to the /dev/urandom RNG of
 ///	most Unix like systems.
@@ -65,6 +63,8 @@ public class URandomRNG: RNG {
 		urandFile.close();
 	}
 
+	/// Evaulates at runtime if /dev/urandom is available.
+	/// Returns: `true` if /dev/urandom PRNG is available.
 	@property
 	public static bool isAvailable() nothrow {
 		// HACK: problem with different standard library version

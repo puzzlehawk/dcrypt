@@ -19,11 +19,11 @@ alias FortunaGenerator!(AES, SHA256) DRNG; /// Deterministic PRNG
 template isRNG(T)
 {
 	enum bool isRNG = 
-		is(T == struct) &&
+		is(T == struct) && // isInputRange!T &&
 			is(typeof(
 					{
 						ubyte[] buf;
-						T rng = void;
+						T rng = T.init;
 						string name = rng.name;
 						rng.nextBytes(buf);
 						rng.addSeed(cast(const ubyte[]) buf);

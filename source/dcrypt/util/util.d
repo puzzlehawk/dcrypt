@@ -4,6 +4,9 @@ import core.vararg;
 import std.traits;
 import std.algorithm;
 
+/// TODO: neat variadic implementation of `wipe()`
+
+/// Clears data in memory.
 @safe @nogc nothrow
 void wipe(T)(ref T t) {
 	static if(isArray!T) {
