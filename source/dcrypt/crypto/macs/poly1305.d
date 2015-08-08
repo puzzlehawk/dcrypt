@@ -1,13 +1,17 @@
 ﻿module dcrypt.crypto.macs.poly1305;
 
+import dcrypt.crypto.macs.mac;
 import dcrypt.crypto.blockcipher;
 import dcrypt.util.pack;
+
+static assert(isMAC!(Poly1305!void), "Poly1305!void is not a valid mac.");
 
 private {
 	enum ubyte rMaskLow2 = 0xFC;
 	enum ubyte rMaskHigh4 = 0x0F;
 }
 
+@safe nothrow @nogc
 public struct Poly1305(Cipher) if (isBlockCipher!Cipher || is(Cipher == void)) {
 
 	static if(useCipher) {
@@ -42,7 +46,7 @@ public struct Poly1305(Cipher) if (isBlockCipher!Cipher || is(Cipher == void)) {
 		ubyte[blockSize] currentBlock;
 
 		/** Current offset in input buffer */
-		int currentBlockOffset = 0;
+		uint currentBlockOffset = 0;
 
 		/** Polynomial accumulator */
 		int h0, h1, h2, h3, h4;
@@ -56,7 +60,7 @@ public struct Poly1305(Cipher) if (isBlockCipher!Cipher || is(Cipher == void)) {
 	 *        {@link Poly1305KeyGenerator Poly1305 key format}, otherwise just the
 	 *        {@link KeyParameter}.
 	 */
-	public void start(in ubyte[] key, in ubyte[] nonce)
+	public void start(in ubyte[] key, in ubyte[] nonce = null)
 	{
 		setKey(key, nonce);
 		
@@ -102,7 +106,7 @@ public struct Poly1305(Cipher) if (isBlockCipher!Cipher || is(Cipher == void)) {
 
 		static if (useCipher)
 		{
-			cipher.init(true, s);
+			cipher.start(true, s);
 			cipher.processBlock(nonce, s);
 		}
 		
@@ -112,7 +116,7 @@ public struct Poly1305(Cipher) if (isBlockCipher!Cipher || is(Cipher == void)) {
 		k3 = fromLittleEndian!int(s[12..16]);
 	}
 
-	public void put(in ubyte[] inp) {
+	public void put(in ubyte[] inp...) {
 
 		import std.algorithm: min;
 
@@ -179,7 +183,13 @@ public struct Poly1305(Cipher) if (isBlockCipher!Cipher || is(Cipher == void)) {
 		h0 += b * 5;
 	}
 
-	public int doFinal(ubyte[] output)
+	public ubyte[macSize] finish() {
+		ubyte[macSize] mac;
+		doFinal(mac);
+		return mac;
+	}
+
+	public uint doFinal(ubyte[] output)
 	in {
 		assert(output.length >= blockSize, "Output buffer is too short.");
 	}
@@ -239,12 +249,13 @@ public struct Poly1305(Cipher) if (isBlockCipher!Cipher || is(Cipher == void)) {
 		h0 = h1 = h2 = h3 = h4 = 0;
 	}
 
-	private static long mul32x32_64(int i1, int i2)
+	private static long mul32x32_64(int i1, int i2) pure
 	{
 		return (cast(long)i1) * i2;
 	}
 }
 
+/// Check if r has right format.
 @safe
 private bool checkKey(in ubyte[] key) pure nothrow @nogc {
 	assert(key.length == 16, "r must be 128 bits.");
@@ -266,17 +277,8 @@ private bool checkMask(in ubyte b, in ubyte mask) pure nothrow @nogc
 	return (b & (~mask)) == 0;
 }
 
-/**
- * Modifies an existing 32 byte key value to comply with the requirements of the Poly1305 key by
- * clearing required bits in the <code>r</code> (second 16 bytes) portion of the key.<br>
- * Specifically:
- * <ul>
- * <li>r[3], r[7], r[11], r[15] have top four bits clear (i.e., are {0, 1, . . . , 15})</li>
- * <li>r[4], r[8], r[12] have bottom two bits clear (i.e., are in {0, 4, 8, . . . , 252})</li>
- * </ul>
- *
- * @param key a 32 byte key value <code>k[0] ... k[15], r[0] ... r[15]</code>
- */
+/// Clears bits in key.
+@safe
 private void clamp(ubyte[] key) nothrow @nogc
 in {
 	assert(key.length == 16);
@@ -298,28 +300,58 @@ body {
 	key[12] &= rMaskLow2;
 }
 
+/// Raw Poly1305
+/// onetimeauth.c from nacl-20110221
 unittest {
 
-	Poly1305!void poly;
-
-	alias const(ubyte[]) octets;
-
-	ubyte[32] key = cast(octets) x"2539121d8e234e652d651fa4c8cff880eea6a7251c1e72916d11c2cb214d3c25";
-
-	poly.start(key, null);
-
-	poly.put(cast(octets) x"8e993b9f48681273c29650ba32fc76ce48332ea7164d96a4476fb8c531a1186a
+	poly1305Test!(Poly1305!void)(
+		x"2539121d8e234e652d651fa4c8cff880eea6a7251c1e72916d11c2cb214d3c25",
+		null,
+		x"8e993b9f48681273c29650ba32fc76ce48332ea7164d96a4476fb8c531a1186a
                         c0dfc17c98dce87b4da7f011ec48c97271d2c20f9b928fe2270d6fb863d51738
                         b48eeee314a7cc8ab932164548e526ae90224368517acfeabd6bb3732bc0e9da
-                        99832b61ca01b6de56244a9e88d5f9b37973f622a43d14a6599b1f654cb45a74e355a5");
-
-	ubyte[16] mac;
-	poly.doFinal(mac);
-
-	import std.stdio;
-	import dcrypt.util.encoders.hex;
-	//writeln(mac.toHexStr());
-
-	assert(mac == x"f3ffc7703f9400e52a7dfb4b3d3305d9", poly.name~" failed!");
+                        99832b61ca01b6de56244a9e88d5f9b37973f622a43d14a6599b1f654cb45a74e355a5",
+		x"f3ffc7703f9400e52a7dfb4b3d3305d9"
+		);
 	
+}
+
+unittest {
+	import dcrypt.crypto.engines.aes;
+
+	poly1305Test!(Poly1305!AES)(
+		x"0000000000000000000000000000000000000000000000000000000000000000",
+		x"00000000000000000000000000000000",
+		x"",
+		x"66e94bd4ef8a2c3b884cfa59ca342b2e"
+		);
+	
+}
+
+unittest {
+	import dcrypt.crypto.engines.aes;
+	
+	poly1305Test!(Poly1305!AES)(
+		x"f795bd4a52e29ed713d313fa20e98dbcf795bd0a50e29e0710d3130a20e98d0c",
+		x"917cf69ebd68b2ec9b9fe9a3eadda692",
+		x"66f7",
+		x"5ca585c75e8f8f025e710cabc9a1508b"
+		);
+	
+}
+
+version(unittest) {
+	// Helper function for unittests.
+
+	private void poly1305Test(P)(string key, string iv, string data, string expectedMac) {
+
+		alias const(ubyte[]) octets;
+
+		P poly;
+		poly.start(cast(octets) key, cast(octets) iv);
+		poly.put(cast(octets) data);
+
+		assert(poly.finish() == expectedMac, "Poly1305 failed!");
+		
+	}
 }
