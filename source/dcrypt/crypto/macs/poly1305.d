@@ -11,8 +11,10 @@ private {
 	enum ubyte rMaskHigh4 = 0x0F;
 }
 
+alias Poly1305!void Poly1305Raw;
+
 @safe nothrow @nogc
-public struct Poly1305(Cipher) if (isBlockCipher!Cipher || is(Cipher == void)) {
+public struct Poly1305(Cipher) if ((isBlockCipher!Cipher && Cipher.blockSize == 16) || is(Cipher == void)) {
 
 	static if(useCipher) {
 		public enum name = "Poly1305-" ~ Cipher.name;
@@ -52,14 +54,20 @@ public struct Poly1305(Cipher) if (isBlockCipher!Cipher || is(Cipher == void)) {
 		int h0, h1, h2, h3, h4;
 	}
 
-	/**
-	 * Initialises the Poly1305 MAC.
-	 * 
-	 * @param params if used with a block cipher, then a {@link ParametersWithIV} containing a 128 bit
-	 *        nonce and a {@link KeyParameter} with a 256 bit key complying to the
-	 *        {@link Poly1305KeyGenerator Poly1305 key format}, otherwise just the
-	 *        {@link KeyParameter}.
-	 */
+	/// Wipe sensitive data.
+	~this() {
+		r0 = r1 = r2 = r3 = r4 = 0;
+		s1 = s2 = s3 = s4 = 0;
+		k0 = k1 = k2 = k2 = 0;
+		
+		currentBlock[] = 0;
+		h0 = h1 = h2 = h3 = h4 = 0;
+	}
+
+	/// Initializes the Poly1305 MAC.
+	/// Params:
+	/// key = 32 byte key.
+	/// nonce = 16 byte nonce. Required if used with block cipher.
 	public void start(in ubyte[] key, in ubyte[] nonce = null)
 	{
 		setKey(key, nonce);
@@ -80,7 +88,7 @@ public struct Poly1305(Cipher) if (isBlockCipher!Cipher || is(Cipher == void)) {
 
 		ubyte[16] r, s;
 		r[] = key[0..16];
-		clamp(r[]);
+		clamp(r);
 		s[] = key[16..32];
 		
 		assert(checkKey(r), "Invalid format for r portion of Poly1305 key.");
@@ -242,6 +250,7 @@ public struct Poly1305(Cipher) if (isBlockCipher!Cipher || is(Cipher == void)) {
 		return blockSize;
 	}
 
+	/// Resets the internal state such that a new MAC can be computed.
 	public void reset()
 	{
 		currentBlockOffset = 0;
@@ -249,56 +258,54 @@ public struct Poly1305(Cipher) if (isBlockCipher!Cipher || is(Cipher == void)) {
 		h0 = h1 = h2 = h3 = h4 = 0;
 	}
 
-	private static long mul32x32_64(int i1, int i2) pure
+	/// Returns: i1*i2 as long
+	private long mul32x32_64(in int i1, in int i2) pure
 	{
 		return (cast(long)i1) * i2;
 	}
+
+	/// Check if r has right format.
+	private bool checkKey(in ubyte[] key) pure {
+		assert(key.length == 16, "r must be 128 bits.");
+
+		bool checkMask(in ubyte b, in ubyte mask) pure
+		{
+			return (b & (~mask)) == 0;
+		}
+
+		return 
+				checkMask(key[3], rMaskHigh4) &&
+				checkMask(key[7], rMaskHigh4) &&
+				checkMask(key[11], rMaskHigh4) &&
+				checkMask(key[15], rMaskHigh4) &&
+				
+				checkMask(key[4], rMaskLow2) &&
+				checkMask(key[8], rMaskLow2) &&
+				checkMask(key[12], rMaskLow2);
+	}
+
+	/// Clears bits in key:
+	/// Clears top four bits of bytes 3,7,11,15
+	/// Clears bottom two bits of bytes 4,8,12
+	/// 
+	/// Params:
+	/// key = Some bits of this key get cleared.
+	private void clamp(ref ubyte[16] key)
+	{
+		// r[3], r[7], r[11], r[15] have top four bits clear (i.e., are {0, 1, . . . , 15})
+		key[3] &= rMaskHigh4;
+		key[7] &= rMaskHigh4;
+		key[11] &= rMaskHigh4;
+		key[15] &= rMaskHigh4;
+
+	 	// r[4], r[8], r[12] have bottom two bits clear (i.e., are in {0, 4, 8, . . . , 252}).
+		key[4] &= rMaskLow2;
+		key[8] &= rMaskLow2;
+		key[12] &= rMaskLow2;
+	}
 }
 
-/// Check if r has right format.
-@safe
-private bool checkKey(in ubyte[] key) pure nothrow @nogc {
-	assert(key.length == 16, "r must be 128 bits.");
 
-	return 
-		checkMask(key[3], rMaskHigh4) &&
-			checkMask(key[7], rMaskHigh4) &&
-			checkMask(key[11], rMaskHigh4) &&
-			checkMask(key[15], rMaskHigh4) &&
-			
-			checkMask(key[4], rMaskLow2) &&
-			checkMask(key[8], rMaskLow2) &&
-			checkMask(key[12], rMaskLow2);
-}
-
-@safe
-private bool checkMask(in ubyte b, in ubyte mask) pure nothrow @nogc
-{
-	return (b & (~mask)) == 0;
-}
-
-/// Clears bits in key.
-@safe
-private void clamp(ubyte[] key) nothrow @nogc
-in {
-	assert(key.length == 16);
-}
-body {
-	/*
-	 * r[3], r[7], r[11], r[15] have top four bits clear (i.e., are {0, 1, . . . , 15})
-	 */
-	key[3] &= rMaskHigh4;
-	key[7] &= rMaskHigh4;
-	key[11] &= rMaskHigh4;
-	key[15] &= rMaskHigh4;
-	
-	/*
-	 * r[4], r[8], r[12] have bottom two bits clear (i.e., are in {0, 4, 8, . . . , 252}).
-	 */
-	key[4] &= rMaskLow2;
-	key[8] &= rMaskLow2;
-	key[12] &= rMaskLow2;
-}
 
 // Raw Poly1305
 // onetimeauth.c from nacl-20110221
