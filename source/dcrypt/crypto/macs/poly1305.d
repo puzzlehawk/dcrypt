@@ -78,10 +78,10 @@ public struct Poly1305(Cipher) if (isBlockCipher!Cipher || is(Cipher == void)) {
 	}
 	body {
 
-		ubyte[16] s, r;
-		s[] = key[0..16];
-		r[] = key[16..32];
+		ubyte[16] r, s;
+		r[] = key[0..16];
 		clamp(r[]);
+		s[] = key[16..32];
 		
 		assert(checkKey(r), "Invalid format for r portion of Poly1305 key.");
 
@@ -300,12 +300,12 @@ body {
 	key[12] &= rMaskLow2;
 }
 
-/// Raw Poly1305
-/// onetimeauth.c from nacl-20110221
+// Raw Poly1305
+// onetimeauth.c from nacl-20110221
 unittest {
 
 	poly1305Test!(Poly1305!void)(
-		x"2539121d8e234e652d651fa4c8cff880eea6a7251c1e72916d11c2cb214d3c25",
+		x"eea6a7251c1e72916d11c2cb214d3c25 2539121d8e234e652d651fa4c8cff880",
 		null,
 		x"8e993b9f48681273c29650ba32fc76ce48332ea7164d96a4476fb8c531a1186a
                         c0dfc17c98dce87b4da7f011ec48c97271d2c20f9b928fe2270d6fb863d51738
@@ -332,7 +332,7 @@ unittest {
 	import dcrypt.crypto.engines.aes;
 	
 	poly1305Test!(Poly1305!AES)(
-		x"f795bd4a52e29ed713d313fa20e98dbcf795bd0a50e29e0710d3130a20e98d0c",
+		x"f795bd0a50e29e0710d3130a20e98d0c f795bd4a52e29ed713d313fa20e98dbc",
 		x"917cf69ebd68b2ec9b9fe9a3eadda692",
 		x"66f7",
 		x"5ca585c75e8f8f025e710cabc9a1508b"
@@ -340,10 +340,134 @@ unittest {
 	
 }
 
+// Test vectors from RFC7539, A.3. #1
+unittest {
+	
+	poly1305Test!(Poly1305!void)(
+		x"00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00",
+		null,
+		x"00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+		00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+		00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+		00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00",
+		x"00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00"
+		);
+	
+}
+
+// Test vectors from RFC7539, A.3. #2
+unittest {
+	
+	poly1305Test!(Poly1305!void)(
+		x"00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 36 e5 f6 b5 c5 e0 60 70 f0 ef ca 96 22 7a 86 3e",
+		null,
+		longTestData0,
+		x"36 e5 f6 b5 c5 e0 60 70 f0 ef ca 96 22 7a 86 3e"
+		);
+	
+}
+
+// Test vectors from RFC7539, A.3. #3
+unittest {
+	
+	poly1305Test!(Poly1305!void)(
+		x"36 e5 f6 b5 c5 e0 60 70 f0 ef ca 96 22 7a 86 3e 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00",
+		null,
+		longTestData0,
+		x"f3 47 7e 7c d9 54 17 af 89 a6 b8 79 4c 31 0c f0"
+		);
+	
+}
+
+// Test vectors from RFC7539, A.3. #4
+unittest {
+	
+	poly1305Test!(Poly1305!void)(
+		x"1c 92 40 a5 eb 55 d3 8a f3 33 88 86 04 f6 b5 f0 47 39 17 c1 40 2b 80 09 9d ca 5c bc 20 70 75 c0",
+		null,
+		x"
+		  27 54 77 61 73 20 62 72 69 6c 6c 69 67 2c 20 61
+		  6e 64 20 74 68 65 20 73 6c 69 74 68 79 20 74 6f
+		  76 65 73 0a 44 69 64 20 67 79 72 65 20 61 6e 64
+		  20 67 69 6d 62 6c 65 20 69 6e 20 74 68 65 20 77
+		  61 62 65 3a 0a 41 6c 6c 20 6d 69 6d 73 79 20 77
+		  65 72 65 20 74 68 65 20 62 6f 72 6f 67 6f 76 65
+		  73 2c 0a 41 6e 64 20 74 68 65 20 6d 6f 6d 65 20
+		  72 61 74 68 73 20 6f 75 74 67 72 61 62 65 2e
+		",
+		x"45 41 66 9a 7e aa ee 61 e7 08 dc 7c bc c5 eb 62"
+		);
+	
+}
+
+// Test vectors from RFC7539, A.3. #5
+// If one uses 130-bit partial reduction, does the code handle the case where partially reduced final result is not fully reduced?
+unittest {
+	
+	poly1305Test!(Poly1305!void)(
+		x"02 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+		00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00",
+		null,
+		x"
+		  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+		",
+		x"03 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00"
+		);
+	
+}
+
+// Test vectors from RFC7539, A.3. #6
+// What happens if addition of s overflows modulo 2^128?
+unittest {
+	
+	poly1305Test!(Poly1305!void)(
+		x"02 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+		FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF",
+		null,
+		x"
+		  02 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+		",
+		x"03 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00"
+		);
+	
+}
+
+// Test vectors from RFC7539, A.3. #7
+// What happens if data limb is all ones and there is carry from lower limb?
+unittest {
+	
+	poly1305Test!(Poly1305!void)(
+		x"01 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+		00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00",
+		null,
+		x"
+			FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+			F0 FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+			11 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+		",
+		x"05 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00"
+		);
+	
+}
+unittest {
+	
+	poly1305Test!(Poly1305!void)(
+		x"02 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+		FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF",
+		null,
+		x"
+		  02 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+		",
+		x"03 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00"
+		);
+	
+}
+
 version(unittest) {
 	// Helper function for unittests.
+private:
 
-	private void poly1305Test(P)(string key, string iv, string data, string expectedMac) {
+	void poly1305Test(P)(string key, string iv, string data, string expectedMac) {
 
 		alias const(ubyte[]) octets;
 
@@ -354,4 +478,31 @@ version(unittest) {
 		assert(poly.finish() == expectedMac, "Poly1305 failed!");
 		
 	}
+
+	enum longTestData0 = x"
+		  41 6e 79 20 73 75 62 6d 69 73 73 69 6f 6e 20 74
+		  6f 20 74 68 65 20 49 45 54 46 20 69 6e 74 65 6e
+		  64 65 64 20 62 79 20 74 68 65 20 43 6f 6e 74 72
+		  69 62 75 74 6f 72 20 66 6f 72 20 70 75 62 6c 69
+		  63 61 74 69 6f 6e 20 61 73 20 61 6c 6c 20 6f 72
+		  20 70 61 72 74 20 6f 66 20 61 6e 20 49 45 54 46
+		  20 49 6e 74 65 72 6e 65 74 2d 44 72 61 66 74 20
+		  6f 72 20 52 46 43 20 61 6e 64 20 61 6e 79 20 73
+		  74 61 74 65 6d 65 6e 74 20 6d 61 64 65 20 77 69
+		  74 68 69 6e 20 74 68 65 20 63 6f 6e 74 65 78 74
+		  20 6f 66 20 61 6e 20 49 45 54 46 20 61 63 74 69
+		  76 69 74 79 20 69 73 20 63 6f 6e 73 69 64 65 72
+		  65 64 20 61 6e 20 22 49 45 54 46 20 43 6f 6e 74
+		  72 69 62 75 74 69 6f 6e 22 2e 20 53 75 63 68 20
+		  73 74 61 74 65 6d 65 6e 74 73 20 69 6e 63 6c 75
+		  64 65 20 6f 72 61 6c 20 73 74 61 74 65 6d 65 6e
+		  74 73 20 69 6e 20 49 45 54 46 20 73 65 73 73 69
+		  6f 6e 73 2c 20 61 73 20 77 65 6c 6c 20 61 73 20
+		  77 72 69 74 74 65 6e 20 61 6e 64 20 65 6c 65 63
+		  74 72 6f 6e 69 63 20 63 6f 6d 6d 75 6e 69 63 61
+		  74 69 6f 6e 73 20 6d 61 64 65 20 61 74 20 61 6e
+		  79 20 74 69 6d 65 20 6f 72 20 70 6c 61 63 65 2c
+		  20 77 68 69 63 68 20 61 72 65 20 61 64 64 72 65
+		  73 73 65 64 20 74 6f
+		";
 }
