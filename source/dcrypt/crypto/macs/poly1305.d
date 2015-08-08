@@ -25,9 +25,6 @@ public struct Poly1305(Cipher) if (isBlockCipher!Cipher || is(Cipher == void)) {
 		static if(useCipher) {
 			Cipher cipher;
 		}
-
-		ubyte[1] singleByte; // TODO remove
-
 		// Initialised state
 
 		/** Polynomial key */
@@ -74,16 +71,22 @@ public struct Poly1305(Cipher) if (isBlockCipher!Cipher || is(Cipher == void)) {
 
 		assert(key !is null && key.length == 32, "Poly1305 requires a 32 byte key.");
 
-		assert(checkKey(key), "Invalid format for r portion of Poly1305 key.");
 	}
 	body {
+
+		ubyte[16] s, r;
+		s[] = key[0..16];
+		r[] = key[16..32];
+		clamp(r[]);
 		
+		assert(checkKey(r), "Invalid format for r portion of Poly1305 key.");
+
 		// Extract r portion of key
 
-		int t0 = fromLittleEndian!int(key[blockSize+0..blockSize+4]);
-		int t1 = fromLittleEndian!int(key[blockSize+4..blockSize+8]);
-		int t2 = fromLittleEndian!int(key[blockSize+8..blockSize+12]);
-		int t3 = fromLittleEndian!int(key[blockSize+12..blockSize+16]);
+		int t0 = fromLittleEndian!int(r[0..4]);
+		int t1 = fromLittleEndian!int(r[4..8]);
+		int t2 = fromLittleEndian!int(r[8..12]);
+		int t3 = fromLittleEndian!int(r[12..16]);
 		
 		r0 = t0 & 0x3ffffff; t0 >>>= 26; t0 |= t1 << 6;
 		r1 = t0 & 0x3ffff03; t1 >>>= 20; t1 |= t2 << 12;
@@ -99,20 +102,14 @@ public struct Poly1305(Cipher) if (isBlockCipher!Cipher || is(Cipher == void)) {
 
 		static if (useCipher)
 		{
-			
-			ubyte[blockSize] kBytes;		// Compute encrypted nonce
-			cipher.init(true, key[0..blockSize]);
-			cipher.processBlock(nonce, kBytes);
-		}
-		else
-		{
-			alias kBytes = key;
+			cipher.init(true, s);
+			cipher.processBlock(nonce, s);
 		}
 		
-		k0 = fromLittleEndian!int(kBytes[0..4]);
-		k1 = fromLittleEndian!int(kBytes[4..8]);
-		k2 = fromLittleEndian!int(kBytes[8..12]);
-		k3 = fromLittleEndian!int(kBytes[12..16]);
+		k0 = fromLittleEndian!int(s[0..4]);
+		k1 = fromLittleEndian!int(s[4..8]);
+		k2 = fromLittleEndian!int(s[8..12]);
+		k3 = fromLittleEndian!int(s[12..16]);
 	}
 
 	public void put(in ubyte[] inp) {
@@ -225,11 +222,11 @@ public struct Poly1305(Cipher) if (isBlockCipher!Cipher || is(Cipher == void)) {
 
 		toLittleEndian!int(cast(int)f0, output[0..4]);
 		f1 += (f0 >>> 32);
-		toLittleEndian!int(cast(int)f0, output[4..8]);
+		toLittleEndian!int(cast(int)f1, output[4..8]);
 		f2 += (f1 >>> 32);
-		toLittleEndian!int(cast(int)f0, output[8..12]);
+		toLittleEndian!int(cast(int)f2, output[8..12]);
 		f3 += (f2 >>> 32);
-		toLittleEndian!int(cast(int)f0, output[12..16]);
+		toLittleEndian!int(cast(int)f3, output[12..16]);
 		
 		reset();
 		return blockSize;
@@ -250,17 +247,17 @@ public struct Poly1305(Cipher) if (isBlockCipher!Cipher || is(Cipher == void)) {
 
 @safe
 private bool checkKey(in ubyte[] key) pure nothrow @nogc {
-	assert(key.length == 32, "Poly1305 key must be 256 bits.");
+	assert(key.length == 16, "r must be 128 bits.");
 
 	return 
-		checkMask(key[19], rMaskHigh4) &&
-			checkMask(key[23], rMaskHigh4) &&
-			checkMask(key[27], rMaskHigh4) &&
-			checkMask(key[31], rMaskHigh4) &&
+		checkMask(key[3], rMaskHigh4) &&
+			checkMask(key[7], rMaskHigh4) &&
+			checkMask(key[11], rMaskHigh4) &&
+			checkMask(key[15], rMaskHigh4) &&
 			
-			checkMask(key[20], rMaskLow2) &&
-			checkMask(key[24], rMaskLow2) &&
-			checkMask(key[28], rMaskLow2);
+			checkMask(key[4], rMaskLow2) &&
+			checkMask(key[8], rMaskLow2) &&
+			checkMask(key[12], rMaskLow2);
 }
 
 @safe
@@ -269,17 +266,60 @@ private bool checkMask(in ubyte b, in ubyte mask) pure nothrow @nogc
 	return (b & (~mask)) == 0;
 }
 
+/**
+ * Modifies an existing 32 byte key value to comply with the requirements of the Poly1305 key by
+ * clearing required bits in the <code>r</code> (second 16 bytes) portion of the key.<br>
+ * Specifically:
+ * <ul>
+ * <li>r[3], r[7], r[11], r[15] have top four bits clear (i.e., are {0, 1, . . . , 15})</li>
+ * <li>r[4], r[8], r[12] have bottom two bits clear (i.e., are in {0, 4, 8, . . . , 252})</li>
+ * </ul>
+ *
+ * @param key a 32 byte key value <code>k[0] ... k[15], r[0] ... r[15]</code>
+ */
+private void clamp(ubyte[] key) nothrow @nogc
+in {
+	assert(key.length == 16);
+}
+body {
+	/*
+	 * r[3], r[7], r[11], r[15] have top four bits clear (i.e., are {0, 1, . . . , 15})
+	 */
+	key[3] &= rMaskHigh4;
+	key[7] &= rMaskHigh4;
+	key[11] &= rMaskHigh4;
+	key[15] &= rMaskHigh4;
+	
+	/*
+	 * r[4], r[8], r[12] have bottom two bits clear (i.e., are in {0, 4, 8, . . . , 252}).
+	 */
+	key[4] &= rMaskLow2;
+	key[8] &= rMaskLow2;
+	key[12] &= rMaskLow2;
+}
+
 unittest {
+
 	Poly1305!void poly;
 
 	alias const(ubyte[]) octets;
 
-	poly.start(cast(octets) x"0000000000000000000000000000000000000000000000000000000000000000", null);
-	poly.put(cast(octets) x"00000000000000000000000000000000");
+	ubyte[32] key = cast(octets) x"2539121d8e234e652d651fa4c8cff880eea6a7251c1e72916d11c2cb214d3c25";
+
+	poly.start(key, null);
+
+	poly.put(cast(octets) x"8e993b9f48681273c29650ba32fc76ce48332ea7164d96a4476fb8c531a1186a
+                        c0dfc17c98dce87b4da7f011ec48c97271d2c20f9b928fe2270d6fb863d51738
+                        b48eeee314a7cc8ab932164548e526ae90224368517acfeabd6bb3732bc0e9da
+                        99832b61ca01b6de56244a9e88d5f9b37973f622a43d14a6599b1f654cb45a74e355a5");
 
 	ubyte[16] mac;
 	poly.doFinal(mac);
 
-	assert(mac == x"66e94bd4ef8a2c3b884cfa59ca342b2e", poly.name~" failed!");
+	import std.stdio;
+	import dcrypt.util.encoders.hex;
+	//writeln(mac.toHexStr());
+
+	assert(mac == x"f3ffc7703f9400e52a7dfb4b3d3305d9", poly.name~" failed!");
 	
 }
