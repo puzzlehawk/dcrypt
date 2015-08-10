@@ -274,7 +274,7 @@ public struct Poly1305(Cipher) if ((isBlockCipher!Cipher && Cipher.blockSize == 
 		}
 
 		return 
-				checkMask(key[3], rMaskHigh4) &&
+			checkMask(key[3], rMaskHigh4) &&
 				checkMask(key[7], rMaskHigh4) &&
 				checkMask(key[11], rMaskHigh4) &&
 				checkMask(key[15], rMaskHigh4) &&
@@ -298,7 +298,7 @@ public struct Poly1305(Cipher) if ((isBlockCipher!Cipher && Cipher.blockSize == 
 		key[11] &= rMaskHigh4;
 		key[15] &= rMaskHigh4;
 
-	 	// r[4], r[8], r[12] have bottom two bits clear (i.e., are in {0, 4, 8, . . . , 252}).
+		// r[4], r[8], r[12] have bottom two bits clear (i.e., are in {0, 4, 8, . . . , 252}).
 		key[4] &= rMaskLow2;
 		key[8] &= rMaskLow2;
 		key[12] &= rMaskLow2;
@@ -456,16 +456,74 @@ unittest {
 		);
 	
 }
+
+// Test vectors from RFC7539, A.3. #8
+// What happens if final result from polynomial part is exactly 2^130-5?
+unittest {
+	
+	poly1305Test!(Poly1305!void)(
+		x"01 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+		00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00",
+		null,
+		x"
+			FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+			FB FE FE FE FE FE FE FE FE FE FE FE FE FE FE FE
+			01 01 01 01 01 01 01 01 01 01 01 01 01 01 01 01
+		",
+		x"00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00"
+		);
+	
+}
+
+// Test vectors from RFC7539, A.3. #9
+// What happens if final result from polynomial part is exactly 2^130-6?
 unittest {
 	
 	poly1305Test!(Poly1305!void)(
 		x"02 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-		FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF",
+		00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00",
 		null,
 		x"
-		  02 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+		  FD FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
 		",
-		x"03 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00"
+		x"FA FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF"
+		);
+	
+}
+
+// Test vectors from RFC7539, A.3. #10
+// What happens if 5*H+L-type reduction produces 131-bit intermediate result?
+unittest {
+	
+	poly1305Test!(Poly1305!void)(
+		x"01 00 00 00 00 00 00 00 04 00 00 00 00 00 00 00
+		00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00",
+		null,
+		x"
+			E3 35 94 D7 50 5E 43 B9 00 00 00 00 00 00 00 00
+			33 94 D7 50 5E 43 79 CD 01 00 00 00 00 00 00 00
+			00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+			01 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+		",
+		x"14 00 00 00 00 00 00 00 55 00 00 00 00 00 00 00"
+		);
+	
+}
+
+// Test vectors from RFC7539, A.3. #11
+// What happens if 5*H+L-type reduction produces131-bit final result?
+unittest {
+	
+	poly1305Test!(Poly1305!void)(
+		x"01 00 00 00 00 00 00 00 04 00 00 00 00 00 00 00
+		00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00",
+		null,
+		x"
+			E3 35 94 D7 50 5E 43 B9 00 00 00 00 00 00 00 00
+			33 94 D7 50 5E 43 79 CD 01 00 00 00 00 00 00 00
+			00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+		",
+		x"13 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00"
 		);
 	
 }
