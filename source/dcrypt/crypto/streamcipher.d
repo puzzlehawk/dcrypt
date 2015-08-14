@@ -150,27 +150,35 @@ in {
 body {
 	import std.conv: text;
 	import dcrypt.util.encoders.hex;
+	alias const(ubyte)[] octets;
 
 	ubyte[] buf;
 
-	for(size_t i = 0 ; i < keys.length; ++i) {
-		const ubyte[] key = cast(const ubyte[]) keys[i];
-		const ubyte[] plain = cast(const ubyte[]) plaintexts[i];
-		const ubyte[] ciphertext = cast(const ubyte[]) ciphertexts[i];
+	import std.range: zip;
 
-		if(ivs != null) {
-			const ubyte[] iv = cast(const ubyte[]) ivs[i];
-			c.start(true, key, iv);
-		} else {
-			c.start(true, key, null);
-		}
+	void doTest(in ubyte[] key, in ubyte[] plain, in ubyte[] ciphertext, in ubyte[] iv) {
+		
+		c.start(true, key, iv);
 		
 		buf.length = plain.length;
 		
 		c.processBytes(plain, buf);
-
+		
 		//debug writeln(hexEncode(buf));
 		assert(buf == ciphertext, text(c.name(), " encryption failed: ", hexEncode(buf),
 				" != ", hexEncode(ciphertext)));
 	}
+
+	if(ivs !is null) {
+		foreach(key, plain, cipher, iv; zip(keys, plaintexts, ciphertexts, ivs)) {
+			doTest(cast(octets) key, cast(octets) plain, cast(octets) cipher, cast(octets) iv);
+		}
+	}else {
+		foreach(key, plain, cipher; zip(keys, plaintexts, ciphertexts)) {
+			doTest(cast(octets) key, cast(octets) plain, cast(octets) cipher, null);
+		}
+	}
+
+	
+
 }
