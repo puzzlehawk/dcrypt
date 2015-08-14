@@ -143,8 +143,9 @@ in {
 	assert(keys.length == plaintexts.length, "expected as much plaintexts as keys");
 	assert(keys.length == ciphertexts.length, "expected as much ciphertexts as keys");
 
-	if(ivs != null)
-		assert(keys.length == plaintexts.length, "expected as much ivs as keys");
+	if(ivs != null) {
+		assert(keys.length == ivs.length, "expected as much ivs as keys");
+	}
 }
 body {
 	import std.conv: text;
@@ -167,6 +168,7 @@ body {
 		buf.length = plain.length;
 		
 		c.processBytes(plain, buf);
+
 		//debug writeln(hexEncode(buf));
 		assert(buf == ciphertext, text(c.name(), " encryption failed: ", hexEncode(buf),
 				" != ", hexEncode(ciphertext)));
