@@ -136,7 +136,7 @@ public struct Salsa20 {
 		}
 		
 		ubyte output = keyStream[index]^input;
-		index = (index + 1) & 63;
+		index = (index + 1) % keyStream.length;
 		
 		return output;
 	}
@@ -148,9 +148,11 @@ public struct Salsa20 {
 	/// input = input bytes
 	/// output = buffer for output bytes. length must match input length.
 	/// 
+	/// Returns: Slice pointing to processed data which might be smaller than `output`.
+	/// 
 	/// Throws: MaxBytesExceededException = if limit of 2^70 bytes is exceeded
 	///
-	public void processBytes(in ubyte[] input, ubyte[] output)
+	public ubyte[] processBytes(in ubyte[] input, ubyte[] output)
 	in {
 		assert(output.length >= input.length, "output buffer too short");
 		assert(initialized, "Salsa20Engine not initialized!");
@@ -163,6 +165,7 @@ public struct Salsa20 {
 			throw new MaxBytesExceededException("2^70 byte limit per IV would be exceeded. Change IV!");
 		}
 
+		ubyte[] initialOutputSlice = output;
 		const (ubyte)[] inp = input;
 
 		while(inp.length > 0) {
@@ -186,9 +189,12 @@ public struct Salsa20 {
 			output = output[len..$];
 		}
 
+
+		return initialOutputSlice[0..input.length];
 	}
 
 	/// reset the cipher to its initial state
+	deprecated("The reset() function might lead to insecure use of a stream cipher.")
 	public void reset() nothrow @nogc
 	in {
 		assert(initialized, "not yet initialized");

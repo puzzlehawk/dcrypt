@@ -1,11 +1,18 @@
 ﻿module dcrypt.crypto.engines.chacha;
 
+import std.algorithm: min;
+
 import dcrypt.util.util;
 import dcrypt.util.bitmanip;
 import dcrypt.util.pack;
 
+/// 
+/// Standard: RFC 7539
+/// 
+/// Note: This implementation is incompatible with BouncyCastle.
+/// 
 @safe nothrow @nogc
-public struct ChaCha {
+public struct ChaCha20 {
 
 	public {
 		enum name = "ChaCha"~rounds;
@@ -17,11 +24,81 @@ public struct ChaCha {
 
 		uint[16] state;
 		ubyte[16*4] keyStream;
+		size_t keyStreamIndex = 0;
+
+		bool initialized = false;
 	}
 
 	~this () {
 		wipe(state);
 		wipe(keyStream);
+	}
+
+	/// Initialize the ChaCha20 stream cipher.
+	/// 
+	/// Params:
+	/// forEncryption = Not used, because encryption and decryptioin are the same.
+	/// key = A secret key of 32 bytes length (256 bit).
+	/// iv = A nonce of 12 bytes length (96 bit).
+	public void start(bool forEncryption, in ubyte[] key, in ubyte[] iv)
+	in {
+		assert(key.length == 32, name~" requires a 32 byte key.");
+		assert(iv.length == 12, name~" requires a 12 byte nonce.");
+	} body {
+
+		ubyte[32] _key = key;
+		ubyte[12] _iv = iv;
+
+		initState(state, _key, 1, _iv);
+		keyStreamIndex = 0;
+		initialized = true;
+	}
+
+	public ubyte returnByte(in ubyte input)
+	{
+		if (keyStreamIndex == 0) {
+			genKeyStream();
+		}
+		
+		ubyte output = keyStream[keyStreamIndex]^input;
+		keyStreamIndex = (keyStreamIndex + 1) % keyStream.length;
+		
+		return output;
+	}
+
+	/// Returns: Slice pointing to processed data which might be smaller than `output`.
+	public ubyte[] processBytes(in ubyte[] input, ubyte[] output)
+	in {
+		assert(initialized, name~" not initialized.");
+		assert(output.length >= input.length, "Output buffer too small.");
+	} body {
+	
+		const (ubyte)[] inp = input;
+		ubyte[] initialOutput = output;
+		
+		while(inp.length > 0) {
+			
+			if (keyStreamIndex == 0) {
+				genKeyStream();
+			}
+			
+			size_t len = min(keyStream.length-keyStreamIndex, inp.length);
+			output[0..len] = inp[0..len] ^ keyStream[keyStreamIndex..keyStreamIndex+len];
+			keyStreamIndex = (keyStreamIndex + len) % keyStream.length;
+
+			inp = inp[len..$];
+			output = output[len..$];
+		}
+
+		return initialOutput[0..input.length]; // Return slice to processed data.
+	}
+
+	/// Reset the cipher to its initial state. Same as calling start() with same parameters again.
+	/// Warning: Don't encrypt different data with the same initial state.
+	deprecated("The reset() function might lead to insecure use of a stream cipher.")
+	public void reset() {
+		state[12] = 1; // reset the counter
+		keyStreamIndex = 0;
 	}
 
 	/// Performs a ChaCha quarter round on a, b, c, d
@@ -58,15 +135,19 @@ public struct ChaCha {
 
 	/// Set the state as follows:
 	/// state = constants ~ key ~ counter ~ nonce
-	private static void initState(ref uint[16] state, in ref ubyte[32] key, in uint counter, in ref ubyte[12] nonce) pure {
+	package static void initState(ref uint[16] state, in ref ubyte[32] key, in uint counter, in ref ubyte[12] nonce) pure {
 		state[0..4] = constants;
 		fromLittleEndian(key[], state[4..12]);
 		state[12] = counter;
 		fromLittleEndian(nonce[], state[13..16]);
 	}
 
-	private static void chaCha20Block(in ref uint[16] inState, ref uint[16] outState) pure {
-	
+	/// Performs the ChaCha block function on `inState`, result in `outState`
+	/// Params:
+	/// inState = the state created with `initState()`
+	/// outState = buffer for the new state
+	package static void chaCha20Block(in ref uint[16] inState, ref uint[16] outState) pure {
+		
 		uint[16] workingState = inState;
 
 		static assert(rounds % 2 == 0, "'rounds' must be even.");
@@ -78,31 +159,52 @@ public struct ChaCha {
 		outState[] = workingState[];
 	}
 
+	/// Performs the ChaCha block function on `inState`, result in `outState`
+	/// Params:
+	/// inState = the state created with `initState()`
+	/// outState = buffer for the new state
+	package static void chaCha20Block(in ref uint[16] inState, ref ubyte[16*4] outState) pure 
+	{
+		uint[16] key;
+		chaCha20Block(inState, key);
+		toLittleEndian!uint(key, outState);
+	}
+
 	private void incrementCounter() {
 		state[12]++;
 	}
 
 	/// Generate a block of key stream and write it to `keyStream`.
-	private void genKeyStream() {
-
-		uint[16] key;
-		chaCha20Block(state, key);
-		toLittleEndian!uint(key, keyStream);
-
+	private void genKeyStream() 
+	in {
+		assert(initialized, name~" not initialized.");
+	} body {
+		// generate the key stream
+		chaCha20Block(state, keyStream);
 		incrementCounter();
-
 	}
 
 	// test the ChaCha20 block function.
 	unittest {
+
 		ubyte[32] key = cast(const ubyte[]) x"000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f";
 		uint counter = 1;
 		ubyte[12] nonce = cast(const ubyte[]) x"000000090000004a00000000";
 
 		uint[16] state;
 
-		ChaCha.initState(state, key, counter, nonce);
-		ChaCha.chaCha20Block(state, state);
+		initState(state, key, counter, nonce);
+
+		enum uint[16] expectedInitialState = [
+			0x61707865, 0x3320646e, 0x79622d32, 0x6b206574,
+			0x03020100, 0x07060504, 0x0b0a0908, 0x0f0e0d0c,
+			0x13121110, 0x17161514, 0x1b1a1918, 0x1f1e1d1c,
+			0x00000001, 0x09000000, 0x4a000000, 0x00000000
+		];
+
+		assert(state == expectedInitialState, "initState() failed!");
+
+		chaCha20Block(state, state);
 
 		enum uint[16] expectedState= [
 			0xe4e7f110, 0x15593bd1, 0x1fdd0f50, 0xc47120a3,
@@ -112,6 +214,19 @@ public struct ChaCha {
 		];
 
 		assert(state == expectedState, "chaCha20Block() failed!");
+
+		ubyte[16*4] keyStream;
+
+		toLittleEndian!uint(state, keyStream);
+
+		ubyte[16*4] expectedKeyStream = cast(const ubyte[]) x"
+			10 f1 e7 e4 d1 3b 59 15 50 0f dd 1f a3 20 71 c4
+			c7 d1 f4 c7 33 c0 68 03 04 22 aa 9a c3 d4 6c 4e
+			d2 82 64 46 07 9f aa 09 14 c2 d7 05 d9 8b 02 a2
+			b5 12 9c d1 de 16 4e b9 cb d0 83 e8 a2 50 3c 4e";
+
+		assert(keyStream == expectedKeyStream, "Got unexpected key stream.");
+
 	}
 
 }

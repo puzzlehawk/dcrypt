@@ -15,7 +15,7 @@ template isStreamCipher(T)
 						string name = c.name;
 						c.start(true, cast(const ubyte[]) block, cast(const ubyte[]) block); // init with key and IV
 						ubyte b = c.returnByte(cast(ubyte)0);
-						c.processBytes(cast(const ubyte[]) block, block);
+						ubyte[] outSlice = c.processBytes(cast(const ubyte[]) block, block);
 						c.reset();
 					}));
 }
@@ -57,7 +57,7 @@ public interface StreamCipher {
 	 * Throws: BufferLengthException if the output buffer is too small.
 	 */
 	@safe
-	public void processBytes(in ubyte[] input, ubyte[] output);
+	public ubyte[] processBytes(in ubyte[] input, ubyte[] output);
 	
 	@safe
 	public void reset();
@@ -115,14 +115,19 @@ public class StreamCipherWrapper(T) if(isStreamCipher!T): StreamCipher {
 	 *
 	 * Params: input = the input byte array.
 	 * output = the output buffer the processed bytes go into.
+	 * 
+	 * Returns: Slice pointing to encrypted or decrypted data. Might be smaller than `output` buffer.
+	 * 
 	 * Throws: BufferLengthException if the output buffer is too small.
+	 * 
 	 */
 	@safe
-	public void processBytes(in ubyte[] input, ubyte[] output) {
-		cipher.processBytes(input, output);
+	public ubyte[] processBytes(in ubyte[] input, ubyte[] output) {
+		return cipher.processBytes(input, output);
 	}
 	
 	@safe
+	deprecated("The reset() function might lead to insecure use of a stream cipher.")
 	public void reset() {
 		cipher.reset();
 	}

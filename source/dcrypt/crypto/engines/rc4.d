@@ -2,7 +2,7 @@ module dcrypt.crypto.engines.rc4;
 
 public import dcrypt.crypto.streamcipher;
 
-deprecated("RC4 is considered insecure. Avoid using it"):
+deprecated("RC4 is considered insecure. Avoid using it."):
 
 // test RC4
 unittest
@@ -136,7 +136,7 @@ public struct RC4 {
 		this.forEncryption = forEncryption;
 		
 		workingKey = userKey.dup;
-		reset();
+		KSA(workingKey);
 	}
 	
 	/**
@@ -145,13 +145,24 @@ public struct RC4 {
 	public ubyte returnByte(ubyte b) nothrow @nogc {
 		return b ^ nextByte();
 	}
-	
-	public void processBytes(in ubyte[] input, ubyte[] output) nothrow @nogc {
+
+	/// Params:
+	/// input = input buffer
+	/// output = output buffer
+	/// Returns: Slice pointing to processed data which might be smaller than `output`.
+	public ubyte[] processBytes(in ubyte[] input, ubyte[] output) nothrow @nogc
+	in {
+		assert(output.length >= input.length, "Output buffer too small.");
+	}
+	body {
 		foreach(i; 0 .. input.length){
 			output[i] = nextByte() ^ input[i];
 		}
+
+		return output[0..input.length];
 	}
 
+	deprecated("The reset() function might lead to insecure use of a stream cipher.")
 	public void reset() nothrow @nogc {
 		KSA(workingKey);
 	}
