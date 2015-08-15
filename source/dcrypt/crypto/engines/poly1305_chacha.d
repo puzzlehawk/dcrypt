@@ -1,10 +1,15 @@
 ﻿module dcrypt.crypto.engines.poly1305_chacha;
 
+/// Implementation of the Poly1305-ChaCha20 AEAD cipher.
+/// 
+/// Standard: RFC 7539
+
 import dcrypt.crypto.modes.aead;
 import dcrypt.crypto.engines.chacha;
 import dcrypt.crypto.macs.poly1305;
 import dcrypt.util.pack;
 
+// TODO: adapt to AEAD API
 //static assert(isAEADCipher!Poly1305ChaCha, Poly1305ChaCha.name~" is not a valid AEAD cipher.");
 
 @safe nothrow @nogc
