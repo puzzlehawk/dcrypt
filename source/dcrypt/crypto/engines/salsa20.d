@@ -71,22 +71,14 @@ public struct Salsa20 {
 		 */
 		uint					index = 0;
 		uint[stateSize]		engineState; /// state
-		uint[stateSize]		x  ; /// internal buffer
 		ubyte[stateSize*4]	keyStream; /// expanded state, 64 bytes
-		ubyte[32]			workingKey;
-		size_t				workingKeyLength = 32;
-		ubyte[8]			workingIV;
 		bool				initialized = false;
 		
 		/*
 		 * internal counter
 		 */
 		uint cW0, cW1, cW2;
-
-		invariant {
-			assert(workingKeyLength == 16 || workingKeyLength == 32, "invalid workingKey length: must be 16 or 32 bytes");
-		}
-		
+				
 	}
 
 	@safe @nogc nothrow
@@ -94,10 +86,7 @@ public struct Salsa20 {
 		import dcrypt.util.util: wipe;
 		
 		wipe(engineState);
-		wipe(x);
 		wipe(keyStream);
-		wipe(workingKey);
-		wipe(workingIV);
 	}
 
 	/// Initialize the cipher.
@@ -200,7 +189,9 @@ public struct Salsa20 {
 		assert(initialized, "not yet initialized");
 	}
 	body {
-		setKey(workingKey, workingIV);
+		//setKey(workingKey, workingIV);
+		// reset counter
+		engineState[8..10] = 0;
 	}
 
 	
@@ -212,17 +203,17 @@ public struct Salsa20 {
 	 * input = input data
 	 * x = output buffer where keystream gets written to
 	 */    
-	public final static void salsaCore(uint rounds)(in uint[] input, uint[] x) pure nothrow @nogc
+	public final static void salsaCore(uint rounds)(in uint[] input, uint[] output) pure nothrow @nogc
 	in {
 		assert(input.length == stateSize, "invalid input length");
-		assert(x.length == stateSize, "x: invalid length");
+		assert(output.length == stateSize, "x: invalid length");
 
 	}
 	body {
 
 		static assert(rounds % 2 == 0 || rounds > 0, "rounds must be a even number and > 0");
 
-		x[] = input[];
+		uint[stateSize] x = input;
 		
 		for (int i = rounds; i > 0; i -= 2)
 		{
@@ -261,7 +252,7 @@ public struct Salsa20 {
 		}
 		
 		// element wise addition
-		x[] += input[];
+		output[] = x[] + input[];
 		
 	}
 
@@ -280,29 +271,25 @@ private:
 		assert(ivBytes.length == 8, "invalid iv length");
 	}
 	body {
-		workingKeyLength = keyBytes.length;
-		workingKey[0..workingKeyLength] = keyBytes[];
-		workingIV[]  = ivBytes[];
 
 		index = 0;
 		resetCounter();
-		uint offset = 0;
 		ubyte[sigma.length] constants;
 		
 		// Key
-		fromLittleEndian(workingKey[0..16], engineState[1..5]);
+		fromLittleEndian(keyBytes[0..16], engineState[1..5]);
 		
-		if (workingKeyLength == 32)
+		if (keyBytes.length == 32)
 		{
 			constants[] = sigma[];
-			offset = 16;
+
+			fromLittleEndian(keyBytes[16..32], engineState[11..15]);
 		}
 		else
 		{
 			constants[] = tau[];
+			fromLittleEndian(keyBytes[0..16], engineState[11..15]);
 		}
-
-		fromLittleEndian(workingKey[offset..offset+16], engineState[11..11+4]);
 
 		engineState[0] = fromLittleEndian!uint(constants[0..$]);
 		engineState[5] = fromLittleEndian!uint(constants[4..$]);
@@ -310,9 +297,7 @@ private:
 		engineState[15] = fromLittleEndian!uint(constants[12..$]);
 
 		// IV
-
-		engineState[6] = fromLittleEndian!uint(workingIV[0..$]);
-		engineState[7] = fromLittleEndian!uint(workingIV[4..$]);
+		fromLittleEndian!uint(ivBytes[0..$], engineState[6..8]);
 		engineState[8] = 0;
 		engineState[9] = 0;
 
@@ -325,8 +310,9 @@ private:
 		assert(output.length == stateSize*4, "invalid length of output buffer: 64 bytes required");
 	}
 	body {
-		salsaCore!20(engineState, x);
-		toLittleEndian(x, output);
+		uint[stateSize] x;
+		salsaCore!20(engineState, x[]);
+		toLittleEndian(x[], output);
 	}
 
 	void resetCounter() nothrow @nogc
