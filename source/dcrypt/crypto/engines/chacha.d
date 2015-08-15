@@ -6,10 +6,12 @@ import dcrypt.util.util;
 import dcrypt.util.bitmanip;
 import dcrypt.util.pack;
 
+/// Implementation of the ChaCha stream cipher as first described by D. J. Bernstein (http://cr.yp.to/chacha.html),
+/// following RFC 7539.
 /// 
 /// Standard: RFC 7539
 /// 
-/// Note: This implementation is incompatible with BouncyCastle.
+/// Note: This might not be compatible with BouncyCastle's implementation because that one uses a 64-bit counter. 
 /// 
 @safe nothrow @nogc
 public struct ChaCha20 {
@@ -54,8 +56,12 @@ public struct ChaCha20 {
 		initialized = true;
 	}
 
+	/// Process a single byte.
 	public ubyte returnByte(in ubyte input)
-	{
+	in {
+		assert(initialized, name~" not initialized.");
+	} body {
+
 		if (keyStreamIndex == 0) {
 			genKeyStream();
 		}
@@ -72,7 +78,7 @@ public struct ChaCha20 {
 		assert(initialized, name~" not initialized.");
 		assert(output.length >= input.length, "Output buffer too small.");
 	} body {
-	
+		
 		const (ubyte)[] inp = input;
 		ubyte[] initialOutput = output;
 		
@@ -183,50 +189,51 @@ public struct ChaCha20 {
 		chaCha20Block(state, keyStream);
 		incrementCounter();
 	}
+}
 
-	// test the ChaCha20 block function.
-	unittest {
 
-		ubyte[32] key = cast(const ubyte[]) x"000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f";
-		uint counter = 1;
-		ubyte[12] nonce = cast(const ubyte[]) x"000000090000004a00000000";
 
-		uint[16] state;
+// test the ChaCha20 block function.
+unittest {
+	
+	ubyte[32] key = cast(const ubyte[]) x"000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f";
+	uint counter = 1;
+	ubyte[12] nonce = cast(const ubyte[]) x"000000090000004a00000000";
+	
+	uint[16] state;
+	
+	ChaCha20.initState(state, key, counter, nonce);
+	
+	enum uint[16] expectedInitialState = [
+		0x61707865, 0x3320646e, 0x79622d32, 0x6b206574,
+		0x03020100, 0x07060504, 0x0b0a0908, 0x0f0e0d0c,
+		0x13121110, 0x17161514, 0x1b1a1918, 0x1f1e1d1c,
+		0x00000001, 0x09000000, 0x4a000000, 0x00000000
+	];
 
-		initState(state, key, counter, nonce);
-
-		enum uint[16] expectedInitialState = [
-			0x61707865, 0x3320646e, 0x79622d32, 0x6b206574,
-			0x03020100, 0x07060504, 0x0b0a0908, 0x0f0e0d0c,
-			0x13121110, 0x17161514, 0x1b1a1918, 0x1f1e1d1c,
-			0x00000001, 0x09000000, 0x4a000000, 0x00000000
-		];
-
-		assert(state == expectedInitialState, "initState() failed!");
-
-		chaCha20Block(state, state);
-
-		enum uint[16] expectedState= [
-			0xe4e7f110, 0x15593bd1, 0x1fdd0f50, 0xc47120a3,
-			0xc7f4d1c7, 0x0368c033, 0x9aaa2204, 0x4e6cd4c3,
-			0x466482d2, 0x09aa9f07, 0x05d7c214, 0xa2028bd9,
-			0xd19c12b5, 0xb94e16de, 0xe883d0cb, 0x4e3c50a2
-		];
-
-		assert(state == expectedState, "chaCha20Block() failed!");
-
-		ubyte[16*4] keyStream;
-
-		toLittleEndian!uint(state, keyStream);
-
-		ubyte[16*4] expectedKeyStream = cast(const ubyte[]) x"
+	assert(state == expectedInitialState, "initState() failed!");
+	
+	ChaCha20.chaCha20Block(state, state);
+	
+	enum uint[16] expectedState= [
+		0xe4e7f110, 0x15593bd1, 0x1fdd0f50, 0xc47120a3,
+		0xc7f4d1c7, 0x0368c033, 0x9aaa2204, 0x4e6cd4c3,
+		0x466482d2, 0x09aa9f07, 0x05d7c214, 0xa2028bd9,
+		0xd19c12b5, 0xb94e16de, 0xe883d0cb, 0x4e3c50a2
+	];
+	
+	assert(state == expectedState, "chaCha20Block() failed!");
+	
+	ubyte[16*4] keyStream;
+	
+	toLittleEndian!uint(state, keyStream);
+	
+	ubyte[16*4] expectedKeyStream = cast(const ubyte[]) x"
 			10 f1 e7 e4 d1 3b 59 15 50 0f dd 1f a3 20 71 c4
 			c7 d1 f4 c7 33 c0 68 03 04 22 aa 9a c3 d4 6c 4e
 			d2 82 64 46 07 9f aa 09 14 c2 d7 05 d9 8b 02 a2
 			b5 12 9c d1 de 16 4e b9 cb d0 83 e8 a2 50 3c 4e";
-
-		assert(keyStream == expectedKeyStream, "Got unexpected key stream.");
-
-	}
-
+	
+	assert(keyStream == expectedKeyStream, "Got unexpected key stream.");
+	
 }
