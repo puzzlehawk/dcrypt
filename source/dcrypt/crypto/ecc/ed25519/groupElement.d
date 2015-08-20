@@ -1,6 +1,6 @@
 ﻿module dcrypt.crypto.ecc.ed25519.groupElement;
 
-import dcrypt.crypto.ecc.ed25519.fieldElement;
+public import dcrypt.crypto.ecc.ed25519.fieldElement;
 import dcrypt.crypto.ecc.ed25519.base;
 
 //#ifndef GE_H
@@ -351,7 +351,7 @@ void ge_madd(ref ge_p1p1 r, in ref ge_p3 p, in ref ge_precomp q)
 {
 	fe t0;
 
-
+	
 	/* qhasm: YpX1 = Y1+X1 */
 	/* asm 1: fe_add(>YpX1=fe#1,<Y1=fe#12,<X1=fe#11); */
 	/* asm 2: fe_add(>YpX1=r.X,<Y1=p.Y,<X1=p.X); */
@@ -593,7 +593,9 @@ extern void ge_p3_to_p2(ref ge_p2 r, in ref ge_p3 p)
 }
 
 void ge_p3_tobytes(ubyte[] s, in ref ge_p3 h)
-{
+in {
+	assert(s.length == 32);
+} body {
 	fe recip;
 	fe x;
 	fe y;
@@ -654,7 +656,7 @@ alias select ed25519_ref10_select;
 /// Params:
 /// b = 0, 1
 void select(ref ge_precomp t, in int pos, in byte b)
-	in {
+in {
 	assert(b == 0 || b == 1);
 } body {
 	ge_precomp minust;

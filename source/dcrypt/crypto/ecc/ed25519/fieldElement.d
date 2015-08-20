@@ -165,7 +165,7 @@ out {
 	dest = src;
 }
 
-ulong load_3(in ubyte[] inp)
+ulong load_3(in ubyte[] inp) pure
 in {
 	assert(inp.length == 3);
 } body {
@@ -176,7 +176,7 @@ in {
 	return result;
 }
 
-ulong load_4(in ubyte[] inp)
+ulong load_4(in ubyte[] inp) pure
 in {
 	assert(inp.length == 4);
 }  body {
@@ -1215,6 +1215,10 @@ void fe_sub(ref fe h, in ref fe f, in ref fe g)
 
 
 /**
+ * 
+ * Params:
+ * s = 32 byte buffer
+ * 
  Preconditions:
  |h| bounded by 1.1*2^26,1.1*2^25,1.1*2^26,1.1*2^25,etc.
 
