@@ -2,6 +2,7 @@ module dcrypt.crypto.digests.keccak;
 
 import dcrypt.crypto.digest;
 import dcrypt.util.bitmanip: rol;
+import dcrypt.util.pack;
 import dcrypt.exceptions;
 import dcrypt.errors;
 
@@ -97,7 +98,10 @@ public struct Keccak(uint bitLength)
 		@nogc
 		void put(in ubyte[] input...) nothrow
 		{
-			doUpdate(input, input.length*8);
+			//doUpdate(input, input.length*8);
+			// call absorb directly, since only whole bytes are processed.
+			//absorb(input, input.length*8);
+			absorb(input);
 		}
 
 		/// Calculate the final hash value.
@@ -120,7 +124,7 @@ public struct Keccak(uint bitLength)
 
 		void start() nothrow @nogc
 		{
-			initSponge!(rate, capacity)();
+			initSponge();
 		}
 	}
 
@@ -128,21 +132,23 @@ private:
 
 	enum capacity = bitLength*2;
 	enum rate = 1600 - capacity;
+	enum byteStateLength = 1600 / 8;
 
 	uint bitsInQueue;
 	bool squeezing;
 	uint bitsAvailableForSqueezing;
-	ubyte[1600 / 8] state;
+	ubyte[byteStateLength] state;
 	ubyte[1536 / 8] dataQueue;
 	ubyte[rate / 8] chunk;
 
 	private nothrow @nogc:
 
-	void clearDataQueueSection(uint off, uint len) 	{
+	void clearDataQueueSection(in size_t off, in size_t len) {
 		dataQueue[off..off+len] = 0;
 	}
 
-	void doUpdate(in ubyte[] data, ulong databitlen)
+	/// Handles data with arbitrary bit size.
+	void doUpdate(in ubyte[] data, in ulong databitlen)
 	{
 		if ((databitlen % 8) == 0)
 		{
@@ -159,11 +165,9 @@ private:
 		}
 	}
 
-	void initSponge(uint rate, uint capacity)() 
-		if(rate + capacity == 1600 && rate % 64 == 0)
+	/// Resets Keccak.
+	void initSponge() 
 	{
-		static assert(chunk.length == rate / 8);
-
 		state[] = 0;
 		dataQueue[] = 0;
 		bitsInQueue = 0;
@@ -174,7 +178,6 @@ private:
 	void absorbQueue()
 	{
 		KeccakAbsorb(state, dataQueue[0..rate / 8]);
-
 		bitsInQueue = 0;
 	}
 
@@ -195,8 +198,7 @@ private:
 
 				for (j = 0; j < wholeBlocks; j++)
 				{
-					chunk[0..$] = data[(i / 8) + (j * chunk.length)..$];
-					KeccakAbsorb(state, chunk);
+					KeccakAbsorb(state, data[(i / 8) + (j * rate / 8)..$]);
 				}
 
 				i += wholeBlocks * rate;
@@ -226,6 +228,51 @@ private:
 					dataQueue[bitsInQueue / 8] = cast(ubyte)(data[(i / 8)] & mask);
 					bitsInQueue += partialByte;
 					i += partialByte;
+				}
+			}
+		}
+	}
+
+	/// Absorb even bytes.
+	void absorb(in ubyte[] data) 
+	in {
+		assert ((bitsInQueue % 8) == 0, "attempt to absorb with odd length queue.");
+		assert(!squeezing, "attempt to absorb while squeezing.");
+	}
+	body {
+		size_t j, wholeBlocks;
+		immutable size_t databitlen = data.length * 8;
+
+		const (ubyte)[] iBuf = data;
+
+		while (iBuf.length > 0)
+		{
+			if ((bitsInQueue == 0) && (data.length >= rate/8) && (iBuf.length <= (data.length - rate/8)))
+			{
+				while(iBuf.length > rate/8)
+				{
+					KeccakAbsorb(state, iBuf[0..rate / 8]);
+					iBuf = iBuf[rate / 8..$];
+				}
+			}
+			else
+			{
+				size_t partialBlock = iBuf.length * 8;
+				if (partialBlock + bitsInQueue > rate)
+				{
+					partialBlock = rate - bitsInQueue;
+				}
+
+				
+				dataQueue[bitsInQueue / 8 .. bitsInQueue / 8 + partialBlock / 8]
+				= iBuf[0 .. partialBlock / 8];
+				iBuf = iBuf[partialBlock / 8..$];
+				
+				bitsInQueue += partialBlock;
+
+				if (bitsInQueue == rate)
+				{
+					absorbQueue();
 				}
 			}
 		}
@@ -290,51 +337,24 @@ private:
 		}
 	}
 
-	void fromBytesToWords(ulong[] stateAsWords, in ubyte[] state)
+	static void keccakPermutation(ref ubyte[byteStateLength] state) pure
 	{
-		for (uint i = 0; i < (1600 / 64); i++)
-		{
-			stateAsWords[i] = 0;
-			uint index = i * (64 / 8);
-			for (uint j = 0; j < (64 / 8); j++)
-			{
-				stateAsWords[i] |= (cast(ulong)state[index + j] & 0xff) << ((8 * j));
-			}
-		}
-	}
-	
-	void fromWordsToBytes(ubyte[] state, in ulong[] stateAsWords)
-	{
-		for (uint i = 0; i < (1600 / 64); i++)
-		{
-			uint index = i * (64 / 8);
-			for (uint j = 0; j < (64 / 8); j++)
-			{
-				state[index + j] = cast(ubyte)((stateAsWords[i] >>> ((8 * j))) & 0xFF);
-			}
-		}
-	}
+		ulong[25] longState;
 
-	
-	void keccakPermutation(ubyte[] state) 
-	{
-		ulong[this.state.length / 8] longState;
-
-		fromBytesToWords(longState, state);
+		fromLittleEndian(state[], longState[]);
 		keccakPermutationOnWords(longState);
-		fromWordsToBytes(state, longState);
+		toLittleEndian(longState[], state[]);
 	}
 
-	void keccakPermutationAfterXor(ubyte[] state, ubyte[] data)
-	{
-		uint i;
-
+	static void keccakPermutationAfterXor(ref ubyte[byteStateLength] state, in ubyte[] data) pure
+	in {
+		assert(data.length <= state.length);
+	} body {
 		state[0..data.length] ^= data[];
-
 		keccakPermutation(state);
 	}
 
-	void keccakPermutationOnWords(ref ulong[25] state)
+	static void keccakPermutationOnWords(ref ulong[25] state) pure
 	{
 		foreach (uint i; 0..24)
 		{
@@ -376,7 +396,7 @@ private:
 		}
 	}
 
-
+	
 	static void pi(ref ulong[25] A) pure
 	{
 		ulong[25] tempA = A;
@@ -405,18 +425,18 @@ private:
 		}
 	}
 
-
+	
 	static void iota(ref ulong[25] A, in uint indexRound) pure
 	{
 		A[0] ^= KeccakRoundConstants[indexRound];
 	}
 
-	void KeccakAbsorb(ubyte[] byteState, ubyte[] data) 
+	static void KeccakAbsorb(ref ubyte[byteStateLength] byteState, in ubyte[] data) pure
 	{
 		keccakPermutationAfterXor(byteState, data);
 	}
 
-	void KeccakExtract(in ubyte[] byteState, ubyte[] data, in uint laneCount) 
+	static void KeccakExtract(in ubyte[] byteState, ubyte[] data, in uint laneCount) pure
 	{
 		data[0..laneCount*8] = byteState[0..laneCount*8];
 	}
@@ -428,7 +448,7 @@ private @safe {
 	enum ulong[24] KeccakRoundConstants = keccakInitializeRoundConstants();
 	enum uint[25] KeccakRhoOffsets = keccakInitializeRhoOffsets();
 	
-	ulong[24] keccakInitializeRoundConstants() pure nothrow @nogc
+	static ulong[24] keccakInitializeRoundConstants() pure nothrow @nogc
 	{
 		ulong[24] keccakRoundConstants;
 		ubyte[1] LFSRstate;
@@ -452,7 +472,7 @@ private @safe {
 		return keccakRoundConstants;
 	}
 	
-	bool LFSR86540(ubyte[] LFSR) pure nothrow @nogc
+	static bool LFSR86540(ubyte[] LFSR) pure nothrow @nogc
 	{
 		bool result = (((LFSR[0]) & 0x01) != 0);
 		if (((LFSR[0]) & 0x80) != 0)
@@ -467,7 +487,7 @@ private @safe {
 		return result;
 	}
 	
-	uint[25] keccakInitializeRhoOffsets() pure nothrow @nogc
+	static uint[25] keccakInitializeRhoOffsets() pure nothrow @nogc
 	{
 		uint[25] keccakRhoOffsets;
 		uint x, y, t, newX, newY;
