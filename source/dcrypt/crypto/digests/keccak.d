@@ -4,10 +4,9 @@ import dcrypt.crypto.digest;
 import dcrypt.util.bitmanip: rol;
 import dcrypt.util.pack;
 import dcrypt.exceptions;
-import dcrypt.errors;
 
-import std.exception: enforce;
 import std.conv:text;
+import std.algorithm: min;
 
 alias WrapperDigest!Keccak224 Keccak224Digest;
 alias WrapperDigest!Keccak256 Keccak256Digest;
@@ -240,35 +239,29 @@ private:
 		assert(!squeezing, "attempt to absorb while squeezing.");
 	}
 	body {
-		size_t j, wholeBlocks;
 		immutable size_t databitlen = data.length * 8;
 
 		const (ubyte)[] iBuf = data;
 
 		while (iBuf.length > 0)
 		{
-			if ((bitsInQueue == 0) && (data.length >= rate/8) && (iBuf.length <= (data.length - rate/8)))
+			assert(bitsInQueue % 8 == 0);
+
+			if ((bitsInQueue == 0) && (iBuf.length >= rate/8))
 			{
 				while(iBuf.length > rate/8)
 				{
 					KeccakAbsorb(state, iBuf[0..rate / 8]);
 					iBuf = iBuf[rate / 8..$];
 				}
-			}
-			else
-			{
-				size_t partialBlock = iBuf.length * 8;
-				if (partialBlock + bitsInQueue > rate)
-				{
-					partialBlock = rate - bitsInQueue;
-				}
+			} else {
+				immutable size_t partialBlock = min(iBuf.length, rate/8 - bitsInQueue/8);
 
+				dataQueue[bitsInQueue / 8 .. bitsInQueue / 8 + partialBlock]
+				= iBuf[0 .. partialBlock];
+				iBuf = iBuf[partialBlock..$];
 				
-				dataQueue[bitsInQueue / 8 .. bitsInQueue / 8 + partialBlock / 8]
-				= iBuf[0 .. partialBlock / 8];
-				iBuf = iBuf[partialBlock / 8..$];
-				
-				bitsInQueue += partialBlock;
+				bitsInQueue += partialBlock*8;
 
 				if (bitsInQueue == rate)
 				{
