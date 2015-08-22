@@ -1,10 +1,12 @@
 module dcrypt.crypto.digests.keccak;
 
 import dcrypt.crypto.digest;
-import std.conv:text;
+import dcrypt.util.bitmanip: rol;
 import dcrypt.exceptions;
 import dcrypt.errors;
+
 import std.exception: enforce;
+import std.conv:text;
 
 alias WrapperDigest!Keccak224 Keccak224Digest;
 alias WrapperDigest!Keccak256 Keccak256Digest;
@@ -245,17 +247,9 @@ private:
 		dataQueue[(rate - 1) / 8] |= 1 << ((rate - 1) % 8);
 		absorbQueue();
 
-		if (rate == 1024)
-		{
-			KeccakExtract1024bits(state, dataQueue);
-			bitsAvailableForSqueezing = 1024;
-		}
-		else
-
-		{
-			KeccakExtract(state, dataQueue, rate / 64);
-			bitsAvailableForSqueezing = rate;
-		}
+		KeccakExtract(state, dataQueue, rate / 64);
+		bitsAvailableForSqueezing = rate;
+		
 		squeezing = true;
 	}
 
@@ -279,17 +273,9 @@ private:
 			{
 				keccakPermutation(state);
 
-				if (rate == 1024)
-				{
-					KeccakExtract1024bits(state, dataQueue);
-					bitsAvailableForSqueezing = 1024;
-				}
-				else
-
-				{
-					KeccakExtract(state, dataQueue, rate / 64);
-					bitsAvailableForSqueezing = rate;
-				}
+				KeccakExtract(state, dataQueue, rate / 64);
+				bitsAvailableForSqueezing = rate;
+				
 			}
 			partialBlock = bitsAvailableForSqueezing;
 			if (cast(ulong)partialBlock > outputLength - i)
@@ -348,7 +334,7 @@ private:
 		keccakPermutation(state);
 	}
 
-	void keccakPermutationOnWords(ulong[] state)
+	void keccakPermutationOnWords(ref ulong[25] state)
 	{
 		foreach (uint i; 0..24)
 		{
@@ -360,12 +346,11 @@ private:
 		}
 	}
 
-	void theta(ulong[] A)
+	static void theta(ref ulong[25] A) pure
 	{
 		ulong[5] C;
 		foreach (uint x; 0..5)
 		{
-			C[x] = 0;
 			foreach (uint y; 0..5)
 			{
 				C[x] ^= A[x + 5 * y];
@@ -373,7 +358,7 @@ private:
 		}
 		foreach (uint x; 0..5)
 		{
-			ulong dX = ((((C[(x + 1) % 5]) << 1) ^ ((C[(x + 1) % 5]) >>> (64 - 1)))) ^ C[(x + 4) % 5];
+			ulong dX = rol(C[(x + 1) % 5], 1) ^ C[(x + 4) % 5];
 			foreach (uint y; 0..5)
 			{
 				A[x + 5 * y] ^= dX;
@@ -381,23 +366,20 @@ private:
 		}
 	}
 
-	void rho(ulong[] A) 
+	/// Rotate each element of A by the index in the KeccakRhoOffsets table.
+	static void rho(ref ulong[25] A) pure
 	{
-		foreach (uint x; 0..5)
+		foreach (uint index; 0..25)
 		{
-			foreach (uint y; 0..5)
-			{
-				uint index = x + 5 * y;
-				A[index] = ((KeccakRhoOffsets[index] != 0) ? (((A[index]) << KeccakRhoOffsets[index]) ^ ((A[index]) >>> (64 - KeccakRhoOffsets[index]))) : A[index]);
-			}
+			immutable uint rhoOffset = KeccakRhoOffsets[index];
+			A[index] = rol(A[index], rhoOffset);
 		}
 	}
 
-	
-	void pi(ulong[] A) 
+
+	static void pi(ref ulong[25] A) pure
 	{
-		ulong[25] tempA;
-		tempA[0..$] = A[0..$];
+		ulong[25] tempA = A;
 
 		foreach (uint x; 0..5)
 		{
@@ -409,7 +391,7 @@ private:
 	}
 
 	
-	void chi(ulong[] A) 
+	static void chi(ref ulong[25] A) pure
 	{
 		ulong[5] chiC;
 		foreach (uint y; 0..5)
@@ -418,14 +400,13 @@ private:
 			{
 				chiC[x] = A[x + 5 * y] ^ ((~A[(((x + 1) % 5) + 5 * y)]) & A[(((x + 2) % 5) + 5 * y)]);
 			}
-			foreach (uint x; 0..5)
-			{
-				A[x + 5 * y] = chiC[x];
-			}
+
+			A[5*y..5*y+5] = chiC[];
 		}
 	}
 
-	void iota(ulong[] A, uint indexRound)
+
+	static void iota(ref ulong[25] A, in uint indexRound) pure
 	{
 		A[0] ^= KeccakRoundConstants[indexRound];
 	}
@@ -435,12 +416,7 @@ private:
 		keccakPermutationAfterXor(byteState, data);
 	}
 
-	void KeccakExtract1024bits(in ubyte[] byteState, ubyte[] data) 
-	{
-		data[0..128] = byteState[0..128];
-	}
-
-	void KeccakExtract(in ubyte[] byteState, ubyte[] data, uint laneCount) 
+	void KeccakExtract(in ubyte[] byteState, ubyte[] data, in uint laneCount) 
 	{
 		data[0..laneCount*8] = byteState[0..laneCount*8];
 	}
