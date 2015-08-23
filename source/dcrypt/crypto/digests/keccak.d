@@ -89,19 +89,20 @@ unittest {
 
 unittest {
 	SHA3!224 sha3;
-	
+
 	// empty message
 	assert(sha3.finish() == x"
 		6B 4E 03 42 36 67 DB B7 3B 6E 15 45 4F 0E B1 AB
 		D4 59 7F 9A 1B 07 8E 3F 5B 5A 6B C7",
 		sha3.name~" failed.");
 
-//	ubyte[200] msg = 0b11000101;
-//	sha3.put(msg);
-//	assert(sha3.finish() == x"
-//		93 76 81 6A BA 50 3F 72 F9 6C E7 EB 65 AC 09 5D 
-//		EE E3 BE 4B F9 BB C2 A1 CB 7E 11 E0",
-//		sha3.name~" failed.");
+	ubyte[200] msg = 0b10100011;
+	sha3.put(msg);
+
+	assert(sha3.finish() == x"
+		93 76 81 6A BA 50 3F 72 F9 6C E7 EB 65 AC 09 5D 
+		EE E3 BE 4B F9 BB C2 A1 CB 7E 11 E0",
+		sha3.name~" failed.");
 }
 
 unittest {
@@ -155,15 +156,15 @@ public struct SHA3(uint bitLength)
 		keccak.put(b);
 	}
 
-
+	
 	/// Calculate the final hash value.
 	/// Params:
 	/// output = buffer for hash value.
 	/// Returns: length of hash value in bytes.
 	uint doFinal(ubyte[] output) nothrow @nogc {
 
-		ubyte[1] tail = 0b00000010;
-		keccak.absorb(tail, 2);
+		enum ubyte tail = 0b00000010;
+		keccak.absorbBits(tail, 2);
 
 		return keccak.doFinal(output);
 	}
@@ -236,8 +237,7 @@ public struct Keccak(uint bitLength)
 		bool squeezing;
 		uint bitsAvailableForSqueezing;
 		ubyte[byteStateLength] state;
-		ubyte[1536 / 8] dataQueue;
-		ubyte[rate / 8] chunk;
+		ubyte[rate / 8] dataQueue;
 	}
 
 	private nothrow @nogc:
@@ -247,20 +247,27 @@ public struct Keccak(uint bitLength)
 	}
 
 	/// Handles data with arbitrary bit size.
-	void doUpdate(in ubyte[] data, in ulong databitlen)
-	{
+	void doUpdate(in ubyte[] data, in size_t databitlen)
+	in {
+		assert(data.length == (databitlen+7) / 8);
+	} body	{
 		if ((databitlen % 8) == 0)
 		{
+			assert(databitlen == data.length * 8);
 			absorb(data);
 		}
 		else
 		{
-			absorb(data, databitlen - (databitlen % 8));
+			if(databitlen > 8) {
+				// Absorb all bytes except the last.
+				absorb(data[0..$-2]);
+			}
 
-			ubyte[1] lastByte;
+			immutable size_t bitLen = databitlen % 8;
 
-			lastByte[0] = cast(ubyte)(data[(databitlen / 8)] >>> (8 - (databitlen % 8)));
-			absorb(lastByte, databitlen % 8);
+			ubyte lastByte = cast(ubyte)(data[(databitlen / 8)] >>> (8 - bitLen));
+			//absorb(lastByte, databitlen % 8);
+			absorbBits(lastByte, bitLen);
 		}
 	}
 
@@ -280,56 +287,20 @@ public struct Keccak(uint bitLength)
 		bitsInQueue = 0;
 	}
 
-	void absorb(in ubyte[] data, ulong databitlen) 
+	void absorbBits(in ubyte partialByte, in ulong bitLen) 
 	in {
+		assert(bitLen < 8, "bitLen must be < 8.");
 		assert ((bitsInQueue % 8) == 0, "attempt to absorb with odd length queue.");
 		assert(!squeezing, "attempt to absorb while squeezing.");
 	}
 	body {
-		ulong i, j, wholeBlocks;
-
-		i = 0;
-		while (i < databitlen)
+		if (bitsInQueue == rate)
 		{
-			if ((bitsInQueue == 0) && (databitlen >= rate) && (i <= (databitlen - rate)))
-			{
-				wholeBlocks = (databitlen - i) / rate;
-
-				for (j = 0; j < wholeBlocks; j++)
-				{
-					KeccakAbsorb(state, data[(i / 8) + (j * rate / 8)..$]);
-				}
-
-				i += wholeBlocks * rate;
-			}
-			else
-			{
-				uint partialBlock = cast(uint)(databitlen - i);
-				if (partialBlock + bitsInQueue > rate)
-				{
-					partialBlock = rate - bitsInQueue;
-				}
-				uint partialByte = partialBlock % 8;
-				partialBlock -= partialByte;
-
-				dataQueue[bitsInQueue / 8 .. bitsInQueue / 8 + partialBlock / 8]
-				= data[i / 8 .. i / 8 + partialBlock / 8];
-
-				bitsInQueue += partialBlock;
-				i += partialBlock;
-				if (bitsInQueue == rate)
-				{
-					absorbQueue();
-				}
-				if (partialByte > 0)
-				{
-					uint mask = (1 << partialByte) - 1;
-					dataQueue[bitsInQueue / 8] = cast(ubyte)(data[(i / 8)] & mask);
-					bitsInQueue += partialByte;
-					i += partialByte;
-				}
-			}
+			absorbQueue();
 		}
+		uint mask = (1 << bitLen) - 1;
+		dataQueue[bitsInQueue / 8] = cast(ubyte)(partialByte & mask);
+		bitsInQueue += bitLen;
 	}
 
 	/// Absorb even bytes.
