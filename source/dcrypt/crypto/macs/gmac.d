@@ -12,25 +12,23 @@ import dcrypt.crypto.modes.gcm.gcm;
  * Standards: NIST Special Publication 800-38D
  */
 @safe
-public class GMac(T) if(isBlockCipher!T): Mac
+public struct GMac(T) if(isBlockCipher!T)
 {
 
 	private {
 		GCM!T gcm;
-		uint macSizeBits;
 		bool initialized = false;
 	}
 
 	public {
-	
-		void start(in ubyte[] key, in ubyte[] nonce, in uint macSize = 128) {
-			gcm.start(true, key, nonce, macSize);
-			macSizeBits = macSize;
+		
+		void start(in ubyte[] key, in ubyte[] nonce) {
+			gcm.start(true, key, nonce);
 			initialized = true;
 		}
 	}
 
-	public override {
+	public {
 		
 		@property
 		string name() pure nothrow {
@@ -46,7 +44,7 @@ public class GMac(T) if(isBlockCipher!T): Mac
 		 */
 		@property
 		uint macSize() pure nothrow {
-			return macSizeBits / 8;
+			return 16;
 		}
 
 		/**
@@ -67,10 +65,10 @@ public class GMac(T) if(isBlockCipher!T): Mac
 		 * close the MAC, producing the final MAC value. The doFinal
 		 * call leaves the MAC reset(). 
 		 */
-		size_t doFinal(ubyte[] output) nothrow
+		void finish(ubyte[] output) nothrow
 		in {
 			assert(initialized, "GMac not initialized. call init() first.");
-			assert(output.length >= getMacSize(), "output buffer too short for MAC");
+			assert(output.length >= gcm.macSize, "output buffer too short for MAC");
 		}
 		body {
 
@@ -78,15 +76,8 @@ public class GMac(T) if(isBlockCipher!T): Mac
 				reset();
 			}
 
-			try {
-				// get the MAC
-				return gcm.doFinal(output);
-			} catch(InvalidCipherTextException ex) {
-				// should not happen in encryption mode
-				assert(false, "unexpected InvalidCipherTextException");
-			} catch (Exception e) {
-				assert(false, "unexpected Exception");
-			}
+			gcm.finish(output[0..0]);
+			output[0..macSize] = gcm.getMac();
 		}
 
 		/**
@@ -130,7 +121,7 @@ unittest {
 	
 	ubyte[] outbuf = new ubyte[gmac.macSize];
 
-	gmac.doFinal(outbuf);
+	gmac.finish(outbuf);
 	
 	octets expectedMac = cast(octets) (x"F09478A9B09007D06F46E9B6A1DA25DD");
 

@@ -20,14 +20,14 @@ public class AEADCipherBenchmark: Benchmark {
 
 	override string[] benchmark(ulong length) {
 
-		cipher.start(true, new ubyte[16], new ubyte[16], 128);
+		cipher.start(true, new ubyte[16], new ubyte[16]);
 
 
 		double aadSpeed = getSpeed(length)*1e-6;
 
 		double encrSpeed = getSpeed(length)*1e-6;
 
-		cipher.start(true, new ubyte[16], new ubyte[16], 128);
+		cipher.start(true, new ubyte[16], new ubyte[16]);
 		
 		//double decrSpeed = getSpeed(length)*1e-6;
 
@@ -36,7 +36,7 @@ public class AEADCipherBenchmark: Benchmark {
 	}
 
 	private double getAADSpeed(ulong length) {
-		ubyte[] blockA = new ubyte[64];
+		ubyte[64] blockA;
 		StopWatch sw;
 		sw.reset();
 		sw.start();
@@ -50,8 +50,8 @@ public class AEADCipherBenchmark: Benchmark {
 	}
 	
 	private double getSpeed(ulong length) {
-		ubyte[] blockA = new ubyte[64];
-		ubyte[] blockB = new ubyte[cipher.getOutputSize(64)];
+		ubyte[64] blockA;
+		ubyte[128] blockB;
 		StopWatch sw;
 		sw.reset();
 		sw.start();

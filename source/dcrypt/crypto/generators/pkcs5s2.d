@@ -1,13 +1,12 @@
 module dcrypt.crypto.generators.pkcs5s2;
 
-public import dcrypt.crypto.generators.pbe;
 import dcrypt.crypto.macs.hmac;
 import dcrypt.crypto.digest;
 import dcrypt.crypto.params.keyparameter;
 import dcrypt.exceptions;
 import std.datetime;
 import std.algorithm: min;
-
+import std.exception: enforce;
 /**
  * Generator for PBE derived keys and ivs as defined by PKCS 5 V2.0 Scheme 2.
  * This generator uses a SHA-1 HMac as the calculation function.

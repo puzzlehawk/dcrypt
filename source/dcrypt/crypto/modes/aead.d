@@ -19,13 +19,16 @@ template isAEADCipher(T)
 						bc.start(true, block, block); //  start with key, iv
 
 						string name = T.name;
+						uint macSize = T.macSize;
+
 						//BlockCipher c = bc.getUnderlyingCipher();
 						bc.processAADBytes(cast (const ubyte[])block);
-						bc.processBytes(cast(const ubyte[]) [0], cast(ubyte[]) [0]);
+						size_t outLen = bc.processBytes(cast(const ubyte[]) [0], cast(ubyte[]) [0]);
 						// TODO: ubyte[] slice = bc.processBytes(cast(const ubyte[]) [0], cast(ubyte[]) [0]);
-						bc.doFinal(cast(const ubyte[]) [0]);
+						//bc.doFinal(cast(const ubyte[]) [0]);
 						// TODO: ubyte[] mac = finish(block);
-						bc.getMac(cast(const ubyte[]) [0]);
+						size_t len = bc.finish(cast(const ubyte[]) [0]);
+						ubyte[T.macSize] macTag = bc.getMac();
 						size_t s1 = bc.getUpdateOutputSize(cast(size_t) 0);
 						size_t s2 = bc.getOutputSize(cast(size_t) 0);
 						bc.reset();
@@ -44,7 +47,7 @@ public interface AEADCipher
 		 * params = the necessary parameters for the underlying cipher to be initialised.
 		 * macSize = Size of mac tag in bits.
 		 */
-		void start(bool forEncryption, in ubyte[] key, in ubyte[] iv, in uint macSize = 0) nothrow @nogc;
+		void start(bool forEncryption, in ubyte[] key, in ubyte[] iv) nothrow @nogc;
 
 		/**
 		 * Return the name of the algorithm.
@@ -289,28 +292,41 @@ version(unittest) {
 			ubyte[] aad = hexDecode(hexAAD[i]);
 			ubyte[] ciphertext = hexDecode(hexCipherTexts[i]);
 			
-			ubyte[] output = new ubyte[0];
+			ubyte[] output = new ubyte[plain.length];
 						
 			// set to encryption mode
-			cipher.start(true, hexDecode(test_key), hexDecode(hexIVs[i]), macSize[i]);
-			
+			cipher.start(true, hexDecode(test_key), hexDecode(hexIVs[i]));
+
+			output.length = cipher.getOutputSize(plain.length);
+
+			immutable size_t taglen = macSize[i]/8;
+			ubyte[] expectedMac = ciphertext[$-taglen..$];
+			ciphertext = ciphertext[0..$-taglen];
+
+//			assert(cipher.getUpdateOutputSize(plain.length) == plain.length);
+			assert(output.length >= cipher.getUpdateOutputSize(plain.length));
+
 			// test reset()
 			cipher.processAADBytes([0,1,2,3]);
-			output.length = cipher.getOutputSize(plain.length);
 			cipher.processBytes(plain, output);
 			cipher.reset();
-			
-			output.length = cipher.getOutputSize(plain.length);
-			
+
+
+			assert(output.length >= cipher.getUpdateOutputSize(plain.length));
+
 			// test encryption
 			cipher.processAADBytes(aad);
 			size_t offset = cipher.processBytes(plain, output);
-			
+
+
 			size_t len = offset+cipher.doFinal(output[offset..$]);
-			//output = output[0..len];
 			
 			assert(output == ciphertext,
 				text(cipher.name~" encrypt: (",hexEncode(output),") != ("~hexCipherTexts[i]~")"));
+
+			ubyte[32] mac;
+			cipher.getMac(mac);
+			assert(mac[0..taglen] == expectedMac);
 			
 		}
 	}
