@@ -11,17 +11,17 @@ import dcrypt.util.pack;
 
 /// generate a 256 bit key
 unittest {
-	ubyte[] key = scrypt(cast(const(ubyte)[])"password",cast(const(ubyte)[])"salt", 123, 1, 1, 32);
-	assert(key.length == 32);
+	ubyte[32] key;
+	scrypt(cast(const(ubyte)[])"password", cast(const(ubyte)[])"salt", 123, 1, 1, key);
 }
 
 /// generate keys and compare them with test vectors from
 /// https://www.tarsnap.com/scrypt/scrypt.pdf
 unittest {
 
-	ubyte[] key;
+	ubyte[] key = new ubyte[64];
 
-	key = scrypt(cast(const(ubyte)[])"",cast(const(ubyte)[])"", 16, 1, 1, 64);
+	scrypt(cast(const(ubyte)[])"",cast(const(ubyte)[])"", 16, 1, 1, key);
 
 	assert(key == x"
 77 d6 57 62 38 65 7b 20 3b 19 ca 42 c1 8a 04 97
@@ -29,7 +29,7 @@ f1 6b 48 44 e3 07 4a e8 df df fa 3f ed e2 14 42
 fc d0 06 9d ed 09 48 f8 32 6a 75 3a 0f c8 1f 17
 e8 d3 e0 fb 2e 0d 36 28 cf 35 e2 0c 38 d1 89 06");
 
-	key = scrypt(cast(const(ubyte)[])"password",cast(const(ubyte)[])"NaCl", 1024, 8, 16, 64);
+	scrypt(cast(const(ubyte)[])"password",cast(const(ubyte)[])"NaCl", 1024, 8, 16, key);
 
 	assert(key == x"
 fd ba be 1c 9d 34 72 00 78 56 e7 19 0d 01 e9 fe
@@ -37,8 +37,8 @@ fd ba be 1c 9d 34 72 00 78 56 e7 19 0d 01 e9 fe
 2e af 30 d9 2e 22 a3 88 6f f1 09 27 9d 98 30 da
 c7 27 af b9 4a 83 ee 6d 83 60 cb df a2 cc 06 40");
 
-	key = scrypt(cast(const(ubyte)[])"pleaseletmein",cast(const(ubyte)[])"SodiumChloride",
-		16384, 8, 1, 64);
+	scrypt(cast(const(ubyte)[])"pleaseletmein",cast(const(ubyte)[])"SodiumChloride",
+		16384, 8, 1, key);
 	
 	assert(key == x"
 70 23 bd cb 3a fd 73 48 46 1c 06 cd 81 fd 38 eb
@@ -71,21 +71,22 @@ e6 1e 85 dc 0d 65 1e 40 df cf 01 7b 45 57 58 87");
 	/// N = CPU/memory cost parameter
 	/// r = block size parameter
 	/// p = parallelization parameter. p <= (2^32-1)*hashLen/MFLen
-	/// dkLen = length in octets of derived key. dkLen < 2^32
+	/// output = Output buffer for derived key. Buffer length defines the key length. Lenght < 2^32.
 	/// 
 	@safe
-	public ubyte[] scrypt(in ubyte[] pass, in ubyte[] salt, uint N, uint r, uint p, uint dkLen)
+	public void scrypt(in ubyte[] pass, in ubyte[] salt, in uint N, in uint r, in uint p, ubyte[] output)
 	in {
 		assert(p <= ((1L<<32)-1)*32/(r * 128), "parallelization parameter p too large");
-		assert(dkLen < 1L<<32, "dkLen must be smaller than 2^32");
+		assert(output.length < 1L<<32, "dkLen must be smaller than 2^32");
 	}
 	body {
 
-		return MFCrypt(pass, salt, N, r, p, dkLen);
+		MFCrypt(pass, salt, N, r, p, output);
 		
 	}
 
 private:
+
 	// TODO Validate arguments
 	///
 	/// implementation of https://www.tarsnap.com/scrypt/scrypt.pdf
@@ -98,16 +99,18 @@ private:
 	/// p = parallelization parameter. p <= (2^32-1)*hashLen/MFLen
 	/// dkLen = length in octets of derived key. dkLen < 2^32
 	/// 
+	/// Returns: Derived key.
+	/// 
 	@safe
-	ubyte[] MFCrypt(in ubyte[] pass, in ubyte[] salt, uint N, uint r, uint p, uint dkLen)
+	void MFCrypt(in ubyte[] pass, in ubyte[] salt, uint N, uint r, uint p, ubyte[] output)
 	in {
 		assert(p <= ((1L<<32)-1)*32/(r * 128), "parallelization parameter p too large");
-		assert(dkLen < 1L<<32, "dkLen must be smaller than 2^32");
+		assert(output.length < 1L<<32, "dkLen must be smaller than 2^32");
 	}
 	body {
 		uint MFLenBytes = r * 128;
-		
-		ubyte[] bytes = SingleIterationPBKDF2(pass, salt, p * MFLenBytes);
+		ubyte[] bytes = new ubyte[p * MFLenBytes];
+		SingleIterationPBKDF2(pass, salt, bytes);
 		
 		size_t BLen = bytes.length >>> 2;
 		uint[] B = new uint[BLen];
@@ -132,11 +135,10 @@ private:
 				SMix(chunk, N, r);
 			}
 		}
-		
+
 		toLittleEndian(B, bytes);
 		
-		return SingleIterationPBKDF2(pass, bytes, dkLen);
-		
+		SingleIterationPBKDF2(pass, bytes, output);
 	}
 
 	@trusted
@@ -147,12 +149,11 @@ private:
 		}
 	}
 
-	ubyte[] SingleIterationPBKDF2(in ubyte[] P, in ubyte[] S, uint dkLen)
+	void SingleIterationPBKDF2(in ubyte[] P, in ubyte[] S, ubyte[] output)
 	{
-		PKCS5S2ParametersGenerator!SHA256 pGen = new PKCS5S2ParametersGenerator!SHA256;
-		pGen.init(P, S, 1);
-		KeyParameter key = pGen.generateDerivedMacParameters(dkLen * 8);
-		return key.getKey();
+		PBKDF2!SHA256 pGen;
+		pGen.start(P, S, 1);
+		pGen.nextBytes(output);
 	}
 	
 	void SMix(uint[] B, in uint N, in uint r) pure nothrow

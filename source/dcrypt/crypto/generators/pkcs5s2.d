@@ -6,6 +6,7 @@ import dcrypt.crypto.digest;
 import dcrypt.crypto.params.keyparameter;
 import dcrypt.exceptions;
 import std.datetime;
+import std.algorithm: min;
 
 /**
  * Generator for PBE derived keys and ivs as defined by PKCS 5 V2.0 Scheme 2.
@@ -16,8 +17,7 @@ import std.datetime;
  * RSA's PKCS5 Page</a>
  */
 @safe
-public class PKCS5S2ParametersGenerator(D) : PBEParametersGenerator
-	if(isDigest!D)
+public struct PBKDF2(D) if(isDigest!D)
 {
 
 	//	unittest {
@@ -50,91 +50,96 @@ public class PKCS5S2ParametersGenerator(D) : PBEParametersGenerator
 	//		assert(gen.getIterationCount() > 0, "failed to do any iterations in given time");
 	//	}
 
-	
+	enum name = "PBKDF2-"~(HMac!D).name;
 
-	
-	public override {
-		/**
-		 * Generate a key parameter derived from the password, salt, and iteration
-		 * count we are currently initialised with.
-		 *
-		 * Params:
-		 * keySize = the size of the key we want (in bits)
-		 * Returns:
-		 * 	a KeyParameter object.
-		 */
-		KeyParameter generateDerivedParameters(uint keySize)
-		{
-			keySize = keySize / 8;
+	private {
+		const (ubyte)[] salt;
+		ulong iterationCount;
+		ulong iterTime;
+
+		HMac!D hMac;
+		ubyte[4]  counter;
+		ubyte[hMac.macSize] state;
+		uint stateOff = state.length;
+
+		bool initialized = false;
+	}
+
+	public void start(in ubyte[] password, in ubyte[] salt, uint iterationCount, uint iterTime = 0) 
+	{
+		enforce(iterTime > 0 || iterationCount > 0, "either iterationCount or iterTime have to be > 0!");
+
+		this.salt = salt;
+		this.iterationCount = iterationCount;
+		this.iterTime = iterTime;
+
+		hMac.start(password);
+		initialized = true;
+	}
+
+	public void reset() {
+		counter[] = 0;
+		stateOff = state.length;
+		state[] = 0;
+		hMac.reset();
+	}
+
+	public void nextBytes(ubyte[] output)
+	in {
+		assert(initialized, name~" not initialized.");
+	} body {
+		while(output.length > 0) {
+			if(stateOff == state.length) {
+				incCounter();
+				if(iterationCount > 0) {
+					state = genBlock(salt, counter, iterationCount);
+				} else {
+					assert(iterTime > 0);
+					state = genBlock(salt, counter, 0, iterTime);
+				}
+
+				stateOff = 0;
+			}
 			
-			ubyte[]  dKey = generateDerivedKey(keySize);
+			size_t len = min(state.length-stateOff, output.length);
+			output[0..len] = state[stateOff..stateOff+len];
+			output = output[len..$];
+			stateOff += len;
 			
-			return new KeyParameter(dKey);
-		}
-		
-		/**
-		 * Generate a key with initialization vector parameter derived from
-		 * the password, salt, and iteration count we are currently initialized
-		 * with.
-		 *
-		 * Params:
-		 * keySize	=	the size of the key we want (in bits)
-		 * ivSize	=	the size of the iv we want (in bits)
-		 * Returns: a ParametersWithIV object.
-		 */
-		ParametersWithIV generateDerivedParameters(uint keySize, uint ivSize)
-		{
-			keySize = keySize / 8;
-			ivSize = ivSize / 8;
-			
-			ubyte[]  dKey = generateDerivedKey(keySize + ivSize);
-			
-			return new ParametersWithIV(dKey[0..keySize], dKey[keySize..keySize+ivSize]);
-		}
-		
-		/**
-		 * Generate a key parameter for use with a MAC derived from the password,
-		 * salt, and iteration count we are currently initialized with.
-		 *
-		 * Params: keySize = the size of the key we want (in bits)
-		 * Returns: a KeyParameter object.
-		 */
-		KeyParameter generateDerivedMacParameters(uint keySize)
-		{
-			return generateDerivedParameters(keySize);
-		}
-		
-		string getAlgorithmName() {
-			return "PBKDF2/"~hMac.name;
+			assert(stateOff <= state.length);
 		}
 	}
 
 private:
-	HMac!D hMac;
-	ubyte[D.digestLength] state;
-
 	
-	void F(in ubyte[]  S, uint iterCount, in ubyte[]  iBuf, ubyte[]  output) 
+	/// 
+	/// msTime = Time in milliseconds.
+	ubyte[hMac.macSize] genBlock(in ubyte[] salt, in ubyte[] counter, ulong iterCount, ulong iterTime = 0) 
 	in {
-		assert(output.length == state.length, "length of output buffer should be equal to state.length");
+		assert(initialized, name~" not initialized.");
+		if(iterCount == 0) {
+			assert(iterTime > 0, "iterTime must be > 0.");
+		}
 	}
 	body {
-		if (S != null)
+		ubyte[D.digestLength] state, output;
+
+		if (salt != null)
 		{
-			hMac.put(S);
+			hMac.put(salt);
 		}
 
-		hMac.put(iBuf);
+		hMac.put(counter);
 		hMac.finish(state);
 
 		output[] = state[];
-		
+
 		if(iterCount > 0) { 
 			foreach (count; 1..iterCount)
 			{
 				hMac.put(state);
 				hMac.finish(state);
-
+				
 				assert(output.length >= state.length);
 				output[] ^= state[];
 			}
@@ -146,39 +151,42 @@ private:
 			do {
 				hMac.put(state);
 				hMac.finish(state);
-
+				
 				assert(output.length >= state.length);
 				output[] ^= state[];
 				
 				++count;
-			} while(count < iterTime || (sw.peek().msecs() < iterTime));
+			} while(sw.peek().msecs() < iterTime);
 			
 			iterationCount = count;
 		}
+
+		return output;
 	}
 
-	ubyte[] generateDerivedKey(uint dkLen)
-	{
-		enum     hLen = hMac.macSize;
-		size_t     l = (dkLen + hLen - 1) / hLen;
-		ubyte[4]  iBuf;
-		ubyte[]  outBytes = new ubyte[l * hLen];
-		uint     outPos = 0;
+	
+	//	ubyte[] generateDerivedKey(uint dkLen)
+	//	{
+	//		enum     hLen = hMac.macSize;
+	//		size_t     l = (dkLen + hLen - 1) / hLen;
+	//		counter[] = 0;
+	//
+	//		ubyte[]  outBytes = new ubyte[l * hLen];
+	//
+	//		//hMac.start(password);
+	//
+	//		nextBytes(outBytes);
+	//
+	//		return outBytes;
+	//	}
 
-		hMac.start(password);
+	
 
-		foreach (i; 1..l+1)
+	nothrow @nogc
+	private void incCounter() {uint pos = 3;
+		while (++counter[pos] == 0)
 		{
-			// Increment the value in 'iBuf'
-			uint pos = 3;
-			while (++iBuf[pos] == 0)
-			{
-				--pos;
-			}
-
-			F(salt, iterationCount, iBuf, outBytes[outPos..outPos+hLen]);
-			outPos += hLen;
+			--pos;
 		}
-		return outBytes;
 	}
 }
