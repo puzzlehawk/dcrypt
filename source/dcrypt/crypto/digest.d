@@ -26,8 +26,8 @@ template isDigest(T)
 						uint len = dig.doFinal(data);				// can extract the hash value
 						auto value = dig.finish();					// has finish
 
-						uint digestSize = T.digestLength;			// knows the length of the hash value in bytes
-						uint byteLength = T.byteLength;				// knows the length of its internal state
+						uint digestSize = T.digestLength;			// knows the length of the hash value in bytes. TODO use size in bits
+						uint byteLength = T.byteLength;				// knows the length of its internal state. TODO rename
 						uint blockSize = T.blockSize;				// knows the size if its blocks
 						string name = T.name;						// knows its own name
 

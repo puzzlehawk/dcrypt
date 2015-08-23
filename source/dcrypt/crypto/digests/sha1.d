@@ -1,8 +1,27 @@
 module dcrypt.crypto.digests.sha1;
 
-import dcrypt.crypto.digests.generaldigest;
+import dcrypt.crypto.digest;
 import dcrypt.util.pack;
 
+unittest {
+	// test vectors from http://www.di-mgt.com.au/sha_testvectors.html
+		
+	immutable string[] plaintexts = [
+		x"616263",
+		x"",
+		"abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu"
+	];
+	
+	immutable string[] hashes = [
+		x"a9993e364706816aba3e25717850c26c9cd0d89d",
+		x"da39a3ee5e6b4b0d3255bfef95601890afd80709",
+		x"a49b2446a02c645bf419f995b67091253a04a259"
+	];
+	
+	testDigest(new SHA1Digest(), plaintexts, hashes);
+}
+
+alias WrapperDigest!SHA1 SHA1Digest;
 /**
  * implementation of SHA-1 as outlined in "Handbook of Applied Cryptography", pages 346 - 349.
  *
@@ -10,50 +29,66 @@ import dcrypt.util.pack;
  * is the "endianness" of the word processing!
  */
 @safe
-public class SHA1Digest: GeneralDigest
+public struct SHA1
 {
 
-	unittest {
-		// test vectors from http://www.di-mgt.com.au/sha_testvectors.html
-
-		immutable string[] plaintexts = [
-			x"616263",
-			x"",
-			"abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu"
-		];
-
-		immutable string[] hashes = [
-			x"a9993e364706816aba3e25717850c26c9cd0d89d",
-			x"da39a3ee5e6b4b0d3255bfef95601890afd80709",
-			x"a49b2446a02c645bf419f995b67091253a04a259"
-		];
-
-		testDigest(new SHA1Digest(), plaintexts, hashes);
-	}
-	
 public:
-	/**
-	 * Standard constructor
-	 */
-	this() nothrow
+
+	enum name = "SHA1";
+	enum digestLength = 20;
+	enum byteLength = 64;
+	enum blockSize = 64;
+
+	void put(in ubyte[] input...) nothrow @nogc
 	{
-		start();
+		uint inOff = 0;
+		size_t len = input.length;
+		//
+		// fill the current word
+		//
+		while ((xBufOff != 0) && (len > 0))
+		{
+			putSingleByte(input[inOff]);
+			
+			inOff++;
+			len--;
+		}
+		
+		//
+		// process whole words.
+		//
+		while (len > xBuf.length)
+		{
+			processWord(input[inOff .. inOff + 4]);
+			
+			inOff += xBuf.length;
+			len -= xBuf.length;
+			byteCount += xBuf.length;
+		}
+		
+		//
+		// load in the remainder.
+		//
+		while (len > 0)
+		{
+			putSingleByte(input[inOff]);
+			
+			inOff++;
+			len--;
+		}
 	}
 
-	@property
-	override string name() pure nothrow @nogc
+	uint doFinal(ubyte[] output) nothrow @nogc
 	{
-		return "SHA-1";
-	}
-
-	override uint getDigestSize() nothrow @nogc
-	{
-		return digestLength;
-	}
-
-	override uint doFinal(ubyte[] output) nothrow @nogc
-	{
-		finish();
+		immutable size_t bitLen = byteCount * 8;
+		// add the pad bytes.
+		put(128);
+		while (xBufOff != 0)
+		{
+			put(0);
+		}
+		processLength(bitLen);
+		processBlock();
 
 		// pack the integers into a byte array
 		//toBigEndian!uint([H1,H2,H3,H4,H5], output);
@@ -69,37 +104,47 @@ public:
 		return 20;
 	}
 
-	/**
-	 * reset the chaining variables
-	 */
-	override void start() nothrow @nogc
-	{
-		super.start();
+	ubyte[digestLength] finish() nothrow @nogc {
+		ubyte[digestLength] hash;
+		doFinal(hash);
+		return hash;
+	}
 
-		H1 = 0x67452301;
-		H2 = 0xefcdab89;
-		H3 = 0x98badcfe;
-		H4 = 0x10325476;
-		H5 = 0xc3d2e1f0;
+	/// Reset SHA1.
+	void start() nothrow @nogc
+	{
+		H1 = H10;
+		H2 = H20;
+		H3 = H30;
+		H4 = H40;
+		H5 = H50;
 
 		xOff = 0;
 		X[] = 0;
+
+		byteCount = 0;
+		
+		xBufOff = 0;
+		xBuf[] = 0;
 	}
-	
-	protected override SHA1Digest dupImpl() nothrow {
-		SHA1Digest clone = new SHA1Digest();
-		clone.H1 = H1;
-		clone.H2 = H2;
-		clone.H3 = H3;
-		clone.H4 = H4;
-		clone.H5 = H5;
-		clone.X = X;
-		clone.xOff = xOff;
-		return clone;
-	}
-	
-	protected override void processWord(in ubyte[]  input) nothrow @nogc
+
+	private void putSingleByte(ubyte input) nothrow @nogc
 	{
+		xBuf[xBufOff++] = input;
+		
+		if (xBufOff == xBuf.length)
+		{
+			processWord(xBuf);
+			xBufOff = 0;
+		}
+		
+		byteCount++;
+	}
+
+	private void processWord(in ubyte[]  input) nothrow @nogc
+	in {
+		assert(input.length == 4);
+	} body {
 		// Note: Inlined for performance
 		//        X[xOff] = bigEndianToInt(in, inOff);
 		uint n = input[0] << 24;
@@ -114,7 +159,7 @@ public:
 		}
 	}
 
-	protected override void processLength(ulong bitLength) nothrow @nogc
+	private void processLength(ulong bitLength) nothrow @nogc
 	{
 		if (xOff > 14)
 		{
@@ -130,18 +175,26 @@ private:
 	// Additive constants
 	//
 	static {
-		enum uint    Y1 = 0x5a827999;
-		enum uint    Y2 = 0x6ed9eba1;
-		enum uint    Y3 = 0x8f1bbcdc;
-		enum uint    Y4 = 0xca62c1d6;
+		enum uint Y1 = 0x5a827999;
+		enum uint Y2 = 0x6ed9eba1;
+		enum uint Y3 = 0x8f1bbcdc;
+		enum uint Y4 = 0xca62c1d6;
+
+		enum uint H10 = 0x67452301;
+		enum uint H20 = 0xefcdab89;
+		enum uint H30 = 0x98badcfe;
+		enum uint H40 = 0x10325476;
+		enum uint H50 = 0xc3d2e1f0;
 	}
 
-	enum digestLength = 20;
-
-	uint     H1, H2, H3, H4, H5;
+	uint     H1 = H10, H2 = H20, H3 = H30, H4 = H40, H5 = H50;
 
 	uint[80]   X;
 	uint     xOff;
+
+	ubyte[4]  xBuf;
+	uint     xBufOff;
+	size_t    byteCount;
 	
 
 	uint f(uint u, uint v, uint w) pure nothrow @nogc
@@ -159,7 +212,7 @@ private:
 		return (u ^ v ^ w);
 	}
 
-	protected override void processBlock() nothrow @nogc
+	private void processBlock() nothrow @nogc
 	{
 		//
 		// expand 16 word block into 80 word block.
@@ -253,7 +306,7 @@ private:
 		//
 		// round 4
 		//
-		for (uint j = 0; j <= 3; j++)
+		for (uint j = 0; j < 4; j++)
 		{
 			// E = rotateLeft(A, 5) + h(B, C, D) + E + X[idx++] + Y4
 			// B = rotateLeft(B, 30)
