@@ -9,9 +9,7 @@ import dcrypt.util.encoders.hex;
 import dcrypt.crypto.digest;
 import dcrypt.crypto.digests.sha1;
 import dcrypt.crypto.digests.sha2;
-import dcrypt.crypto.digests.sha2;	
-import dcrypt.crypto.digests.sha2;
-import dcrypt.crypto.digests.keccak;
+import dcrypt.crypto.digests.sha3;
 
 import dcrypt.crypto.generators.pkcs5s2;
 
