@@ -145,13 +145,7 @@ public:
 	in {
 		assert(input.length == 4);
 	} body {
-		// Note: Inlined for performance
-		//        X[xOff] = bigEndianToInt(in, inOff);
-		uint n = input[0] << 24;
-		n |= input[1] << 16;
-		n |= input[2] << 8;
-		n |= input[3];
-		X[xOff] = n;
+		X[xOff] = fromBigEndian!uint(input);
 
 		if (++xOff == 16)
 		{
