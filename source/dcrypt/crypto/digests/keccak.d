@@ -20,6 +20,15 @@ alias Keccak!288 Keccak288;
 alias Keccak!384 Keccak384;
 alias Keccak!512 Keccak512;
 
+alias SHA3!224 SHA3_224;
+alias SHA3!256 SHA3_256;
+alias SHA3!384 SHA3_384;
+alias SHA3!512 SHA3_512;
+
+alias WrapperDigest!SHA3_224 SHA3_224Digest;
+alias WrapperDigest!SHA3_256 SHA3_256Digest;
+alias WrapperDigest!SHA3_384 SHA3_384Digest;
+alias WrapperDigest!SHA3_512 SHA3_512Digest;
 
 static assert(isDigest!Keccak224);
 static assert(isDigest!Keccak256);
@@ -27,9 +36,13 @@ static assert(isDigest!Keccak288);
 static assert(isDigest!Keccak384);
 static assert(isDigest!Keccak512);
 
+static assert(isDigest!SHA3_224);
+static assert(isDigest!SHA3_256);
+static assert(isDigest!SHA3_384);
+static assert(isDigest!SHA3_512);
+
 /// Test Keccak
 unittest {
-	import dcrypt.util.encoders.hex;
 
 	string msg1600 = x"8C3798E51BC68482D7337D3ABB75DC9FFE860714A9AD73551E120059860DDE24AB87327222B64CF774415A70F724CDF270DE3FE47DDA07B61C9EF2A3551F45A5584860248FABDE676E1CD75F6355AA3EAEABE3B51DC813D9FB2EAA4F0F1D9F834D7CAD9C7C695AE84B329385BC0BEF895B9F1EDF44A03D4B410CC23A79A6B62E4F346A5E8DD851C2857995DDBF5B2D717AEB847310E1F6A46AC3D26A7F9B44985AF656D2B7C9406E8A9E8F47DCB4EF6B83CAACF9AEFB6118BFCFF7E44BEF6937EBDDC89186839B77";
 
@@ -139,7 +152,7 @@ unittest {
 
 @safe
 public struct SHA3(uint bitLength)
-	if(bitLength == 224 || bitLength == 256 || bitLength == 288 || bitLength == 384 || bitLength == 512)
+	if(bitLength == 224 || bitLength == 256 || bitLength == 384 || bitLength == 512)
 {
 	private Keccak!bitLength keccak;
 
