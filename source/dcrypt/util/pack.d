@@ -146,11 +146,12 @@ body {
  output = the buffer to write the bytes to
  */
 @safe @nogc
-void toBigEndian(T)(T n, ubyte[] output) if(isIntegral!T) 
+void toBigEndian(T)(in T val, ubyte[] output) if(isIntegral!T) 
 in {
 	assert(output.length >= T.sizeof, "output buffer too small");
 }
 body {
+	T n = val;
 	uint off = 0;
 	
 	static if(T.sizeof == long.sizeof) {
@@ -183,11 +184,12 @@ body {
  output = the buffer to write the bytes to
  */
 @safe @nogc
-void toLittleEndian(T)(T n, ubyte[] output) if(isIntegral!T) 
+void toLittleEndian(T)(in T val, ubyte[] output) if(isIntegral!T) 
 in {
 	assert(output.length >= T.sizeof, "output buffer too small");
 }
 body {
+	T n = val;
 	output[0] = cast (ubyte) (n);
 	n >>>= 8;
 	static if(T.sizeof >= short.sizeof) {

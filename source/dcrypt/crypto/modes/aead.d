@@ -22,7 +22,9 @@ template isAEADCipher(T)
 						//BlockCipher c = bc.getUnderlyingCipher();
 						bc.processAADBytes(cast (const ubyte[])block);
 						bc.processBytes(cast(const ubyte[]) [0], cast(ubyte[]) [0]);
+						// TODO: ubyte[] slice = bc.processBytes(cast(const ubyte[]) [0], cast(ubyte[]) [0]);
 						bc.doFinal(cast(const ubyte[]) [0]);
+						// TODO: ubyte[] mac = finish(block);
 						bc.getMac(cast(const ubyte[]) [0]);
 						size_t s1 = bc.getUpdateOutputSize(cast(size_t) 0);
 						size_t s2 = bc.getOutputSize(cast(size_t) 0);
