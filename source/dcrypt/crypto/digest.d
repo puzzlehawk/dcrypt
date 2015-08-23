@@ -97,7 +97,7 @@ public abstract class Digest {
 	 * close the digest, producing the final digest value. The doFinal
 	 * call leaves the digest reset. */
 	@safe
-	public final ubyte[] doFinal() nothrow {
+	public final ubyte[] finish() nothrow {
 		ubyte[] output = new ubyte[getDigestSize()];
 		doFinal(output);
 		return output;
@@ -238,12 +238,12 @@ version(unittest) {
 				d.put(data);
 			}
 
-			ubyte[] hash = d.doFinal();
+			ubyte[] hash = d.finish();
 			assert(hash == expectedHash, text(d.name, " failed: ",hexEncode(hash), " != ", hexEncode(hashes[i])));
 			
 			// the clone should now create the same hash
 			if(clone) {
-				hash = clone.doFinal();
+				hash = clone.finish();
 				assert(hash == expectedHash, text(d.name, "dup() did not create an independant clone"));
 			}
 		}

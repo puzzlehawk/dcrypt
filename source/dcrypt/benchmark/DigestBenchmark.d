@@ -29,7 +29,7 @@ public class DigestBenchmark: Benchmark {
 			this.length += block.length;
 		}
 		sw.stop();
-		digest.doFinal();
+		ubyte[] hash = digest.finish();
 		
 		
 		double speed = 1e9 * length / sw.peek().nsecs();
