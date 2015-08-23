@@ -13,13 +13,13 @@ template isMAC(T)
 						ubyte[] data;
 						T t = T.init; // can define
 						t.start(data); // set the mac key
-						t.reset();  // can reset the digest
+						t.reset();  // can reset the mac
 
 						t.put(cast(ubyte)0); // can add a single byte
 						t.put(data);	// can add bytes
 						t.put(cast(ubyte)0, cast(ubyte)0); // has variadic put
 
-						uint len = t.doFinal(data);
+						ubyte[] slice = t.finish(data);
 						auto macTag = t.finish();
 
 						uint macSize = T.macSize;

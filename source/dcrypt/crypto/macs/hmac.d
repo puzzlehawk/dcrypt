@@ -81,7 +81,7 @@ public:
 	 * close the MAC, producing the final MAC value. The doFinal
 	 * call leaves the MAC reset(). */
 	@safe
-	uint doFinal(ubyte[] output) nothrow @nogc {
+	ubyte[] finish(ubyte[] output) nothrow @nogc {
 		digest.finish(iHash);
 		digest.put(oKey);
 
@@ -91,13 +91,13 @@ public:
 		
 		digest.put(iKey);
 		
-		return macSize;
+		return output[0..macSize];
 	}
 
 	@safe @nogc nothrow
 	ubyte[macSize] finish() {
 		ubyte[macSize] buf;
-		doFinal(buf);
+		finish(buf);
 		return buf;
 	}
 	
@@ -210,7 +210,7 @@ version(unittest) {
 			
 			//            ubyte[] hash = mac.doFinal();
 			ubyte[] hash = new ubyte[mac.macSize];
-			mac.doFinal(hash);
+			mac.finish(hash);
 			
 			assert(hash == expectedHash, text(mac.name," failed: ",hexEncode(hash), " != ", hexHashes[i]));
 		}

@@ -125,7 +125,7 @@ private:
 		}
 
 		hMac.put(iBuf);
-		hMac.doFinal(state);
+		hMac.finish(state);
 
 		output[] = state[];
 		
@@ -133,7 +133,7 @@ private:
 			foreach (count; 1..iterCount)
 			{
 				hMac.put(state);
-				hMac.doFinal(state);
+				hMac.finish(state);
 
 				assert(output.length >= state.length);
 				output[] ^= state[];
@@ -145,7 +145,7 @@ private:
 			uint count = 0;
 			do {
 				hMac.put(state);
-				hMac.doFinal(state);
+				hMac.finish(state);
 
 				assert(output.length >= state.length);
 				output[] ^= state[];

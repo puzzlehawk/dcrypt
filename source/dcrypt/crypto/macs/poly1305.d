@@ -193,11 +193,11 @@ public struct Poly1305(Cipher) if ((isBlockCipher!Cipher && Cipher.blockSize == 
 
 	public ubyte[macSize] finish() {
 		ubyte[macSize] mac;
-		doFinal(mac);
+		finish(mac);
 		return mac;
 	}
 
-	public uint doFinal(ubyte[] output)
+	public ubyte[] finish(ubyte[] output)
 	in {
 		assert(output.length >= blockSize, "Output buffer is too short.");
 	}
@@ -247,7 +247,7 @@ public struct Poly1305(Cipher) if ((isBlockCipher!Cipher && Cipher.blockSize == 
 		toLittleEndian!int(cast(int)f3, output[12..16]);
 		
 		reset();
-		return blockSize;
+		return output[0..blockSize];
 	}
 
 	/// Resets the internal state such that a new MAC can be computed.
