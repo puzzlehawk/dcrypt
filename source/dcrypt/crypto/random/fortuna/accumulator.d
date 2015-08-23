@@ -167,10 +167,10 @@ if(isDigest!Digest && Digest.digestLength == bufferSize) {
 	/// extract a block of entropy bits out of this pool.
 	/// the internal state is not leaked.
 	/// 
-	/// Returns: The length of the extracted data.
+	/// Returns: Slice pointing to the extracted data
 	/// 
 	/// TODO calls doFinal twice: could be a performance issue
-	uint extractEntropy(ubyte[] oBuf)
+	ubyte[] extractEntropy(ubyte[] oBuf)
 	in {
 		assert(oBuf.length >= accumulator.digestLength, "output buffer too small");
 	}
@@ -181,14 +181,13 @@ if(isDigest!Digest && Digest.digestLength == bufferSize) {
 
 		accumulator.put(0x01, 0x02, 0x03, 0x04);
 
-		// TODO return ubyte[]
-		uint len = cast(ubyte)accumulator.finish(oBuf).length; // write to output buffer
+		ubyte[] slice = accumulator.finish(oBuf); // write to output buffer
 
 		freshEntropyBytes = 0; // out of fresh entropy
 
 		accumulator = temp;	// reset to previous state
 
-		return len;
+		return slice;
 	}
 	
 	/// accumulate some bytes in the entropy pool
