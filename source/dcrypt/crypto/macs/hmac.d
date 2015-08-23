@@ -21,31 +21,44 @@ public:
 
 	public enum name = D.name ~ "/HMAC";
 	public enum macSize = D.digestLength;
+	enum blockSize = D.blockSize;
 
 	
 	/**
 	 * Params: keyParam = the HMac key
 	 */
-	@safe
-	void start(in ubyte[] macKey)
+	@safe @nogc
+	void start(in ubyte[] macKey = null)
 	in {
-		assert(macKey !is null, "mac key can't be null!");
+		if(!initialized) {
+			assert(macKey !is null, "No mac key!");
+		}
 	}
 	body {
-		key = macKey.dup;
-
-		// replace key by hash(key) if key length > block length of hash function
-		if(key.length > digest.blockSize) {
-			digest.start();
-			digest.update(key);
-			uint len = digest.doFinal(key);
-			key.length = len;
+		if(macKey !is null) {
+			iKey[] = ipadByte;
+			oKey[] = opadByte;
+			// replace key by hash(key) if key length > block length of hash function
+			if(macKey.length > blockSize) {
+				ubyte[blockSize] key;
+				digest.start();
+				digest.update(macKey);
+				digest.finish(key);
+				iKey[] ^= key[];
+				oKey[] ^= key[];
+			} else {
+				iKey[0..macKey.length] ^= macKey[];
+				oKey[0..macKey.length] ^= macKey[];
+			}
 		}
 
-		iPad = genPadBytes(key, ipadByte, digest.blockSize);
-		oPad = genPadBytes(key, opadByte, digest.blockSize);
+		if(initialized) {
+			digest.start();
+		}
 
-		reset();
+		digest.update(iKey);
+		
+		initialized = true;
 	}
 
 	
@@ -69,14 +82,14 @@ public:
 	 * call leaves the MAC reset(). */
 	@safe
 	uint doFinal(ubyte[] output) nothrow @nogc {
-		digest.doFinal(iHash);
-		digest.put(oPad);
+		digest.finish(iHash);
+		digest.put(oKey);
 
 		digest.put(iHash);
 
-		digest.doFinal(output);
+		digest.finish(output);
 		
-		reset();
+		digest.put(iKey);
 		
 		return macSize;
 	}
@@ -94,34 +107,23 @@ public:
 	@safe
 	public void reset() nothrow @nogc
 	in{
-		assert(key !is null || key.length == 0, "HMac not initialized!");
+		assert(initialized, "HMac not initialized!");
 	}
 	body {
-		digest.start();
-		digest.update(iPad);
-
-		initialized = true;
+		start();
 	}
 	
 private:
 	D digest;
 	private ubyte[D.digestLength] iHash;
 	//	Digest iPaddedDigest, oPaddedDigest;
-	ubyte[] key;
-	ubyte[] iPad, oPad;
+	ubyte[blockSize] iKey, oKey;
 	bool initialized = false;
 
 	
 	enum ubyte opadByte = 0x5c;
 	enum ubyte ipadByte = 0x36;
 
-
-	ubyte[] genPadBytes(in ubyte[] key, in ubyte padByte, in uint blockSize) nothrow {
-		ubyte[] paddedKey = key.dup;
-		paddedKey.length += blockSize - (key.length%blockSize);
-		paddedKey[] ^= padByte;
-		return paddedKey;
-	}
 }
 
 
