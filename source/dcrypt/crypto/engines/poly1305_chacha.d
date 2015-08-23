@@ -10,12 +10,13 @@ import dcrypt.crypto.macs.poly1305;
 import dcrypt.util.pack;
 
 // TODO: adapt to AEAD API
-//static assert(isAEADCipher!Poly1305ChaCha, Poly1305ChaCha.name~" is not a valid AEAD cipher.");
+static assert(isAEADCipher!Poly1305ChaCha, Poly1305ChaCha.name~" is not a valid AEAD cipher.");
 
 @safe nothrow @nogc
 public struct Poly1305ChaCha {
 
 	public enum name = "ChaCha20-Poly1305";
+	public enum macSize = 16;
 
 	private {
 		Poly1305Raw poly;
@@ -85,7 +86,7 @@ public struct Poly1305ChaCha {
 		aadLength += aad.length;
 	}
 
-	public ubyte[] processBytes(in ubyte[] input, ubyte[] output)
+	public size_t processBytes(in ubyte[] input, ubyte[] output)
 	in {
 		assert(initialized, name~" not initialized.");
 		assert(output.length >= input.length, "Output buffer too small.");
@@ -103,13 +104,16 @@ public struct Poly1305ChaCha {
 
 		cipherTextLength += input.length;
 
-		return output[0..input.length];
+		return input.length;
 	}
 
 	/// Returns: The MAC value of the processed AAD and cipher data.
 	/// 
 	/// Note: Must be reinitialized with `start()` after calling finish
-	public ubyte[16] finish(ubyte[] output = null) {
+	public size_t finish(ubyte[] mac, ubyte[] output = null)
+	in {
+		assert(mac.length == 16, "MAC buffer must be 16 bytes.");
+	} body {
 
 		if(aadMode) {
 			pad16(aadLength);
@@ -129,10 +133,10 @@ public struct Poly1305ChaCha {
 		poly.put(buf[]);
 
 		
-		ubyte[16] tag = poly.finish();
+		mac[0..16] = poly.finish();
 
 		initialized = false;
-		return tag;
+		return 0;
 	}
 
 	/// Get the minimal size of the output buffer for an input of length `len`.
@@ -221,7 +225,8 @@ unittest {
 	pcc.processAADBytes(cast(const ubyte[]) aad[]);
 	pcc.processBytes(cast(const ubyte[]) plaintext[], ciphertext[]);
 
-	ubyte[16] tag = pcc.finish();
+	ubyte[16] tag;
+	pcc.finish(tag);
 
 	assert(ciphertext == expectedCipherText, Poly1305ChaCha.name~" produced wrong ciphertext.");
 	assert(tag == x"1ae10b594f09e26a7e902ecbd0600691", Poly1305ChaCha.name~" produced wrong tag.");

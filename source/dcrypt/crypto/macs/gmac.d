@@ -14,6 +14,7 @@ import dcrypt.crypto.modes.gcm.gcm;
 @safe
 public struct GMac(T) if(isBlockCipher!T)
 {
+	enum macSize = 16;
 
 	private {
 		GCM!T gcm;
@@ -37,14 +38,6 @@ public struct GMac(T) if(isBlockCipher!T)
 			} else {
 				return T.name~"/GMAC";
 			}
-		}
-		
-		/**
-		 * Returns: the size, in bytes, of the MAC.
-		 */
-		@property
-		uint macSize() pure nothrow {
-			return 16;
 		}
 
 		/**
@@ -76,8 +69,7 @@ public struct GMac(T) if(isBlockCipher!T)
 				reset();
 			}
 
-			gcm.finish(output[0..0]);
-			output[0..macSize] = gcm.getMac();
+			gcm.finish(output[0..macSize], output[0..0]);
 		}
 
 		/**

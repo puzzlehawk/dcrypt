@@ -203,11 +203,12 @@ public struct GCM(T) if(is(T == void) || (isBlockCipher!T && T.blockSize == 16))
 		 * Params: out = space for any resulting output data.
 		 * Returns: number of bytes written into out.
 		 */
-		size_t finish(ubyte[] output) nothrow
+		size_t finish(ubyte[] macBuf, ubyte[] output) nothrow
 		in {
 			assert(initialized, "not initialized");
 
 			assert(output.length >= buf.length, "output buffer too small");
+			assert(macBuf.length == 16, "MAC buffer must be 16 bytes.");
 		}
 		body{
 
@@ -244,26 +245,14 @@ public struct GCM(T) if(is(T == void) || (isBlockCipher!T && T.blockSize == 16))
 			outputBytes += partialBlockLen;
 			
 			// calculate the hash
+			ubyte[16] mac;
 			gHash.doFinal(mac);
 
 			mac[] ^= E0[]; // calculate the token
 
+			macBuf[0..16] = mac[];
+
 			return outputBytes;
-		}
-		
-		/**
-		 * Write the MAC of the processed data to buf
-		 * 
-		 * Params: buf  = output buffer
-		 * 
-		 * TODO variable tag size ( macSize of AEADParameters)
-		 */
-		ubyte[macSize] getMac() nothrow @nogc 
-		in {
-			assert(initialized, "not initialized");
-		}
-		body {
-			return mac;
 		}
 		
 		/**
@@ -393,12 +382,12 @@ unittest {
 	oBuf = oBuf[outLen..$];
 
 	gcm.processAADBytes(cast(octets)x"B2C2846512153524C0895E81");
-
-	outLen = gcm.finish(oBuf);
+	ubyte[16] mac;
+	outLen = gcm.finish(mac, oBuf);
 	//	import std.stdio;
 	//	writefln("%(%x%)", output);
 	assert(output == cast(octets)x"701AFA1CC039C0D765128A665DAB69243899BF7318CCDC81C9931DA17FBE8EDD7D17CB8B4C26FC81E3284F2B7FBA713D");
-	assert(gcm.getMac() == cast(octets)x"4F8D55E7D3F06FD5A13C0C29B9D5B880");
+	assert(mac == cast(octets)x"4F8D55E7D3F06FD5A13C0C29B9D5B880");
 }
 
 /// test decryption
@@ -428,10 +417,10 @@ unittest {
 	      3899BF7318CCDC81C9931DA17FBE8EDD
 	      7D17CB8B4C26FC81E3284F2B7FBA713D", oBuf);
 	oBuf = oBuf[outLen..$];
-	
+
 	gcm.processAADBytes(cast(octets)x"B2C2846512153524C0895E81");
-	
-	outLen = gcm.finish(oBuf);
+	ubyte[16] mac;
+	outLen = gcm.finish(mac, oBuf);
 	//		import std.stdio;
 	//		writefln("%(%.2x%)", output);
 	
@@ -440,7 +429,7 @@ unittest {
 	      C1D1E1F202122232425262728292A2B
 	      2C2D2E2F303132333435363738393A0002");
 
-	assert(gcm.getMac() == x"4F8D55E7D3F06FD5A13C0C29B9D5B880");
+	assert(mac == x"4F8D55E7D3F06FD5A13C0C29B9D5B880");
 }
 
 /// Test decryption with modified cipher data. An exception should be thrown beacause of wrong token.
@@ -473,9 +462,9 @@ unittest {
 	oBuf = oBuf[outLen..$];
 	
 	gcm.processAADBytes(cast(octets)x"B2C2846512153524C0895E81");
-
-	outLen = gcm.finish(oBuf);
-	assert(gcm.getMac() != x"4F8D55E7D3F06FD5A13C0C29B9D5BEEF");
+	ubyte[16] mac;
+	outLen = gcm.finish(mac, oBuf);
+	assert(mac != x"4F8D55E7D3F06FD5A13C0C29B9D5BEEF");
 }
 
 /// Test decryption with altered AAD. An exception should be thrown beacause of wrong token.
@@ -508,8 +497,9 @@ unittest {
 	oBuf = oBuf[outLen..$];
 	
 	gcm.processAADBytes(cast(octets)x"B2C2846512153524C089beef"); // changed 5E81 to beef
-
-	assert(gcm.getMac() != x"4F8D55E7D3F06FD5A13C0C29B9D5B880");
+	ubyte[16] mac;
+	gcm.finish(mac, oBuf);
+	assert(mac != x"4F8D55E7D3F06FD5A13C0C29B9D5B880");
 	// verify that an InvalidCipherTextException is thrown
 //	bool exception = false;
 //	try {
@@ -558,8 +548,8 @@ unittest {
 	oBuf = oBuf[outLen..$];
 
 	gcm.processAADBytes(aad);
-	
-	outLen = gcm.finish(oBuf);
+	ubyte[16] mac;
+	outLen = gcm.finish(mac, oBuf);
 	oBuf = oBuf[outLen..$];
 
 	octets expectedCiphertext = cast(octets) (
@@ -572,7 +562,7 @@ unittest {
 	octets expectedMac = cast(octets) x"619cc5aefffe0bfa462af43c1699d050";
 	
 	assert(output == expectedCiphertext);
-	assert(gcm.getMac() == expectedMac);
+	assert(mac == expectedMac);
 }
 
 /// test GCM with different MAC sizes
@@ -752,22 +742,15 @@ public class GCMCipher: AEADCipher {
 		/**
 		 * Finish the operation either appending or verifying the MAC at the end of the data.
 		 *
-		 * Params: out = space for any resulting output data.
+		 * Params:
+		 * out = space for any resulting output data.
+		 * macBuf = Buffer for MAC tag.
 		 * Returns: number of bytes written into out.
 		 * Throws: IllegalStateError = if the cipher is in an inappropriate state.
 		 * dcrypt.exceptions.InvalidCipherTextException =  if the MAC fails to match.
 		 */
-		size_t doFinal(ubyte[] output){
-			return cipher.finish(output);
-		}
-		
-		/**
-		 * Write the MAC of the processed data to buf
-		 * 
-		 * Params: buf  = output buffer
-		 */
-		void getMac(ubyte[] buf) nothrow {
-			buf[0..cipher.macSize] = cipher.getMac();
+		size_t doFinal(ubyte[] macBuf, ubyte[] output) {
+			return cipher.finish(macBuf, output);
 		}
 		
 		/**

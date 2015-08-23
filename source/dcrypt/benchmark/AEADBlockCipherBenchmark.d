@@ -58,7 +58,8 @@ public class AEADCipherBenchmark: Benchmark {
 		foreach(size_t i; 0 .. length/blockA.length) {
 			cipher.processBytes(blockA, blockB);
 		}
-		cipher.doFinal(blockB);
+		ubyte[16] macBuf;
+		cipher.doFinal(macBuf, blockB);
 		sw.stop();
 		
 		double speed = 1e9 * length / sw.peek().nsecs();

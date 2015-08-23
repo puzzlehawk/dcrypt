@@ -27,11 +27,10 @@ template isAEADCipher(T)
 						// TODO: ubyte[] slice = bc.processBytes(cast(const ubyte[]) [0], cast(ubyte[]) [0]);
 						//bc.doFinal(cast(const ubyte[]) [0]);
 						// TODO: ubyte[] mac = finish(block);
-						size_t len = bc.finish(cast(const ubyte[]) [0]);
-						ubyte[T.macSize] macTag = bc.getMac();
+						size_t len = bc.finish(cast(ubyte[]) [0], cast(ubyte[]) [0]);
 						size_t s1 = bc.getUpdateOutputSize(cast(size_t) 0);
 						size_t s2 = bc.getOutputSize(cast(size_t) 0);
-						bc.reset();
+						//bc.reset();
 					}));
 }
 
@@ -86,19 +85,15 @@ public interface AEADCipher
 		/**
 		 * Finish the operation either appending or verifying the MAC at the end of the data.
 		 *
-		 * Params: out = space for any resulting output data.
+		 * Params: 
+		 * out = space for any resulting output data.
+		 * macBuf = Buffer for MAC tag.
 		 * Returns: number of bytes written into out.
 		 * Throws: IllegalStateError = if the cipher is in an inappropriate state.
 		 * dcrypt.exceptions.InvalidCipherTextException =  if the MAC fails to match.
 		 */
-		size_t doFinal(ubyte[] output);
+		size_t doFinal(ubyte[] macBuf, ubyte[] output);
 
-		/**
-		 * Write the MAC of the processed data to buf
-		 * 
-		 * Params: buf  = output buffer
-		 */
-		void getMac(ubyte[] buf) nothrow;
 		
 		/**
 		 * return the size of the output buffer required for a processBytes
@@ -318,14 +313,12 @@ version(unittest) {
 			cipher.processAADBytes(aad);
 			size_t offset = cipher.processBytes(plain, output);
 
+			ubyte[16] mac;
+			size_t len = offset+cipher.doFinal(mac, output[offset..$]);
 
-			size_t len = offset+cipher.doFinal(output[offset..$]);
-			
 			assert(output == ciphertext,
 				text(cipher.name~" encrypt: (",hexEncode(output),") != ("~hexCipherTexts[i]~")"));
-
-			ubyte[32] mac;
-			cipher.getMac(mac);
+				
 			assert(mac[0..taglen] == expectedMac);
 			
 		}
