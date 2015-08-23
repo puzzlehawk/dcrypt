@@ -181,7 +181,8 @@ if(isDigest!Digest && Digest.digestLength == bufferSize) {
 
 		accumulator.put(0x01, 0x02, 0x03, 0x04);
 
-		uint len = accumulator.doFinal(oBuf); // write to output buffer
+		// TODO return ubyte[]
+		uint len = cast(ubyte)accumulator.finish(oBuf).length; // write to output buffer
 
 		freshEntropyBytes = 0; // out of fresh entropy
 
@@ -218,12 +219,12 @@ private unittest {
 	d1.put(0x01);
 	d2.put(0x02);
 	d2 = d1;
-	d1.doFinal(buf1);
+	d1.finish(buf1);
 
 	d1 = d2;
 
-	d1.doFinal(buf1);
-	d2.doFinal(buf2);
+	d1.finish(buf1);
+	d2.finish(buf2);
 
 	assert(buf1 == buf2, "Cloning digests does not work properly.");
 

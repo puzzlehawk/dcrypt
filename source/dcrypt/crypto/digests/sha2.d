@@ -81,8 +81,8 @@ if(bitLength == 256 || bitLength == 384 || bitLength == 512) {
 	/// Calculate the final hash value.
 	/// Params:
 	/// output = buffer for hash value.
-	/// Returns: length of hash value in bytes.
-	uint doFinal(ubyte[] output) nothrow @nogc
+	/// Returns: Slice of `output` containing the hash.
+	ubyte[] finish(ubyte[] output) nothrow @nogc
 	{
 		
 		_finish();
@@ -106,14 +106,14 @@ if(bitLength == 256 || bitLength == 384 || bitLength == 512) {
 		
 		start();
 		
-		return digestLength;
+		return output[0..digestLength];
 	}
 
 	/// Calculate the final hash value.
 	/// Returns: the hash value
 	ubyte[digestLength] finish() nothrow @nogc {
 		ubyte[digestLength] buf;
-		doFinal(buf);
+		finish(buf);
 		return buf;
 	}
 

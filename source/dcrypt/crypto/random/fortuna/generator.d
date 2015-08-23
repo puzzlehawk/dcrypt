@@ -93,7 +93,7 @@ public struct FortunaGenerator(Cipher, Digest) if(isBlockCipher!Cipher && isDige
 		void reseed(in ubyte[] seed...) @nogc {
 			digest.put(key);
 			digest.put(seed);
-			digest.doFinal(key);
+			digest.finish(key);
 
 			updateKey();
 

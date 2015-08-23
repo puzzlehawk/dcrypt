@@ -23,8 +23,8 @@ template isDigest(T)
 						dig.put(cast(ubyte)0, cast(ubyte)0);		// variadic function
 						dig.put(cast(const (ubyte)[]) data);		// can add bytes
 
-						uint len = dig.doFinal(data);				// can extract the hash value
-						auto value = dig.finish();					// has finish
+						ubyte[] result = dig.finish(data);				// can extract the hash value
+						ubyte[T.digestLength] hash = dig.finish();					// has finish
 
 						uint digestSize = T.digestLength;			// knows the length of the hash value in bytes. TODO use size in bits
 						uint byteLength = T.byteLength;				// knows the length of its internal state. TODO rename
@@ -85,13 +85,10 @@ public abstract class Digest {
 	@safe
 	public void put(in ubyte[] input...) nothrow;
 
-	/**
-	 * close the digest, producing the final digest value. The doFinal
-	 * call leaves the digest reset.
-	 * Returns: the amount of bytes written to output
-	 */
+	/// Close the digest, producing the final digest value and resetting the digest.
+	/// Returns: Slice to the hash in output buffer.
 	@safe
-	public uint doFinal(ubyte[] output) nothrow;
+	public ubyte[] finish(ubyte[] output) nothrow;
 	
 	/**
 	 * close the digest, producing the final digest value. The doFinal
@@ -99,7 +96,7 @@ public abstract class Digest {
 	@safe
 	public final ubyte[] finish() nothrow {
 		ubyte[] output = new ubyte[getDigestSize()];
-		doFinal(output);
+		finish(output);
 		return output;
 	}
 
@@ -168,20 +165,15 @@ if(isDigest!T) {
 	}
 	
 
-	
-	/**
-	 * close the digest, producing the final digest value. The doFinal
-	 * call leaves the digest reset.
-	 * Returns: the amount of bytes written to output
-	 */
+
+	/// Close the digest, producing the final digest value and resetting the digest.
+	/// Returns: Slice to the hash in output buffer.
 	@safe
-	public override uint doFinal(ubyte[] output) nothrow @nogc {
-		return digest.doFinal(output);
+	public override ubyte[] finish(ubyte[] output) nothrow @nogc {
+		return digest.finish(output);
 	}
-	
-	/**
-	 * reset the digest back to it's initial state.
-	 */
+
+	/// reset the digest back to it's initial state.
 	@safe
 	public override void start() nothrow @nogc {
 		digest.start();

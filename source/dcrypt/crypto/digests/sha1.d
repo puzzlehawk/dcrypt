@@ -22,6 +22,9 @@ unittest {
 }
 
 alias WrapperDigest!SHA1 SHA1Digest;
+
+static assert(isDigest!SHA1);
+
 /**
  * implementation of SHA-1 as outlined in "Handbook of Applied Cryptography", pages 346 - 349.
  *
@@ -78,7 +81,8 @@ public:
 		}
 	}
 
-	uint doFinal(ubyte[] output) nothrow @nogc
+	/// Returns: Slice of `output` containing the hash.
+	ubyte[] finish(ubyte[] output) nothrow @nogc
 	{
 		immutable size_t bitLen = byteCount * 8;
 		// add the pad bytes.
@@ -101,12 +105,12 @@ public:
 
 		start();
 
-		return 20;
+		return output[0..digestLength];
 	}
 
 	ubyte[digestLength] finish() nothrow @nogc {
 		ubyte[digestLength] hash;
-		doFinal(hash);
+		finish(hash);
 		return hash;
 	}
 

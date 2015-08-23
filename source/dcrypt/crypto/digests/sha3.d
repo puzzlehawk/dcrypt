@@ -180,19 +180,19 @@ public struct SHA3(uint bitLength)
 	/// Params:
 	/// output = buffer for hash value.
 	/// Returns: length of hash value in bytes.
-	uint doFinal(ubyte[] output) nothrow @nogc {
+	ubyte[] finish(ubyte[] output) nothrow @nogc {
 
 		enum ubyte tail = 0b00000010;
 		keccak.absorbBits(tail, 2);
 
-		return keccak.doFinal(output);
+		return keccak.finish(output);
 	}
 	
 	/// Calculate the final hash value.
 	/// Returns: the hash value
 	ubyte[digestLength] finish() nothrow @nogc {
 		ubyte[digestLength] hash;
-		doFinal(hash);
+		finish(hash);
 		return hash;
 	}
 }
@@ -220,18 +220,18 @@ public struct Keccak(uint bitLength)
 		/// Calculate the final hash value.
 		/// Params:
 		/// output = buffer for hash value.
-		/// Returns: length of hash value in bytes.
-		uint doFinal(ubyte[] output) nothrow @nogc {
+		/// Returns: Slice of `output` containing the hash.
+		ubyte[] finish(ubyte[] output) nothrow @nogc {
 			squeeze(output);
 			start();
-			return bitLength/8;
+			return output[0..bitLength/8];
 		}
 
 		/// Calculate the final hash value.
 		/// Returns: the hash value
 		ubyte[digestLength] finish() nothrow @nogc {
 			ubyte[digestLength] buf;
-			doFinal(buf);
+			finish(buf);
 			return buf;
 		}
 
