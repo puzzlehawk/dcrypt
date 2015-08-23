@@ -97,10 +97,7 @@ public struct Keccak(uint bitLength)
 		@nogc
 		void put(in ubyte[] input...) nothrow
 		{
-			//doUpdate(input, input.length*8);
-			// call absorb directly, since only whole bytes are processed.
-			//absorb(input, input.length*8);
-			absorb(input);
+			doUpdate(input, input.length*8);
 		}
 
 		/// Calculate the final hash value.
@@ -108,7 +105,7 @@ public struct Keccak(uint bitLength)
 		/// output = buffer for hash value.
 		/// Returns: length of hash value in bytes.
 		uint doFinal(ubyte[] output) nothrow @nogc {
-			squeeze(output, bitLength);
+			squeeze(output);
 			start();
 			return bitLength/8;
 		}
@@ -127,18 +124,19 @@ public struct Keccak(uint bitLength)
 		}
 	}
 
-private:
+	private {
 
-	enum capacity = bitLength*2;
-	enum rate = 1600 - capacity;
-	enum byteStateLength = 1600 / 8;
+		enum capacity = bitLength*2;
+		enum rate = 1600 - capacity;
+		enum byteStateLength = 1600 / 8;
 
-	uint bitsInQueue;
-	bool squeezing;
-	uint bitsAvailableForSqueezing;
-	ubyte[byteStateLength] state;
-	ubyte[1536 / 8] dataQueue;
-	ubyte[rate / 8] chunk;
+		uint bitsInQueue;
+		bool squeezing;
+		uint bitsAvailableForSqueezing;
+		ubyte[byteStateLength] state;
+		ubyte[1536 / 8] dataQueue;
+		ubyte[rate / 8] chunk;
+	}
 
 	private nothrow @nogc:
 
@@ -151,7 +149,7 @@ private:
 	{
 		if ((databitlen % 8) == 0)
 		{
-			absorb(data, databitlen);
+			absorb(data);
 		}
 		else
 		{
@@ -239,7 +237,6 @@ private:
 		assert(!squeezing, "attempt to absorb while squeezing.");
 	}
 	body {
-		immutable size_t databitlen = data.length * 8;
 
 		const (ubyte)[] iBuf = data;
 
@@ -294,20 +291,17 @@ private:
 	}
 
 	
-	void squeeze(ubyte[] output, ulong outputLength)
-	in {
-		assert(outputLength % 8 == 0, "outputLength not a multiple of 8");
-	}
-	body {
-		ulong i;
+	void squeeze(ubyte[] output)
+	{
+		immutable size_t outputLength = output.length*8;
 		uint partialBlock;
 
 		if (!squeezing)
 		{
 			padAndSwitchToSqueezingPhase();
 		}
-		i = 0;
-		while (i < outputLength)
+
+		while (output.length > 0)
 		{
 			if (bitsAvailableForSqueezing == 0)
 			{
@@ -317,16 +311,12 @@ private:
 				bitsAvailableForSqueezing = rate;
 				
 			}
-			partialBlock = bitsAvailableForSqueezing;
-			if (cast(ulong)partialBlock > outputLength - i)
-			{
-				partialBlock = cast(uint)(outputLength - i);
-			}
+			partialBlock = min(bitsAvailableForSqueezing/8, output.length);
 
-			output[i/8..i/8+partialBlock / 8] = dataQueue[(rate - bitsAvailableForSqueezing) / 8..(rate - bitsAvailableForSqueezing) / 8+partialBlock / 8];
+			output[0..partialBlock] = dataQueue[(rate/8 - bitsAvailableForSqueezing/8)..(rate/8 - bitsAvailableForSqueezing/8) + partialBlock];
+			output = output[partialBlock..$];
 
-			bitsAvailableForSqueezing -= partialBlock;
-			i += partialBlock;
+			bitsAvailableForSqueezing -= partialBlock*8;
 		}
 	}
 
