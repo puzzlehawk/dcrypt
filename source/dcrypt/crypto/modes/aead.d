@@ -56,14 +56,7 @@ public interface AEADCipher
 		@property
 		string name() pure nothrow;
 		
-		/**
-		 * return the cipher this object wraps.
-		 *
-		 * Returns: the cipher this object wraps.
-		 */
-		BlockCipher getUnderlyingCipher() nothrow;
 
-		
 		/**
 		 * Add a sequence of bytes to the associated data check.
 		 * <br>If the implementation supports it, this will be an online operation and will not retain the associated data.
@@ -116,136 +109,106 @@ public interface AEADCipher
 		 */
 		size_t getOutputSize(size_t len) nothrow;
 
-		/**
-		 * Reset the cipher. After resetting the cipher is in the same state
-		 * as it was after the last init (if there was one).
-		 */
-		void reset() nothrow;
 	}
 }
 
-//// TODO AEAD cipher wrapper
-///// Wrapper class for AEAD ciphers
-//@safe
-//public class AEADCipherWrapper(T) if(isAEADCipher!T): AEADCipher
-//{
-//
-//	private T cipher = void;
-//
-//	public {
-//
-//		//		/// Params: c = underlying block cipher
-//		//		this(BlockCipher c) {
-//		//			cipher = T(c);
-//		//		}
-//
-//		/**
-//		 * initialize the underlying cipher. Parameter can either be an AEADParameters or a ParametersWithIV object.
-//		 * Params:
-//		 * forEncryption = true if we are setting up for encryption, false otherwise.
-//		 * params = the necessary parameters for the underlying cipher to be initialised.
-//		 * Throws: IllegalArgumentException if the params argument is inappropriate.
-//		 */
-//		void init(bool forEncryption, ParametersWithIV params) {
-//			cipher.init(forEncryption, params);
-//		}
-//		
-//		/**
-//		 * Return the name of the algorithm.
-//		 * 
-//		 * Returns: the algorithm name.
-//		 */
-//		string getAlgorithmName() pure nothrow {
-//			return cipher.getAlgorithmName();
-//		}
-//
-//		/**
-//		 * return the cipher this object wraps.
-//		 *
-//		 * Returns: the cipher this object wraps.
-//		 */
-//		BlockCipher getUnderlyingCipher() pure nothrow {
-//			return cipher.getUnderlyingCipher();
-//		}
-//
-//		
-//		/**
-//		 * Add a sequence of bytes to the associated data check.
-//		 * If the implementation supports it, this will be an online operation and will not retain the associated data.
-//		 *
-//		 * Params: in = the input byte array.
-//		 */
-//		void processAADBytes(in ubyte[] aad) nothrow {
-//			cipher.processAADBytes(aad);
-//		}
-//		
-//		/**
-//		 * process a block of bytes from in putting the result into out.
-//		 * Params:
-//		 * in = the input byte array.
-//		 * out = the output buffer the processed bytes go into.
-//		 * Returns: the number of bytes written to out.
-//		 * Throws: Error if the output buffer is too small.
-//		 */
-//		size_t processBytes(in ubyte[] input, ubyte[] output) nothrow {
-//			return cipher.processBytes(input, output);
-//		}
-//		
-//		/**
-//		 * Finish the operation either appending or verifying the MAC at the end of the data.
-//		 *
-//		 * Params: out = space for any resulting output data.
-//		 * Returns: number of bytes written into out.
-//		 * Throws: IllegalStateError = if the cipher is in an inappropriate state.
-//		 * dcrypt.exceptions.InvalidCipherTextException =  if the MAC fails to match.
-//		 */
-//		size_t doFinal(ubyte[] output){
-//			return cipher.doFinal(output);
-//		}
-//		
-//		/**
-//		 * Write the MAC of the processed data to buf
-//		 * 
-//		 * Params: buf  = output buffer
-//		 */
-//		void getMac(ubyte[] buf) nothrow {
-//			cipher.getMac(buf);
-//		}
-//		
-//		/**
-//		 * return the size of the output buffer required for a processBytes
-//		 * an input of len bytes.
-//		 *
-//		 * Params: len = the length of the input.
-//		 * Returns: the space required to accommodate a call to processBytes
-//		 * with len bytes of input.
-//		 */
-//		size_t getUpdateOutputSize(size_t len) nothrow {
-//			return cipher.getUpdateOutputSize(len);
-//		}
-//		
-//		/**
-//		 * return the size of the output buffer required for a processBytes plus a
-//		 * doFinal with an input of len bytes.
-//		 *
-//		 * Params:
-//		 * len = the length of the input.
-//		 * Returns: the space required to accommodate a call to processBytes and doFinal
-//		 * with len bytes of input.
-//		 */
-//		size_t getOutputSize(size_t len) nothrow {
-//			return cipher.getOutputSize(len);
-//		}
-//		
-//		/**
-//		 * Reset the cipher. After resetting the cipher is in the same state
-//		 * as it was after the last init (if there was one).
-//		 */
-//		void reset() nothrow {
-//			cipher.reset();
-//		}
-//	}
-//}
+// TODO AEAD cipher wrapper
+/// Wrapper class for AEAD ciphers
+@safe
+public class AEADCipherWrapper(T) if(isAEADCipher!T): AEADCipher
+{
+
+	private T cipher;
+
+	public {
+
+		//		/// Params: c = underlying block cipher
+		//		this(BlockCipher c) {
+		//			cipher = T(c);
+		//		}
+
+		/**
+		 * initialize the underlying cipher. Parameter can either be an AEADParameters or a ParametersWithIV object.
+		 * Params:
+		 * forEncryption = true if we are setting up for encryption, false otherwise.
+		 * params = the necessary parameters for the underlying cipher to be initialised.
+		 */
+		void start(bool forEncryption, in ubyte[] key, in ubyte[] iv) {
+			cipher.start(forEncryption, key, iv);
+		}
+		
+		/**
+		 * Return the name of the algorithm.
+		 * 
+		 * Returns: the algorithm name.
+		 */
+		@property
+		string name() pure nothrow {
+			return cipher.name;
+		}
+
+		
+		/**
+		 * Add a sequence of bytes to the associated data check.
+		 * If the implementation supports it, this will be an online operation and will not retain the associated data.
+		 *
+		 * Params: in = the input byte array.
+		 */
+		void processAADBytes(in ubyte[] aad) nothrow {
+			cipher.processAADBytes(aad);
+		}
+		
+		/**
+		 * process a block of bytes from in putting the result into out.
+		 * Params:
+		 * in = the input byte array.
+		 * out = the output buffer the processed bytes go into.
+		 * Returns: the number of bytes written to out.
+		 * Throws: Error if the output buffer is too small.
+		 */
+		size_t processBytes(in ubyte[] input, ubyte[] output) nothrow {
+			return cipher.processBytes(input, output);
+		}
+		
+		/**
+		 * Finish the operation. Does not verify the mac.
+		 *
+		 * Params:
+		 * out = space for any resulting output data.
+		 * macBuf = Buffer for MAC tag.
+		 * Returns: number of bytes written into out.
+		 * Throws: IllegalStateError = if the cipher is in an inappropriate state.
+		 */
+		size_t doFinal(ubyte[] macBuf, ubyte[] output){
+			return cipher.finish(macBuf, output);
+		}
+		
+		/**
+		 * return the size of the output buffer required for a processBytes
+		 * an input of len bytes.
+		 *
+		 * Params: len = the length of the input.
+		 * Returns: the space required to accommodate a call to processBytes
+		 * with len bytes of input.
+		 */
+		size_t getUpdateOutputSize(size_t len) nothrow {
+			return cipher.getUpdateOutputSize(len);
+		}
+		
+		/**
+		 * return the size of the output buffer required for a processBytes plus a
+		 * doFinal with an input of len bytes.
+		 *
+		 * Params:
+		 * len = the length of the input.
+		 * Returns: the space required to accommodate a call to processBytes and doFinal
+		 * with len bytes of input.
+		 */
+		size_t getOutputSize(size_t len) nothrow {
+			return cipher.getOutputSize(len);
+		}
+	}
+}
 
 
 
@@ -300,11 +263,6 @@ version(unittest) {
 
 //			assert(cipher.getUpdateOutputSize(plain.length) == plain.length);
 			assert(output.length >= cipher.getUpdateOutputSize(plain.length));
-
-			// test reset()
-			cipher.processAADBytes([0,1,2,3]);
-			cipher.processBytes(plain, output);
-			cipher.reset();
 
 
 			assert(output.length >= cipher.getUpdateOutputSize(plain.length));

@@ -25,6 +25,8 @@ import dcrypt.crypto.modes.ctr;
 
 import dcrypt.crypto.modes.gcm.gcm;
 
+import dcrypt.crypto.engines.poly1305_chacha;
+
 import dcrypt.benchmark.Benchmark;
 import dcrypt.benchmark.DigestBenchmark;
 import dcrypt.benchmark.BlockCipherBenchmark;
@@ -81,6 +83,8 @@ version (Benchmark) {
 			new GCMCipher(new AESNIEngine()),
 			new GCMCipher(new SerpentEngine())
 		];
+		//aeadCiphers ~=	new Poly1305ChaChaEngine;
+		
 		Benchmark.doBenchmark(len, aeadCiphers);
 
 		Benchmark.doCurve25519Benchmark(256);

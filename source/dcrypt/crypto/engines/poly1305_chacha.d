@@ -12,8 +12,12 @@ import dcrypt.util.pack;
 // TODO: adapt to AEAD API
 static assert(isAEADCipher!Poly1305ChaCha, Poly1305ChaCha.name~" is not a valid AEAD cipher.");
 
-@safe nothrow @nogc
+alias AEADCipherWrapper!Poly1305ChaCha Poly1305ChaChaEngine;
+
+@safe
 public struct Poly1305ChaCha {
+
+	@safe nothrow @nogc:
 
 	public enum name = "ChaCha20-Poly1305";
 	public enum macSize = 16;

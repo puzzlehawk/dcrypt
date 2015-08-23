@@ -13,8 +13,9 @@ import dcrypt.util.pack;
 /// 
 /// Note: This might not be compatible with BouncyCastle's implementation because that one uses a 64-bit counter. 
 /// 
-@safe nothrow @nogc
 public struct ChaCha20 {
+
+	@safe nothrow @nogc:
 
 	public {
 		enum name = "ChaCha"~rounds;
@@ -22,7 +23,7 @@ public struct ChaCha20 {
 
 	private {
 		enum rounds = 20;
-		enum uint[4] constants = [0x61707865, 0x3320646e, 0x79622d32, 0x6b206574];
+		static immutable uint[4] constants = [0x61707865, 0x3320646e, 0x79622d32, 0x6b206574];
 
 		uint[16] state;
 		ubyte[16*4] keyStream;
