@@ -3,6 +3,56 @@
 import dcrypt.crypto.ecc.ed25519.groupElement;
 import dcrypt.crypto.digests.sha2: SHA512;
 
+unittest {
+	debug import std.stdio;
+
+	//	draft-josefsson-eddsa-ed25519-03
+	//	-----TEST 1
+	//	SECRET KEY:
+	//	9d61b19deffd5a60ba844af492ec2cc4
+	//	4449c5697b326919703bac031cae7f60
+	//			
+	//	PUBLIC KEY:
+	//	d75a980182b10ab7d54bfed3c964073a
+	//	0ee172f3daa62325af021a68f707511a
+
+	//ubyte[32] sk = cast(const ubyte[]) x"9d61b19deffd5a60ba844af492ec2cc4 4449c5697b326919703bac031cae7f60";
+	ubyte[32] sk;
+	sk[0..5] = [1, 2, 3, 4, 5];
+
+	ubyte[32] pk;
+	ubyte[64] az;
+
+	//crypto_sign_pubkey(pk[], sk[]);
+
+	ge_p3 A;
+	
+	//randombytes(sk,32);
+	//crypto_hash_sha512(az,sk,32);
+	sk[0] &= 248;
+	sk[31] &= 63;
+	sk[31] |= 64;
+	
+	ge_scalarmult_base(A,sk[0..32]);
+	writefln("result, A.X, Y, Z, T");
+	printhex(A.X[]);
+	printhex(A.Y[]);
+	printhex(A.Z[]);
+	printhex(A.T[]);
+	ge_p3_tobytes(pk,A);
+
+
+	writefln("public key:");
+	printhex(pk);
+}
+
+void printhex(T)(in T[] b) {
+	import std.stdio;
+	import std.conv: text;
+
+	writefln(text("\n%(%.", T.sizeof*2,"x%)\n"), b);
+}
+
 /* (Modified by Tor to generate detached signatures.) */
 //#include <string.h>
 //#include "crypto_sign.h"
@@ -21,7 +71,11 @@ public void crypto_sign(
 	in ubyte[] sk,
 	in ubyte[] pk
 	)
-{
+in {
+	assert(sig.length == 64);
+	assert(sk.length == 64);
+	assert(pk.length == 32);
+} body {
 	ubyte[64] nonce, hram;
 
 	ge_p3 R;
@@ -45,6 +99,43 @@ public void crypto_sign(
 	sc_reduce(hram);
 	sc_muladd(sig[32..64], hram[0..32], sk[0..32], nonce[0..32]);
 }
+
+/// ref10
+//int crypto_sign(
+//	unsigned char *sm,unsigned long long *smlen,
+//	const unsigned char *m,unsigned long long mlen,
+//	const unsigned char *sk
+//	)
+//{
+//	unsigned char pk[32];
+//	unsigned char az[64];
+//	unsigned char nonce[64];
+//	unsigned char hram[64];
+//	ge_p3 R;
+//	
+//	memmove(pk,sk + 32,32);
+//	
+//	crypto_hash_sha512(az,sk,32);
+//	az[0] &= 248;
+//	az[31] &= 63;
+//	az[31] |= 64;
+//	
+//	*smlen = mlen + 64;
+//	memmove(sm + 64,m,mlen);
+//	memmove(sm + 32,az + 32,32);
+//	crypto_hash_sha512(nonce,sm + 32,mlen + 32);
+//	memmove(sm + 32,pk,32);
+//	
+//	sc_reduce(nonce);
+//	ge_scalarmult_base(&R,nonce);
+//	ge_p3_tobytes(sm,&R);
+//	
+//	crypto_hash_sha512(hram,sm,mlen + 64);
+//	sc_reduce(hram);
+//	sc_muladd(sm + 32,hram,az,nonce);
+//	
+//	return 0;
+//}
 
 /** 'signature' must be 64-bytes long. */
 public bool crypto_sign_open(
@@ -87,6 +178,7 @@ in {
 	return crypto_equals(rcheck, rcopy);
 }
 
+
 ///* Modified for Tor: new API, 64-byte secret keys. */
 ///
 //#include <string.h>
@@ -94,55 +186,76 @@ in {
 //#include "crypto_sign.h"
 //#include "crypto_hash_sha512.h"
 //#include "ge.h"
+//
+//int crypto_sign_seckey(unsigned char *sk)
+//{
+//	unsigned char seed[32];
+//	
+//	if (randombytes(seed,32) < 0)
+//		return -1;
+//	
+//	crypto_sign_seckey_expand(sk, seed);
+//	
+//	memwipe(seed, 0, 32);
+//	
+//	return 0;
+//}
 
-int crypto_sign_seckey(unsigned char *sk)
-{
-	unsigned char seed[32];
-	
-	if (randombytes(seed,32) < 0)
-		return -1;
-	
-	crypto_sign_seckey_expand(sk, seed);
-	
-	memwipe(seed, 0, 32);
-	
-	return 0;
-}
+//void crypto_sign_seckey_expand(ref ubyte[32] sk, in ref ubyte[32] skSeed)
+//{
+//	SHA512 hash;
+//	hash.put(skSeed);
+//	sk = hash.finish()[0..32];
+//	//crypto_hash_sha512(sk,skseed,32);
+//	clamp(sk[0..32]);
+//}
 
-int crypto_sign_seckey_expand(unsigned char *sk, const unsigned char *skseed)
-{
-	crypto_hash_sha512(sk,skseed,32);
-	sk[0] &= 248;
-	sk[31] &= 63;
-	sk[31] |= 64;
-	
-	return 0;
-}
-
+/// Generate public key from secret key. Secret key must be clamped.
 void crypto_sign_pubkey(ubyte[] pk, in ubyte[] sk)
-{
+in {
+	assert(sk.length == 32, "Invalid secret key length. Must be 32.");
+	assert((sk[0] & ~248) == 0 || (sk[31] & ~63) == 0 || (sk[31] & 64) == 64, "Invalid secret key!");
+	assert(pk.length == 32, "Invalid length of 'pk'. Must be 32.");
+} body {
 	ge_p3 A;
 	
 	ge_scalarmult_base(A, sk);
 	ge_p3_tobytes(pk, A);
 }
 
-
-void crypto_sign_keypair(ref ubyte[32] pk, ref ubyte[32] sk)
-{
-	crypto_sign_seckey(sk[]);
-	crypto_sign_pubkey(pk[], sk[]);
+/// Transforms 32 random bytes into a valid secret key.
+/// 
+/// Params:
+/// sk = 32 byte secret key.
+void clamp(ubyte[] sk)
+in {
+	assert(sk.length == 32);
+} body {
+	sk[0] &= 248;
+	sk[31] &= 63;
+	sk[31] |= 64;
 }
+
+/// Generate a keypair.
+//void crypto_sign_keypair(ref ubyte[32] pk, ref ubyte[32] sk)
+//{
+//	crypto_sign_seckey(sk[]);
+//	crypto_sign_pubkey(pk[], sk[]);
+//}
 
 /* Added to ref10 for Tor. We place this in the public domain.  Alternatively,
  * you may have it under the Creative Commons 0 "CC0" license. */
 //#include "fe.h"
 //#include "ed25519_ref10.h"
 
-int ed25519_ref10_pubkey_from_curve25519_pubkey(unsigned char *out,
-	const unsigned char *inp,
-	int signbit)
-{
+void ed25519_ref10_pubkey_from_curve25519_pubkey(ubyte[] outp,
+	in ubyte[] inp,
+	in int signbit)
+in {
+	assert(outp.length == 32, "Output buffer size must be 32.");
+	assert(inp.length == 32, "Input size must be 32.");
+
+} body {
 	fe u;
 	fe one;
 	fe y;
@@ -152,11 +265,11 @@ int ed25519_ref10_pubkey_from_curve25519_pubkey(unsigned char *out,
 	
 	/* From prop228:
 
-   Given a curve25519 x-coordinate (u), we can get the y coordinate
-   of the ed25519 key using
+	 Given a curve25519 x-coordinate (u), we can get the y coordinate
+	 of the ed25519 key using
 
-         y = (u-1)/(u+1)
-  */
+	 y = (u-1)/(u+1)
+	 */
 	fe_frombytes(u, inp);
 	fe_1(one);
 	fe_sub(uminus1, u, one);
@@ -164,12 +277,10 @@ int ed25519_ref10_pubkey_from_curve25519_pubkey(unsigned char *out,
 	fe_invert(inv_uplus1, uplus1);
 	fe_mul(y, uminus1, inv_uplus1);
 	
-	fe_tobytes(out, y);
+	fe_tobytes(outp, y);
 	
 	/* propagate sign. */
-	out[31] |= (!!signbit) << 7;
-	
-	return 0;
+	outp[31] |= (!!signbit) << 7;
 }
 
 package:

@@ -3,6 +3,8 @@
 public import dcrypt.crypto.ecc.ed25519.fieldElement;
 import dcrypt.crypto.ecc.ed25519.base;
 
+debug import std.stdio;
+debug import dcrypt.crypto.ecc.ed25519.ed25519;
 //#ifndef GE_H
 //#define GE_H
 
@@ -271,11 +273,11 @@ void ge_double_scalarmult_vartime(ref ge_p2 r, in ubyte[] a, in ref ge_p3 A, in 
 	
 	ge_p2_0(r);
 	
-	for (i = 255; i >= 0;--i) {
+	for (i = 255; i >= 0; --i) {
 		if (aslide[i] || bslide[i]) break;
 	}
 	
-	for (; i >= 0;--i) {
+	for (; i >= 0; --i) {
 		ge_p2_dbl(t, r);
 		
 		if (aslide[i] > 0) {
@@ -599,11 +601,27 @@ in {
 	fe recip;
 	fe x;
 	fe y;
-	
+
 	fe_invert(recip, h.Z);
+	writeln(__FUNCTION__ ~ " invert, recip:");
+	printhex(recip);
+
 	fe_mul(x, h.X, recip);
+
+	writeln(__FUNCTION__ ~ " mul, x:");
+	printhex(x);
+
 	fe_mul(y, h.Y, recip);
-	fe_tobytes(s,y);
+
+	writeln(__FUNCTION__ ~ " mul, y:");
+	printhex(y);
+
+
+	fe_tobytes(s, y);
+
+	writeln(__FUNCTION__ ~ " fe_tobytes, s:");
+	printhex(s);
+
 	s[31] ^= fe_isnegative(x) << 7;
 }
 
@@ -620,13 +638,18 @@ void ge_precomp_0(ref ge_precomp h)
 // TODO use bool
 ubyte equal(in byte b, in byte c) pure
 {
-	ubyte ub = b;
-	ubyte uc = c;
-	ubyte x = ub ^ uc; /* 0: yes; 1..255: no */
+	ubyte x = b ^ c; /* 0: yes; 1..255: no */
 	uint y = x; /* 0: yes; 1..255: no */
 	y -= 1; /* 4294967295: yes; 0..254: no */
 	y >>= 31; /* 1: yes; 0: no */
 	return cast(ubyte) y;
+}
+
+unittest {
+	assert(equal(0, 1) == 0);
+	assert(equal(1, 1) == 1);
+	assert(equal(127, 126) == 0);
+	assert(equal(127, 127) == 1);
 }
 
 // TODO use bool
@@ -654,14 +677,14 @@ in {
 alias select ed25519_ref10_select;
 
 /// Params:
-/// b = 0, 1
+/// b = 
 void select(ref ge_precomp t, in int pos, in byte b)
-in {
-	assert(b == 0 || b == 1);
-} body {
+{
 	ge_precomp minust;
 	ubyte bnegative = negative(b);
 	ubyte babs = cast(ubyte) (b - SHL8(cast(byte)((-bnegative) & cast(ubyte)b), 1));
+
+	assert((b >= 0 && babs == b) || (b < 0 && babs == -b));
 	
 	ge_precomp_0(t);
 	cmov(t, base[pos][0], equal(babs,1));
@@ -689,6 +712,7 @@ in {
 void ge_scalarmult_base(ref ge_p3 h, in ubyte[] a)
 in {
 	assert(a.length == 32);
+	assert(a[31] <= 127);
 } body {
 	byte[64] e;
 	byte carry;
@@ -697,16 +721,18 @@ in {
 	ge_precomp t;
 	
 	for (uint i = 0; i < 32; ++i) {
-		e[2 * i + 0] = (a[i] >> 0) & 15;
-		e[2 * i + 1] = (a[i] >> 4) & 15;
+		e[2 * i + 0] = (a[i] >> 0) & 0x0F;
+		e[2 * i + 1] = (a[i] >> 4) & 0x0F;
 	}
+	writeln(__FUNCTION__ ~ ", e:");
+	printhex(e);
 	/* each e[i] is between 0 and 15 */
 	/* e[63] is between 0 and 7 */
 	
 	carry = 0;
 	for (uint i = 0; i < 63; ++i) {
 		e[i] += carry;
-		carry = cast(ubyte) (e[i] + 8);
+		carry = cast(byte) (e[i] + 8);
 		carry >>= 4;
 		e[i] -= SHL8(carry,4);
 	}
@@ -716,7 +742,8 @@ in {
 	ge_p3_0(h);
 	for (uint i = 1; i < 64; i += 2) {
 		select(t, i / 2, e[i]);
-		ge_madd(r, h, t); ge_p1p1_to_p3(h, r);
+		ge_madd(r, h, t);
+		ge_p1p1_to_p3(h, r);
 	}
 	
 	ge_p3_dbl(r, h); ge_p1p1_to_p2(s, r);
@@ -726,7 +753,8 @@ in {
 	
 	for (uint i = 0; i < 64; i += 2) {
 		select(t, i / 2, e[i]);
-		ge_madd(r, h, t); ge_p1p1_to_p3(h, r);
+		ge_madd(r, h, t);
+		ge_p1p1_to_p3(h, r);
 	}
 }
 
