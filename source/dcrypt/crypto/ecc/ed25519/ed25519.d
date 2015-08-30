@@ -16,9 +16,10 @@ unittest {
 	//	d75a980182b10ab7d54bfed3c964073a
 	//	0ee172f3daa62325af021a68f707511a
 
-	//ubyte[32] sk = cast(const ubyte[]) x"9d61b19deffd5a60ba844af492ec2cc4 4449c5697b326919703bac031cae7f60";
-	ubyte[32] sk;
-	sk[0..5] = [1, 2, 3, 4, 5];
+	ubyte[32] sk = cast(const ubyte[]) x"9d61b19deffd5a60ba844af492ec2cc4 4449c5697b326919703bac031cae7f60";
+//	ubyte[32] sk;
+//	sk[0..5] = [1, 2, 3, 4, 5];
+//	sk[31] = 255;
 
 	ubyte[32] pk;
 	ubyte[64] az;
