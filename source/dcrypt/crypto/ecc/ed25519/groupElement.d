@@ -3,8 +3,6 @@
 public import dcrypt.crypto.ecc.ed25519.fieldElement;
 import dcrypt.crypto.ecc.ed25519.base;
 
-debug import std.stdio;
-debug import dcrypt.crypto.ecc.ed25519.ed25519;
 //#ifndef GE_H
 //#define GE_H
 
@@ -241,12 +239,12 @@ void slide(byte[] r, in ubyte[] a)
 }
 
 
-/*
- r = a * A + b * B
- where a = a[0]+256*a[1]+...+256^31 a[31].
- and b = b[0]+256*b[1]+...+256^31 b[31].
- B is the Ed25519 base point (x,4/5) with x positive.
- */
+/// calculates a * A + b * B
+/// B is the Ed25519 base point (x,4/5) with x positive.
+/// Params:
+/// a = a[0]+256*a[1]+...+256^31 a[31].
+/// b = b[0]+256*b[1]+...+256^31 b[31].
+/// Returns: r = a * A + b * B
 
 void ge_double_scalarmult_vartime(ref ge_p2 r, in ubyte[] a, in ref ge_p3 A, in ubyte[] b)
 {
@@ -302,7 +300,7 @@ void ge_double_scalarmult_vartime(ref ge_p2 r, in ubyte[] a, in ref ge_p3 A, in 
 
 
 
-int ge_frombytes_negate_vartime(ref ge_p3 h, in ubyte[] s)
+bool ge_frombytes_negate_vartime(ref ge_p3 h, in ubyte[] s)
 in {
 	assert(s.length == 32);
 } body {
@@ -334,7 +332,7 @@ in {
 	fe_sub(check,vxx, u);    /* vx^2-u */
 	if (fe_isnonzero(check)) {
 		fe_add(check,vxx, u);  /* vx^2+u */
-		if (fe_isnonzero(check)) return -1;
+		if (fe_isnonzero(check)) return false;
 		fe_mul(h.X, h.X,sqrtm1);
 	}
 	
@@ -342,7 +340,7 @@ in {
 		fe_neg(h.X, h.X);
 	
 	fe_mul(h.T, h.X, h.Y);
-	return 0;
+	return true;
 }
 
 
@@ -603,25 +601,9 @@ in {
 	fe y;
 
 	fe_invert(recip, h.Z);
-	writeln(__FUNCTION__ ~ " invert, recip:");
-	printhex(recip);
-
 	fe_mul(x, h.X, recip);
-
-	writeln(__FUNCTION__ ~ " mul, x:");
-	printhex(x);
-
 	fe_mul(y, h.Y, recip);
-
-	writeln(__FUNCTION__ ~ " mul, y:");
-	printhex(y);
-
-
 	fe_tobytes(s, y);
-
-	writeln(__FUNCTION__ ~ " fe_tobytes, s:");
-	printhex(s);
-
 	s[31] ^= fe_isnegative(x) << 7;
 }
 
@@ -724,8 +706,6 @@ in {
 		e[2 * i + 0] = (a[i] >> 0) & 0x0F;
 		e[2 * i + 1] = (a[i] >> 4) & 0x0F;
 	}
-	writeln(__FUNCTION__ ~ ", e:");
-	printhex(e);
 	/* each e[i] is between 0 and 15 */
 	/* e[63] is between 0 and 7 */
 	

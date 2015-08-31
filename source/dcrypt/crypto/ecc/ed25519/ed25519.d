@@ -4,8 +4,6 @@ import dcrypt.crypto.ecc.ed25519.groupElement;
 import dcrypt.crypto.digests.sha2: SHA512;
 
 unittest {
-	debug import std.stdio;
-
 	//	draft-josefsson-eddsa-ed25519-03
 	//	-----TEST 1
 	//	SECRET KEY:
@@ -15,37 +13,60 @@ unittest {
 	//	PUBLIC KEY:
 	//	d75a980182b10ab7d54bfed3c964073a
 	//	0ee172f3daa62325af021a68f707511a
-
+	
 	ubyte[32] sk = cast(const ubyte[]) x"9d61b19deffd5a60ba844af492ec2cc4 4449c5697b326919703bac031cae7f60";
-//	ubyte[32] sk;
-//	sk[0..5] = [1, 2, 3, 4, 5];
-//	sk[31] = 255;
+	immutable ubyte[32] expectedPk = cast(const ubyte[]) x"d75a980182b10ab7d54bfed3c964073a 0ee172f3daa62325af021a68f707511a";
 
 	ubyte[32] pk;
-	ubyte[64] az;
 
-	//crypto_sign_pubkey(pk[], sk[]);
+	crypto_sign_pubkey(pk, sk);
 
-	ge_p3 A;
-	
-	//randombytes(sk,32);
-	//crypto_hash_sha512(az,sk,32);
-	sk[0] &= 248;
-	sk[31] &= 63;
-	sk[31] |= 64;
-	
-	ge_scalarmult_base(A,sk[0..32]);
-	writefln("result, A.X, Y, Z, T");
-	printhex(A.X[]);
-	printhex(A.Y[]);
-	printhex(A.Z[]);
-	printhex(A.T[]);
-	ge_p3_tobytes(pk,A);
-
-
-	writefln("public key:");
-	printhex(pk);
+	assert(pk == expectedPk);
 }
+
+//unittest {
+//	debug import std.stdio;
+//
+//	//	draft-josefsson-eddsa-ed25519-03
+//	//	-----TEST 1
+//	//	SECRET KEY:
+//	//	9d61b19deffd5a60ba844af492ec2cc4
+//	//	4449c5697b326919703bac031cae7f60
+//	//			
+//	//	PUBLIC KEY:
+//	//	d75a980182b10ab7d54bfed3c964073a
+//	//	0ee172f3daa62325af021a68f707511a
+//
+//	ubyte[32] sk = cast(const ubyte[]) x"9d61b19deffd5a60ba844af492ec2cc4 4449c5697b326919703bac031cae7f60";
+////	ubyte[32] sk;
+////	sk[0..5] = [1, 2, 3, 4, 5];
+////	sk[31] = 255;
+//
+//	ubyte[32] pk;
+//	ubyte[64] az;
+//
+//	//crypto_sign_pubkey(pk[], sk[]);
+//
+//	ge_p3 A;
+//	
+//	//randombytes(sk,32);
+//	//crypto_hash_sha512(az,sk,32);
+//	sk[0] &= 248;
+//	sk[31] &= 63;
+//	sk[31] |= 64;
+//	
+//	ge_scalarmult_base(A,sk[0..32]);
+//	writefln("result, A.X, Y, Z, T");
+//	printhex(A.X[]);
+//	printhex(A.Y[]);
+//	printhex(A.Z[]);
+//	printhex(A.T[]);
+//	ge_p3_tobytes(pk,A);
+//
+//
+//	writefln("public key:");
+//	printhex(pk);
+//}
 
 void printhex(T)(in T[] b) {
 	import std.stdio;
@@ -154,7 +175,7 @@ in {
 	ge_p2 R;
 
 	if (signature[63] & 224) return false;	// bad signature
-	if (ge_frombytes_negate_vartime(A, pk) != 0) return false; // bad signature
+	if (!ge_frombytes_negate_vartime(A, pk)) return false; // bad signature
 
 	//	memmove(pkcopy,pk,32);
 	//	memmove(rcopy,signature,32);
@@ -219,8 +240,15 @@ in {
 	assert(pk.length == 32, "Invalid length of 'pk'. Must be 32.");
 } body {
 	ge_p3 A;
-	
-	ge_scalarmult_base(A, sk);
+	ubyte[32] secret;
+
+	SHA512 hash;
+	hash.put(sk[0..32]);
+	secret = hash.finish()[0..32];
+
+	clamp(secret);
+
+	ge_scalarmult_base(A, secret);
 	ge_p3_tobytes(pk, A);
 }
 

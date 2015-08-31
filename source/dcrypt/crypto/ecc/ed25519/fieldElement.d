@@ -1254,8 +1254,6 @@ void fe_tobytes(ubyte[] s, in ref fe h)
 in {
 	assert(s.length == 32);
 } body {
-	debug import dcrypt.crypto.ecc.ed25519.ed25519: printhex;
-	debug printhex(h);
 	int h0 = h[0];
 	int h1 = h[1];
 	int h2 = h[2];
