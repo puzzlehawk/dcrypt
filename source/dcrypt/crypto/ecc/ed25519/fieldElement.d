@@ -85,7 +85,7 @@ struct fe {
 	 |f| bounded by 1.1*2^26,1.1*2^25,1.1*2^26,1.1*2^25,etc.
 	 */
 	@property
-	bool isNonzero() const pure
+	bool isNonzero() const
 	{
 		return !crypto_equals(fe_tobytes(this), zero);
 	}
@@ -98,9 +98,14 @@ struct fe {
 	 |f| bounded by 1.1*2^26,1.1*2^25,1.1*2^26,1.1*2^25,etc.
 	 */ 
 	@property
-	bool isNegative() const pure
+	bool isNegative() const
 	{
 		return (fe_tobytes(this)[0] & 1) == 1;
+	}
+
+	@property
+	fe inverse() const {
+		return fe_invert(this);
 	}
 }
 
@@ -291,7 +296,7 @@ unittest {
 	assert(0xFFFFFFFF << 7 == SHL32(0xFFFFFFFF, 7));
 }
 
-void fe_invert(out fe outp, in ref fe z)
+private fe fe_invert(in ref fe z)
 {
 	fe t0;
 	fe t1;
@@ -345,7 +350,7 @@ void fe_invert(out fe outp, in ref fe z)
 	fe_sq(t1, t1); 
 	for (uint i = 1; i < 5; ++i) fe_sq(t1, t1);
 
-	outp = t1 * t0;
+	return t1 * t0;
 }
 
 

@@ -272,8 +272,7 @@ in {
 	fe_frombytes(u, inp);
 	uminus1 = u - fe.one;
 	uplus1 = u + fe.one;
-	fe_invert(inv_uplus1, uplus1);
-	y = uminus1 * inv_uplus1;
+	y = uminus1 * uplus1.inverse;
 	
 	outp[0..32] = fe_tobytes(y);
 	

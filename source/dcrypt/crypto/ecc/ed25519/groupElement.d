@@ -395,13 +395,10 @@ void ge_p3_tobytes(ubyte[] s, in ref ge_p3 h)
 in {
 	assert(s.length == 32);
 } body {
-	fe recip;
-	fe x;
-	fe y;
+	fe recip = h.Z.inverse;
+	fe x = h.X * recip;
+	fe y = h.Y * recip;
 
-	fe_invert(recip, h.Z);
-	x = h.X * recip;
-	y = h.Y * recip;
 	s[0..32] = fe_tobytes(y);
 	s[31] ^= x.isNegative << 7;
 }
@@ -562,13 +559,10 @@ void ge_tobytes(ubyte[] s, in ref ge_p2 h)
 in {
 	assert(s.length == 32);
 } body {
-	fe recip;
-	fe x;
-	fe y;
-	
-	fe_invert(recip, h.Z);
-	x = h.X * recip;
-	y = h.Y * recip;
+	fe recip = h.Z.inverse;
+	fe x = h.X * recip;
+	fe y = h.Y * recip;
+
 	s[0..32] = fe_tobytes(y);
 	s[31] ^= x.isNegative << 7;
 }
