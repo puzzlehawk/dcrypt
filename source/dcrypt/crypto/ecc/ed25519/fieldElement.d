@@ -63,6 +63,16 @@ struct fe {
 		}
 	}
 
+	fe opUnary(string op)() const
+	if(op == "-")
+	{
+		static if(op == "-") {
+			fe tmp;
+			tmp.value[] = -this.value[];
+			return tmp;
+		}
+	}
+
 	ref fe opOpAssign(string op)(auto ref const fe rhs)
 		if (op == "+" || op == "-" || op == "*")
 	{
@@ -106,6 +116,11 @@ struct fe {
 	@property
 	fe inverse() const {
 		return fe_invert(this);
+	}
+
+	/// Changes the sign.
+	void negate() {
+		value[] = -value[];
 	}
 }
 
@@ -608,26 +623,26 @@ private fe fe_mul(in ref fe f, in ref fe g)
 	return h;
 }
 
-/**
- Returns: h = -f
+///**
+// Returns: h = -f
+//
+// Preconditions:
+// |f| bounded by 1.1*2^25,1.1*2^24,1.1*2^25,1.1*2^24,etc.
+//
+// Postconditions:
+// |h| bounded by 1.1*2^25,1.1*2^24,1.1*2^25,1.1*2^24,etc.
+// */
+//void fe_neg(ref fe h, in ref fe f)
+//{
+//	h[] = -f[];
+//}
 
- Preconditions:
- |f| bounded by 1.1*2^25,1.1*2^24,1.1*2^25,1.1*2^24,etc.
-
- Postconditions:
- |h| bounded by 1.1*2^25,1.1*2^24,1.1*2^25,1.1*2^24,etc.
- */
-void fe_neg(ref fe h, in ref fe f)
-{
-	h[] = -f[];
-}
-
-// test fe_neg with overlapping arrays
-unittest {
-	fe f = 1;
-	fe_neg(f, f);
-	assert(f[0] == cast(uint)(-1));
-}
+//// test fe_neg with overlapping arrays
+//unittest {
+//	fe f = 1;
+//	fe_neg(f, f);
+//	assert(f[0] == cast(uint)(-1));
+//}
 
 void fe_pow22523(ref fe outp, in ref fe z)
 {

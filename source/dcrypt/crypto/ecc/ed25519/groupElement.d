@@ -257,8 +257,9 @@ in {
 		h.X *= sqrtm1;
 	}
 	
-	if (h.X.isNegative == (s[31] >> 7))
-		fe_neg(h.X, h.X);
+	if (h.X.isNegative == (s[31] >> 7)) {
+		h.X.negate();
+	}
 
 	h.T = h.X * h.Y;
 	return true;
@@ -474,7 +475,7 @@ void select(ref ge_precomp t, in int pos, in byte b)
 	cmov(t, base[pos][7], babs == 8);
 	minust.yplusx = t.yminusx;
 	minust.yminusx = t.yplusx;
-	fe_neg(minust.xy2d, t.xy2d);
+	minust.xy2d = -t.xy2d;
 	cmov(t, minust, bnegative);
 }
 
