@@ -82,6 +82,19 @@ struct fe {
 	{
 		return !crypto_equals(fe_tobytes(this), zero);
 	}
+
+	/**
+	 return 1 if f is in {1,3,5,...,q-2}
+	 return 0 if f is in {0,2,4,...,q-1}
+
+	 Preconditions:
+	 |f| bounded by 1.1*2^26,1.1*2^25,1.1*2^26,1.1*2^25,etc.
+	 */ 
+	@property
+	bool isNegative() const pure
+	{
+		return (fe_tobytes(this)[0] & 1) == 1;
+	}
 }
 
 /// Compares a and b in constant time.
@@ -185,13 +198,6 @@ unittest {
 	assert(all!"a == 42"(a[]));
 }
 
-void fe_copy(ref fe dest, in ref fe src)
-out {
-	assert(dest == src);
-} body {
-	dest = src;
-}
-
 ulong load_3(in ubyte[] inp) pure
 in {
 	assert(inp.length == 3);
@@ -285,7 +291,7 @@ unittest {
 	assert(0xFFFFFFFF << 7 == SHL32(0xFFFFFFFF, 7));
 }
 
-void fe_invert(ref fe outp, in ref fe z)
+void fe_invert(out fe outp, in ref fe z)
 {
 	fe t0;
 	fe t1;
@@ -341,17 +347,7 @@ void fe_invert(ref fe outp, in ref fe z)
 	fe_mul(outp, t1, t0);
 }
 
-/*
- return 1 if f is in {1,3,5,...,q-2}
- return 0 if f is in {0,2,4,...,q-1}
 
- Preconditions:
- |f| bounded by 1.1*2^26,1.1*2^25,1.1*2^26,1.1*2^25,etc.
- */
-bool fe_isnegative(in ref fe f) pure
-{
-	return (fe_tobytes(f)[0] & 1) == 1;
-}
 
 
 

@@ -258,7 +258,7 @@ in {
 		fe_mul(h.X, h.X,sqrtm1);
 	}
 	
-	if (fe_isnegative(h.X) == (s[31] >> 7))
+	if (h.X.isNegative == (s[31] >> 7))
 		fe_neg(h.X, h.X);
 	
 	fe_mul(h.T, h.X, h.Y);
@@ -404,7 +404,7 @@ in {
 	fe_mul(x, h.X, recip);
 	fe_mul(y, h.Y, recip);
 	s[0..32] = fe_tobytes(y);
-	s[31] ^= fe_isnegative(x) << 7;
+	s[31] ^= x.isNegative << 7;
 }
 
 
@@ -476,8 +476,8 @@ void select(ref ge_precomp t, in int pos, in byte b)
 	cmov(t, base[pos][5], babs == 6);
 	cmov(t, base[pos][6], babs == 7);
 	cmov(t, base[pos][7], babs == 8);
-	fe_copy(minust.yplusx, t.yminusx);
-	fe_copy(minust.yminusx, t.yplusx);
+	minust.yplusx = t.yminusx;
+	minust.yminusx = t.yplusx;
 	fe_neg(minust.xy2d, t.xy2d);
 	cmov(t, minust, bnegative);
 }
@@ -571,7 +571,7 @@ in {
 	fe_mul(x, h.X, recip);
 	fe_mul(y, h.Y, recip);
 	s[0..32] = fe_tobytes(y);
-	s[31] ^= fe_isnegative(x) << 7;
+	s[31] ^= x.isNegative << 7;
 }
 
 // constants
