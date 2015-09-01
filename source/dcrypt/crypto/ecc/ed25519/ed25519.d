@@ -270,11 +270,10 @@ in {
 	 y = (u-1)/(u+1)
 	 */
 	fe_frombytes(u, inp);
-	fe_1(one);
-	uminus1 = u - one;
-	uplus1 = u + one;
+	uminus1 = u - fe.one;
+	uplus1 = u + fe.one;
 	fe_invert(inv_uplus1, uplus1);
-	fe_mul(y, uminus1, inv_uplus1);
+	y = uminus1 * inv_uplus1;
 	
 	outp[0..32] = fe_tobytes(y);
 	

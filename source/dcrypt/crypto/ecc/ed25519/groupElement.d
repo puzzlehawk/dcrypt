@@ -116,11 +116,10 @@ void ge_add(ref ge_p1p1 r, in ref ge_p3 p, in ref ge_cached q)
 	fe t0;
 	r.X = p.Y + p.X;
 	r.Y = p.Y - p.X;
-	fe_mul(r.Z, r.X, q.YplusX);
-
-	fe_mul(r.Y, r.Y, q.YminusX);
-	fe_mul(r.T, q.T2d, p.T);
-	fe_mul(r.X, p.Z, q.Z);
+	r.Z = r.X * q.YplusX;
+	r.Y *= q.YminusX;
+	r.T = q.T2d * p.T;
+	r.X = p.Z * q.Z;
 	t0 = r.X + r.X;
 	r.X = r.Z - r.Y;
 	r.Y = r.Z + r.Y;
@@ -233,35 +232,35 @@ in {
 	fe check;
 	
 	fe_frombytes(h.Y,s);
-	fe_1(h.Z);
+	h.Z = fe.one;
 	fe_sq(u, h.Y);
-	fe_mul(v, u,d);
+	v = u * d;
 	u -= h.Z;      /* u = y^2-1 */
 	v += h.Z;       /* v = dy^2+1 */
 	
 	fe_sq(v3,v);
-	fe_mul(v3,v3,v);        /* v3 = v^3 */
+	v3 *= v;		/* v3 = v^3 */
 	fe_sq(h.X,v3);
-	fe_mul(h.X, h.X,v);
-	fe_mul(h.X, h.X, u);    /* x = uv^7 */
+	h.X *= v; // TODO h.X *= v*u;
+	h.X *= u;   /* x = uv^7 */
 	
 	fe_pow22523(h.X, h.X); /* x = (uv^7)^((q-5)/8) */
-	fe_mul(h.X, h.X,v3);
-	fe_mul(h.X, h.X, u);    /* x = uv^3(uv^7)^((q-5)/8) */
+	h.X *= v3;
+	h.X *= u;    /* x = uv^3(uv^7)^((q-5)/8) */
 	
 	fe_sq(vxx, h.X);
-	fe_mul(vxx,vxx,v);
+	vxx *= v;
 	check = vxx - u;    /* vx^2-u */
 	if (check.isNonzero) {
 		check = vxx + u;  /* vx^2+u */
 		if (check.isNonzero) return false;
-		fe_mul(h.X, h.X,sqrtm1);
+		h.X *= sqrtm1;
 	}
 	
 	if (h.X.isNegative == (s[31] >> 7))
 		fe_neg(h.X, h.X);
-	
-	fe_mul(h.T, h.X, h.Y);
+
+	h.T = h.X * h.Y;
 	return true;
 }
 
@@ -274,9 +273,9 @@ void ge_madd(ref ge_p1p1 r, in ref ge_p3 p, in ref ge_precomp q)
 	fe t0;
 	r.X = p.Y + p.X;
 	r.Y = p.Y - p.X;
-	fe_mul(r.Z, r.X, q.yplusx);
-	fe_mul(r.Y, r.Y, q.yminusx);
-	fe_mul(r.T, q.xy2d, p.T);
+	r.Z = r.X * q.yplusx;
+	r.Y *= q.yminusx;
+	r.T = q.xy2d * p.T;
 	t0 = p.Z + p.Z;
 	r.X = r.Z - r.Y;
 	r.Y += r.Z;
@@ -293,9 +292,9 @@ void ge_msub(ref ge_p1p1 r, in ref ge_p3 p, in ref ge_precomp q)
 	fe t0;
 	r.X = p.Y + p.X;
 	r.Y = p.Y - p.X;
-	fe_mul(r.Z, r.X, q.yminusx);
-	fe_mul(r.Y, r.Y, q.yplusx);
-	fe_mul(r.T, q.xy2d, p.T);
+	r.Z = r.X * q.yminusx;
+	r.Y *= q.yplusx;
+	r.T = q.xy2d * p.T;
 	t0 = p.Z + p.Z;
 	r.X = r.Z - r.Y;
 	r.Y += r.Z;
@@ -308,9 +307,9 @@ void ge_msub(ref ge_p1p1 r, in ref ge_p3 p, in ref ge_precomp q)
  */
 void ge_p1p1_to_p2(ref ge_p2 r, in ref ge_p1p1 p)
 {
-	fe_mul(r.X, p.X, p.T);
-	fe_mul(r.Y, p.Y, p.Z);
-	fe_mul(r.Z, p.Z, p.T);
+	r.X = p.X * p.T;
+	r.Y = p.Y * p.Z;
+	r.Z = p.Z * p.T;
 }
 
 /**
@@ -318,17 +317,17 @@ void ge_p1p1_to_p2(ref ge_p2 r, in ref ge_p1p1 p)
  */
 void ge_p1p1_to_p3(ref ge_p3 r, in ref ge_p1p1 p)
 {
-	fe_mul(r.X, p.X, p.T);
-	fe_mul(r.Y, p.Y, p.Z);
-	fe_mul(r.Z, p.Z, p.T);
-	fe_mul(r.T, p.X, p.Y);
+	r.X = p.X * p.T;
+	r.Y = p.Y * p.Z;
+	r.Z = p.Z * p.T;
+	r.T = p.X * p.Y;
 }
 
 void ge_p2_0(ref ge_p2 h)
 {
 	fe_0(h.X);
-	fe_1(h.Y);
-	fe_1(h.Z);
+	h.Y = fe.one;
+	h.Z = fe.one;
 }
 
 /**
@@ -352,8 +351,8 @@ void ge_p2_dbl(ref ge_p1p1 r, in ref ge_p2 p)
 void ge_p3_0(ref ge_p3 h)
 {
 	fe_0(h.X);
-	fe_1(h.Y);
-	fe_1(h.Z);
+	h.Y = fe.one;
+	h.Z = fe.one;
 	fe_0(h.T);
 }
 
@@ -378,7 +377,7 @@ void ge_p3_to_cached(ref ge_cached r, in ref ge_p3 p)
 	r.YplusX = p.Y + p.X;
 	r.YminusX = p.Y - p.X;
 	r.Z = p.Z;
-	fe_mul(r.T2d, p.T,d2);
+	r.T2d = p.T * d2;
 }
 
 /**
@@ -401,8 +400,8 @@ in {
 	fe y;
 
 	fe_invert(recip, h.Z);
-	fe_mul(x, h.X, recip);
-	fe_mul(y, h.Y, recip);
+	x = h.X * recip;
+	y = h.Y * recip;
 	s[0..32] = fe_tobytes(y);
 	s[31] ^= x.isNegative << 7;
 }
@@ -410,8 +409,8 @@ in {
 
 void ge_precomp_0(ref ge_precomp h)
 {
-	fe_1(h.yplusx);
-	fe_1(h.yminusx);
+	h.yplusx = fe.one;
+	h.yminusx = fe.one;
 	fe_0(h.xy2d);
 }
 
@@ -548,10 +547,10 @@ void ge_sub(ref ge_p1p1 r, in ref ge_p3 p, in ref ge_cached q)
 	fe t0;
 	r.X = p.Y + p.X;
 	r.Y = p.Y - p.X;
-	fe_mul(r.Z, r.X, q.YminusX);
-	fe_mul(r.Y, r.Y, q.YplusX);
-	fe_mul(r.T, q.T2d, p.T);
-	fe_mul(r.X, p.Z, q.Z);
+	r.Z = r.X * q.YminusX;
+	r.Y *= q.YplusX;
+	r.T = q.T2d * p.T;
+	r.X = p.Z * q.Z;
 	t0 = r.X + r.X;
 	r.X = r.Z - r.Y;
 	r.Y += r.Z;
@@ -568,8 +567,8 @@ in {
 	fe y;
 	
 	fe_invert(recip, h.Z);
-	fe_mul(x, h.X, recip);
-	fe_mul(y, h.Y, recip);
+	x = h.X * recip;
+	y = h.Y * recip;
 	s[0..32] = fe_tobytes(y);
 	s[31] ^= x.isNegative << 7;
 }
