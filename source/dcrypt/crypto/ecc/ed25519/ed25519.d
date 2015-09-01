@@ -27,16 +27,16 @@ unittest {
 
 	immutable ubyte[0] message = cast(const ubyte[]) "";
 
-	immutable ubyte[64] signature = crypto_sign(message, sk);
+	immutable ubyte[64] signature = sign(message, sk);
 
 	immutable auto expectedSig = x"e5564300c360ac729086e2cc806e828a84877f1eb8e5d974d873e065224901555fb8821590a33bacc61e39701cf9b46bd25bf5f0595bbe24655141438e7a100b";
 	assert(signature[0..32] == expectedSig[0..32], "Ed25519 signature: wrong R.");
 	assert(signature[32..64] == expectedSig[32..64], "Ed25519 produced unexpected signature.");
 
-	immutable bool valid = crypto_sign_open(signature, message, pk);
+	immutable bool valid = verify(signature, message, pk);
 	assert(valid, "Ed25519 signature verificaton failed.");
 
-	assert(!crypto_sign_open(signature, cast(const ubyte[]) "asdf", pk), "Ed25519 signature verificaton failed.");
+	assert(!verify(signature, cast(const ubyte[]) "asdf", pk), "Ed25519 signature verificaton failed.");
 }
 
 @safe nothrow @nogc:
@@ -46,7 +46,7 @@ unittest {
 /// m = message
 /// sk = secret key
 /// pk = public key
-public ubyte[64] crypto_sign(
+public ubyte[64] sign(
 	in ubyte[] m,
 	in ubyte[] sk
 	//in ubyte[] pk
@@ -134,7 +134,7 @@ in {
 /// signature = 64 bytes signature.
 /// m = The signed message.
 /// pk = The public key.
-public bool crypto_sign_open(
+public bool verify(
 	in ubyte[] signature,
 	in ubyte[] m,
 	in ubyte[] pk
@@ -234,18 +234,6 @@ in {
 	return secret;
 }
 
-/// Transforms 32 random bytes into a valid secret key.
-/// 
-/// Params:
-/// sk = 32 byte secret key.
-void clamp(ubyte[] sk) pure
-in {
-	assert(sk.length == 32);
-} body {
-	sk[0] &= 248;
-	sk[31] &= 63;
-	sk[31] |= 64;
-}
 
 /// Generate a keypair.
 //void crypto_sign_keypair(ref ubyte[32] pk, ref ubyte[32] sk)
@@ -295,6 +283,19 @@ in {
 }
 
 private:
+
+/// Transforms 32 random bytes into a valid secret key.
+/// 
+/// Params:
+/// sk = 32 byte secret key.
+void clamp(ubyte[] sk) pure
+in {
+	assert(sk.length == 32);
+} body {
+	sk[0] &= 248;
+	sk[31] &= 63;
+	sk[31] |= 64;
+}
 
 /**
  Input:

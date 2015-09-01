@@ -17,8 +17,8 @@ version(unittest) {
 			immutable ubyte[64] signature = cast(const ubyte[]) v[3][0..64];
 			
 			assert(secret_to_public(sk) == pk, "Public key generation failed.");
-			assert(crypto_sign(msg, sk) == signature, "Ed25519 signature failed.");
-			assert(crypto_sign_open(signature, msg, pk), "Ed25519 signature verification failed.");
+			assert(sign(msg, sk) == signature, "Ed25519 signature failed.");
+			assert(verify(signature, msg, pk), "Ed25519 signature verification failed.");
 		}
 	}
 
