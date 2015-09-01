@@ -39,12 +39,7 @@ unittest {
 	assert(!crypto_sign_open(signature, cast(const ubyte[]) "asdf", pk), "Ed25519 signature verificaton failed.");
 }
 
-/* (Modified by Tor to generate detached signatures.) */
-//#include <string.h>
-//#include "crypto_sign.h"
-//#include "crypto_hash_sha512.h"
-//#include "ge.h"
-//#include "sc.h"
+@safe nothrow @nogc:
 
 /// Params:
 /// sig = buffer for signature
@@ -63,16 +58,6 @@ in {
 	ubyte[64] sig;
 	ubyte[32] r, h;
 
-	//	def sign(secret, msg):
-	//			a, prefix = secret_expand(secret)
-	//			A = point_compress(point_mul(a, G)) 
-	//			r = sha512_modq(prefix + msg)
-	//			R = point_mul(r, G)
-	//			Rs = point_compress(R)
-	//			h = sha512_modq(Rs + A + msg)
-	//			s = (r + h * a) % q 
-	//			return Rs + int.to_bytes(s, 32, "little")
-	//
 	ge_p3 R;
 
 	immutable ubyte[64] expandedSecret = secret_expand(sk);
@@ -80,19 +65,16 @@ in {
 	immutable ubyte[32] pk = secret_to_public(sk); // TODO optimize, use expanded secret
 	//ge_scalarmult_base(A, expandedSecret[0..32]);
 
-	// crypto_hash_sha512_2(nonce, sk+32, 32, m, mlen);
 	// sha512_modq
 	SHA512 sha;
 	sha.put(expandedSecret[32..64]);
 	sha.put(m);
 	r = sc_reduce(sha.finish());
 
-	//r[0..32] = sha512modq(expandedSecret[32..64], m);
-
-	ge_scalarmult_base(R, r);
+	R = ge_scalarmult_base(r);
 	ge_p3_tobytes(sig[0..32], R);
-	
-	//crypto_hash_sha512_3(hram, sig, 32, pk, 32, m, mlen);
+
+	// sha512modq
 	sha.put(sig[0..32]);
 	sha.put(pk[0..32]);
 	sha.put(m);
@@ -231,7 +213,7 @@ in {
 	ubyte[32] secret = secret_expand(sk)[0..32];
 	ubyte[32] pk;
 	assert((secret[0] & ~248) == 0 || (secret[31] & ~63) == 0 || (secret[31] & 64) == 64, "Invalid secret key!");
-	ge_scalarmult_base(A, secret);
+	A = ge_scalarmult_base(secret);
 	ge_p3_tobytes(pk[], A);
 
 	return pk;
@@ -306,7 +288,7 @@ in {
 	fe_invert(inv_uplus1, uplus1);
 	fe_mul(y, uminus1, inv_uplus1);
 	
-	fe_tobytes(outp, y);
+	outp[0..32] = fe_tobytes(y);
 	
 	/* propagate sign. */
 	outp[31] |= (!!signbit) << 7; // convert non zero values to 128

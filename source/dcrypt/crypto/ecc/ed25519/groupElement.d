@@ -3,8 +3,7 @@
 public import dcrypt.crypto.ecc.ed25519.fieldElement;
 import dcrypt.crypto.ecc.ed25519.base;
 
-//#ifndef GE_H
-//#define GE_H
+@safe nothrow @nogc:
 
 /**
  ge means group element.
@@ -603,7 +602,7 @@ in {
 	fe_invert(recip, h.Z);
 	fe_mul(x, h.X, recip);
 	fe_mul(y, h.Y, recip);
-	fe_tobytes(s, y);
+	s[0..32] = fe_tobytes(y);
 	s[31] ^= fe_isnegative(x) << 7;
 }
 
@@ -617,14 +616,13 @@ void ge_precomp_0(ref ge_precomp h)
 
 
 
-// TODO use bool
-ubyte equal(in byte b, in byte c) pure
+bool equal(in byte b, in byte c) pure
 {
 	ubyte x = b ^ c; /* 0: yes; 1..255: no */
 	uint y = x; /* 0: yes; 1..255: no */
 	y -= 1; /* 4294967295: yes; 0..254: no */
 	y >>= 31; /* 1: yes; 0: no */
-	return cast(ubyte) y;
+	return y != 0;
 }
 
 unittest {
@@ -634,16 +632,17 @@ unittest {
 	assert(equal(127, 127) == 1);
 }
 
-// TODO use bool
-ubyte negative(in byte b) pure
+/// Returns: true if b is negative
+/// TODO replace with <
+bool negative(in byte b) pure
 {
 	ulong x = b; /* 18446744073709551361..18446744073709551615: yes; 0..255: no */
 	x >>= 63; /* 1: yes; 0: no */
-	return cast(ubyte) x;
+	return x != 0;
 }
 
 /// Conditional move: t = u, if and only if b != 0.
-void cmov(ref ge_precomp t, in ref ge_precomp u, in ubyte b)
+void cmov(ref ge_precomp t, in ref ge_precomp u, in bool b)
 in {
 	assert(b == 0 || b == 1);
 } body {
@@ -656,27 +655,26 @@ in {
  * grabs. :p */
 //#define select ed25519_ref10_select
 
-alias select ed25519_ref10_select;
-
+/// Select ge_precomp from base table in constant time.
 /// Params:
 /// b = 
 void select(ref ge_precomp t, in int pos, in byte b)
 {
 	ge_precomp minust;
-	ubyte bnegative = negative(b);
-	ubyte babs = cast(ubyte) (b - SHL8(cast(byte)((-bnegative) & cast(ubyte)b), 1));
+	immutable bool bnegative = negative(b);
+	immutable ubyte babs = cast(ubyte) (b - (cast(byte)((-cast(int)(bnegative)) & cast(ubyte)b) << 1)); // abs(b)
 
 	assert((b >= 0 && babs == b) || (b < 0 && babs == -b));
 	
 	ge_precomp_0(t);
-	cmov(t, base[pos][0], equal(babs,1));
-	cmov(t, base[pos][1], equal(babs,2));
-	cmov(t, base[pos][2], equal(babs,3));
-	cmov(t, base[pos][3], equal(babs,4));
-	cmov(t, base[pos][4], equal(babs,5));
-	cmov(t, base[pos][5], equal(babs,6));
-	cmov(t, base[pos][6], equal(babs,7));
-	cmov(t, base[pos][7], equal(babs,8));
+	cmov(t, base[pos][0], babs == 1);
+	cmov(t, base[pos][1], babs == 2);
+	cmov(t, base[pos][2], babs == 3);
+	cmov(t, base[pos][3], babs == 4);
+	cmov(t, base[pos][4], babs == 5);
+	cmov(t, base[pos][5], babs == 6);
+	cmov(t, base[pos][6], babs == 7);
+	cmov(t, base[pos][7], babs == 8);
 	fe_copy(minust.yplusx, t.yminusx);
 	fe_copy(minust.yminusx, t.yplusx);
 	fe_neg(minust.xy2d, t.xy2d);
@@ -691,7 +689,7 @@ void select(ref ge_precomp t, in int pos, in byte b)
  Preconditions:
  a[31] <= 127
  */
-void ge_scalarmult_base(ref ge_p3 h, in ubyte[] a)
+ge_p3 ge_scalarmult_base(in ubyte[] a)
 in {
 	assert(a.length == 32);
 	assert(a[31] <= 127);
@@ -701,6 +699,7 @@ in {
 	ge_p1p1 r;
 	ge_p2 s;
 	ge_precomp t;
+	ge_p3 h;
 	
 	for (uint i = 0; i < 32; ++i) {
 		e[2 * i + 0] = (a[i] >> 0) & 0x0F;
@@ -736,6 +735,8 @@ in {
 		ge_madd(r, h, t);
 		ge_p1p1_to_p3(h, r);
 	}
+
+	return h;
 }
 
 /**
@@ -744,63 +745,17 @@ in {
 void ge_sub(ref ge_p1p1 r, in ref ge_p3 p, in ref ge_cached q)
 {
 	fe t0;
-	
-	/* qhasm: YpX1 = Y1+X1 */
-	/* asm 1: fe_add(>YpX1=fe#1,<Y1=fe#12,<X1=fe#11); */
-	/* asm 2: fe_add(>YpX1=r.X,<Y1=p.Y,<X1=p.X); */
 	fe_add(r.X, p.Y, p.X);
-	
-	/* qhasm: YmX1 = Y1-X1 */
-	/* asm 1: fe_sub(>YmX1=fe#2,<Y1=fe#12,<X1=fe#11); */
-	/* asm 2: fe_sub(>YmX1=r.Y,<Y1=p.Y,<X1=p.X); */
 	fe_sub(r.Y, p.Y, p.X);
-	
-	/* qhasm: A = YpX1*YmX2 */
-	/* asm 1: fe_mul(>A=fe#3,<YpX1=fe#1,<YmX2=fe#16); */
-	/* asm 2: fe_mul(>A=r.Z,<YpX1=r.X,<YmX2=q.YminusX); */
 	fe_mul(r.Z, r.X, q.YminusX);
-	
-	/* qhasm: B = YmX1*YpX2 */
-	/* asm 1: fe_mul(>B=fe#2,<YmX1=fe#2,<YpX2=fe#15); */
-	/* asm 2: fe_mul(>B=r.Y,<YmX1=r.Y,<YpX2=q.YplusX); */
 	fe_mul(r.Y, r.Y, q.YplusX);
-	
-	/* qhasm: C = T2d2*T1 */
-	/* asm 1: fe_mul(>C=fe#4,<T2d2=fe#18,<T1=fe#14); */
-	/* asm 2: fe_mul(>C=r.T,<T2d2=q.T2d,<T1=p.T); */
 	fe_mul(r.T, q.T2d, p.T);
-	
-	/* qhasm: ZZ = Z1*Z2 */
-	/* asm 1: fe_mul(>ZZ=fe#1,<Z1=fe#13,<Z2=fe#17); */
-	/* asm 2: fe_mul(>ZZ=r.X,<Z1=p.Z,<Z2=q.Z); */
 	fe_mul(r.X, p.Z, q.Z);
-	
-	/* qhasm: D = 2*ZZ */
-	/* asm 1: fe_add(>D=fe#5,<ZZ=fe#1,<ZZ=fe#1); */
-	/* asm 2: fe_add(>D=t0,<ZZ=r.X,<ZZ=r.X); */
 	fe_add(t0, r.X, r.X);
-	
-	/* qhasm: X3 = A-B */
-	/* asm 1: fe_sub(>X3=fe#1,<A=fe#3,<B=fe#2); */
-	/* asm 2: fe_sub(>X3=r.X,<A=r.Z,<B=r.Y); */
 	fe_sub(r.X, r.Z, r.Y);
-	
-	/* qhasm: Y3 = A+B */
-	/* asm 1: fe_add(>Y3=fe#2,<A=fe#3,<B=fe#2); */
-	/* asm 2: fe_add(>Y3=r.Y,<A=r.Z,<B=r.Y); */
 	fe_add(r.Y, r.Z, r.Y);
-	
-	/* qhasm: Z3 = D-C */
-	/* asm 1: fe_sub(>Z3=fe#3,<D=fe#5,<C=fe#4); */
-	/* asm 2: fe_sub(>Z3=r.Z,<D=t0,<C=r.T); */
 	fe_sub(r.Z, t0, r.T);
-	
-	/* qhasm: T3 = D+C */
-	/* asm 1: fe_add(>T3=fe#4,<D=fe#5,<C=fe#4); */
-	/* asm 2: fe_add(>T3=r.T,<D=t0,<C=r.T); */
 	fe_add(r.T, t0, r.T);
-	
-	/* qhasm: return */
 }
 
 void ge_tobytes(ubyte[] s, in ref ge_p2 h)
@@ -814,7 +769,7 @@ in {
 	fe_invert(recip, h.Z);
 	fe_mul(x, h.X, recip);
 	fe_mul(y, h.Y, recip);
-	fe_tobytes(s,y);
+	s[0..32] = fe_tobytes(y);
 	s[31] ^= fe_isnegative(x) << 7;
 }
 

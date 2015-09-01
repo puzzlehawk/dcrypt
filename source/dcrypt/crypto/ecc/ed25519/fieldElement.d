@@ -1,13 +1,8 @@
 ﻿module dcrypt.crypto.ecc.ed25519.fieldElement;
 
-
 import dcrypt.util.pack;
-// from fe.h
 
-//#ifndef FE_H
-//#define FE_H
-//
-//#include "int.h"
+@safe nothrow @nogc:
 
 alias uint[10] fe;
 
@@ -19,54 +14,10 @@ alias uint[10] fe;
 immutable ubyte[32] zero = 0;
 
 
-
-//#define fe_frombytes crypto_sign_ed25519_ref10_fe_frombytes
-//#define fe_tobytes crypto_sign_ed25519_ref10_fe_tobytes
-//#define fe_copy crypto_sign_ed25519_ref10_fe_copy
-//#define fe_isnonzero crypto_sign_ed25519_ref10_fe_isnonzero
-//#define fe_isnegative crypto_sign_ed25519_ref10_fe_isnegative
-//#define fe_0 crypto_sign_ed25519_ref10_fe_0
-//#define fe_1 crypto_sign_ed25519_ref10_fe_1
-//#define fe_cswap crypto_sign_ed25519_ref10_fe_cswap
-//#define fe_cmov crypto_sign_ed25519_ref10_fe_cmov
-//#define fe_add crypto_sign_ed25519_ref10_fe_add
-//#define fe_sub crypto_sign_ed25519_ref10_fe_sub
-//#define fe_neg crypto_sign_ed25519_ref10_fe_neg
-//#define fe_mul crypto_sign_ed25519_ref10_fe_mul
-//#define fe_sq crypto_sign_ed25519_ref10_fe_sq
-//#define fe_sq2 crypto_sign_ed25519_ref10_fe_sq2
-//#define fe_mul121666 crypto_sign_ed25519_ref10_fe_mul121666
-//#define fe_invert crypto_sign_ed25519_ref10_fe_invert
-//#define fe_pow22523 crypto_sign_ed25519_ref10_fe_pow22523
-//
-//extern void fe_frombytes(fe,const unsigned char *);
-//extern void fe_tobytes(unsigned char *,const fe);
-//
-//extern void fe_copy(fe,const fe);
-//extern int fe_isnonzero(const fe);
-//extern int fe_isnegative(const fe);
-//extern void fe_0(fe);
-//extern void fe_1(fe);
-//extern void fe_cswap(fe,fe,unsigned int);
-//extern void fe_cmov(fe,const fe,unsigned int);
-//
-//extern void fe_add(fe,const fe,const fe);
-//extern void fe_sub(fe,const fe,const fe);
-//extern void fe_neg(fe,const fe);
-//extern void fe_mul(fe,const fe,const fe);
-//extern void fe_sq(fe,const fe);
-//extern void fe_sq2(fe,const fe);
-//extern void fe_mul121666(fe,const fe);
-//extern void fe_invert(fe,const fe);
-//extern void fe_pow22523(fe,const fe);
-//
-//#endif
-
-
 /// Compares a and b in constant time.
 /// 
 /// Returns: 0 if a == b, some other value if a != b.
-bool crypto_equals(T)(in T[] a, in T[] b)
+bool crypto_equals(T)(in T[] a, in T[] b) pure
 in {
 	assert(a.length == b.length, "Unequal length.");
 } body  {
@@ -87,13 +38,13 @@ unittest {
 }
 
 /// h = 0
-void fe_0(ref fe h)
+void fe_0(out fe h)
 {
 	h[] = 0;
 }
 
 /// h = 1
-void fe_1(ref fe h)
+void fe_1(out fe h)
 {
 	h[0] = 1;
 	h[1..10] = 0;
@@ -116,29 +67,29 @@ void fe_add(ref fe h, in ref fe f, in ref fe g)
 	}
 }
 
-/*
- * Conditional move.
- Replace (f,g) with (g,g) if b == 1;
- replace (f,g) with (f,g) if b == 0.
 
- Preconditions: b in {0,1}.
- 
- TODO change b to bool
- */
-void fe_cmov(ref fe f, in ref fe g, in uint b)
+/// Conditional move.
+/// Replace (f,g) with (g,g) if b == 1;
+/// replace (f,g) with (f,g) if b == 0.
+/// 
+/// Params:
+/// dest = Destination.
+/// src = Source.
+/// condition = Condition.
+void fe_cmov(ref fe dest, in ref fe src, in bool condition)
 in {
-	assert(b == 0 || b == 1);
+	assert(condition == 0 || condition == 1);
 } out {
-	if(b == 1) {
-		assert(f == g);
+	if(condition == 1) {
+		assert(dest == src);
 	}
 } body {
-	immutable uint mask = -b;
+	immutable uint mask = -(cast(int)condition);
 
-	assert((b == 0 && mask == 0) || (b == 1 && mask == 0xFFFFFFFF));
+	assert((condition == 0 && mask == 0) || (condition == 1 && mask == 0xFFFFFFFF));
 
-	f[] ^= mask & f[];
-	f[] ^= mask & g[];
+	dest[] ^= mask & dest[];
+	dest[] ^= mask & src[];
 }
 
 // test conditional move
@@ -195,7 +146,7 @@ in {
 /*
  Ignores top bit of h.
  */
-void fe_frombytes(ref fe h, in ubyte[] s)
+void fe_frombytes(out fe h, in ubyte[] s)
 in {
 	assert(s.length == 32);
 } body {
@@ -268,168 +219,54 @@ void fe_invert(ref fe outp, in ref fe z)
 	fe t1;
 	fe t2;
 	fe t3;
-	
-	/* Modified by Tor: pointless loops removed to appease analysis tools */
-	
-	/* qhasm: fe z1 */
-	
-	/* qhasm: fe z2 */
-	
-	/* qhasm: fe z8 */
-	
-	/* qhasm: fe z9 */
-	
-	/* qhasm: fe z11 */
-	
-	/* qhasm: fe z22 */
-	
-	/* qhasm: fe z_5_0 */
-	
-	/* qhasm: fe z_10_5 */
-	
-	/* qhasm: fe z_10_0 */
-	
-	/* qhasm: fe z_20_10 */
-	
-	/* qhasm: fe z_20_0 */
-	
-	/* qhasm: fe z_40_20 */
-	
-	/* qhasm: fe z_40_0 */
-	
-	/* qhasm: fe z_50_10 */
-	
-	/* qhasm: fe z_50_0 */
-	
-	/* qhasm: fe z_100_50 */
-	
-	/* qhasm: fe z_100_0 */
-	
-	/* qhasm: fe z_200_100 */
-	
-	/* qhasm: fe z_200_0 */
-	
-	/* qhasm: fe z_250_50 */
-	
-	/* qhasm: fe z_250_0 */
-	
-	/* qhasm: fe z_255_5 */
-	
-	/* qhasm: fe z_255_21 */
-	
-	/* qhasm: enter pow225521 */
-	
-	/* qhasm: z2 = z1^2^1 */
-	/* asm 1: fe_sq(>z2=fe#1,<z1=fe#11); for (uint i = 1; i < 1; ++i) fe_sq(>z2=fe#1,>z2=fe#1); */
-	/* asm 2: fe_sq(>z2=t0,<z1=z); for (uint i = 1; i < 1; ++i) fe_sq(>z2=t0,>z2=t0); */
-	fe_sq(t0, z); /* DEADCODE This loop has no effect:  for (uint i = 1; i < 1; ++i) fe_sq(t0, t0); */
-	
-	/* qhasm: z8 = z2^2^2 */
-	/* asm 1: fe_sq(>z8=fe#2,<z2=fe#1); for (uint i = 1; i < 2; ++i) fe_sq(>z8=fe#2,>z8=fe#2); */
-	/* asm 2: fe_sq(>z8=t1,<z2=t0); for (uint i = 1; i < 2; ++i) fe_sq(>z8=t1,>z8=t1); */
-	fe_sq(t1, t0); for (uint i = 1; i < 2; ++i) fe_sq(t1, t1);
-	
-	/* qhasm: z9 = z1*z8 */
-	/* asm 1: fe_mul(>z9=fe#2,<z1=fe#11,<z8=fe#2); */
-	/* asm 2: fe_mul(>z9=t1,<z1=z,<z8=t1); */
-	fe_mul(t1, z, t1);
-	
-	/* qhasm: z11 = z2*z9 */
-	/* asm 1: fe_mul(>z11=fe#1,<z2=fe#1,<z9=fe#2); */
-	/* asm 2: fe_mul(>z11=t0,<z2=t0,<z9=t1); */
-	fe_mul(t0, t0, t1);
-	
-	/* qhasm: z22 = z11^2^1 */
-	/* asm 1: fe_sq(>z22=fe#3,<z11=fe#1); for (uint i = 1; i < 1; ++i) fe_sq(>z22=fe#3,>z22=fe#3); */
-	/* asm 2: fe_sq(>z22=t2,<z11=t0); for (uint i = 1; i < 1; ++i) fe_sq(>z22=t2,>z22=t2); */
-	fe_sq(t2, t0); /* DEADCODE This loop has no effect   for (uint i = 1; i < 1; ++i) fe_sq(t2, t2); */
-	
-	/* qhasm: z_5_0 = z9*z22 */
-	/* asm 1: fe_mul(>z_5_0=fe#2,<z9=fe#2,<z22=fe#3); */
-	/* asm 2: fe_mul(>z_5_0=t1,<z9=t1,<z22=t2); */
-	fe_mul(t1, t1, t2);
-	
-	/* qhasm: z_10_5 = z_5_0^2^5 */
-	/* asm 1: fe_sq(>z_10_5=fe#3,<z_5_0=fe#2); for (uint i = 1; i < 5; ++i) fe_sq(>z_10_5=fe#3,>z_10_5=fe#3); */
-	/* asm 2: fe_sq(>z_10_5=t2,<z_5_0=t1); for (uint i = 1; i < 5; ++i) fe_sq(>z_10_5=t2,>z_10_5=t2); */
-	fe_sq(t2, t1); for (uint i = 1; i < 5; ++i) fe_sq(t2, t2);
-	
-	/* qhasm: z_10_0 = z_10_5*z_5_0 */
-	/* asm 1: fe_mul(>z_10_0=fe#2,<z_10_5=fe#3,<z_5_0=fe#2); */
-	/* asm 2: fe_mul(>z_10_0=t1,<z_10_5=t2,<z_5_0=t1); */
-	fe_mul(t1, t2, t1);
-	
-	/* qhasm: z_20_10 = z_10_0^2^10 */
-	/* asm 1: fe_sq(>z_20_10=fe#3,<z_10_0=fe#2); for (uint i = 1; i < 10; ++i) fe_sq(>z_20_10=fe#3,>z_20_10=fe#3); */
-	/* asm 2: fe_sq(>z_20_10=t2,<z_10_0=t1); for (uint i = 1; i < 10; ++i) fe_sq(>z_20_10=t2,>z_20_10=t2); */
-	fe_sq(t2, t1); for (uint i = 1; i < 10; ++i) fe_sq(t2, t2);
-	
-	/* qhasm: z_20_0 = z_20_10*z_10_0 */
-	/* asm 1: fe_mul(>z_20_0=fe#3,<z_20_10=fe#3,<z_10_0=fe#2); */
-	/* asm 2: fe_mul(>z_20_0=t2,<z_20_10=t2,<z_10_0=t1); */
-	fe_mul(t2, t2, t1);
-	
-	/* qhasm: z_40_20 = z_20_0^2^20 */
-	/* asm 1: fe_sq(>z_40_20=fe#4,<z_20_0=fe#3); for (uint i = 1; i < 20; ++i) fe_sq(>z_40_20=fe#4,>z_40_20=fe#4); */
-	/* asm 2: fe_sq(>z_40_20=t3,<z_20_0=t2); for (uint i = 1; i < 20; ++i) fe_sq(>z_40_20=t3,>z_40_20=t3); */
-	fe_sq(t3, t2); for (uint i = 1; i < 20; ++i) fe_sq(t3, t3);
-	
-	/* qhasm: z_40_0 = z_40_20*z_20_0 */
-	/* asm 1: fe_mul(>z_40_0=fe#3,<z_40_20=fe#4,<z_20_0=fe#3); */
-	/* asm 2: fe_mul(>z_40_0=t2,<z_40_20=t3,<z_20_0=t2); */
-	fe_mul(t2, t3, t2);
-	
-	/* qhasm: z_50_10 = z_40_0^2^10 */
-	/* asm 1: fe_sq(>z_50_10=fe#3,<z_40_0=fe#3); for (uint i = 1; i < 10; ++i) fe_sq(>z_50_10=fe#3,>z_50_10=fe#3); */
-	/* asm 2: fe_sq(>z_50_10=t2,<z_40_0=t2); for (uint i = 1; i < 10; ++i) fe_sq(>z_50_10=t2,>z_50_10=t2); */
-	fe_sq(t2, t2); for (uint i = 1; i < 10; ++i) fe_sq(t2, t2);
-	
-	/* qhasm: z_50_0 = z_50_10*z_10_0 */
-	/* asm 1: fe_mul(>z_50_0=fe#2,<z_50_10=fe#3,<z_10_0=fe#2); */
-	/* asm 2: fe_mul(>z_50_0=t1,<z_50_10=t2,<z_10_0=t1); */
-	fe_mul(t1, t2, t1);
-	
-	/* qhasm: z_100_50 = z_50_0^2^50 */
-	/* asm 1: fe_sq(>z_100_50=fe#3,<z_50_0=fe#2); for (uint i = 1; i < 50; ++i) fe_sq(>z_100_50=fe#3,>z_100_50=fe#3); */
-	/* asm 2: fe_sq(>z_100_50=t2,<z_50_0=t1); for (uint i = 1; i < 50; ++i) fe_sq(>z_100_50=t2,>z_100_50=t2); */
-	fe_sq(t2, t1); for (uint i = 1; i < 50; ++i) fe_sq(t2, t2);
-	
-	/* qhasm: z_100_0 = z_100_50*z_50_0 */
-	/* asm 1: fe_mul(>z_100_0=fe#3,<z_100_50=fe#3,<z_50_0=fe#2); */
-	/* asm 2: fe_mul(>z_100_0=t2,<z_100_50=t2,<z_50_0=t1); */
-	fe_mul(t2, t2, t1);
-	
-	/* qhasm: z_200_100 = z_100_0^2^100 */
-	/* asm 1: fe_sq(>z_200_100=fe#4,<z_100_0=fe#3); for (uint i = 1; i < 100; ++i) fe_sq(>z_200_100=fe#4,>z_200_100=fe#4); */
-	/* asm 2: fe_sq(>z_200_100=t3,<z_100_0=t2); for (uint i = 1; i < 100; ++i) fe_sq(>z_200_100=t3,>z_200_100=t3); */
-	fe_sq(t3, t2); for (uint i = 1; i < 100; ++i) fe_sq(t3, t3);
-	
-	/* qhasm: z_200_0 = z_200_100*z_100_0 */
-	/* asm 1: fe_mul(>z_200_0=fe#3,<z_200_100=fe#4,<z_100_0=fe#3); */
-	/* asm 2: fe_mul(>z_200_0=t2,<z_200_100=t3,<z_100_0=t2); */
-	fe_mul(t2, t3, t2);
-	
-	/* qhasm: z_250_50 = z_200_0^2^50 */
-	/* asm 1: fe_sq(>z_250_50=fe#3,<z_200_0=fe#3); for (uint i = 1; i < 50; ++i) fe_sq(>z_250_50=fe#3,>z_250_50=fe#3); */
-	/* asm 2: fe_sq(>z_250_50=t2,<z_200_0=t2); for (uint i = 1; i < 50; ++i) fe_sq(>z_250_50=t2,>z_250_50=t2); */
-	fe_sq(t2, t2); for (uint i = 1; i < 50; ++i) fe_sq(t2, t2);
-	
-	/* qhasm: z_250_0 = z_250_50*z_50_0 */
-	/* asm 1: fe_mul(>z_250_0=fe#2,<z_250_50=fe#3,<z_50_0=fe#2); */
-	/* asm 2: fe_mul(>z_250_0=t1,<z_250_50=t2,<z_50_0=t1); */
-	fe_mul(t1, t2, t1);
-	
-	/* qhasm: z_255_5 = z_250_0^2^5 */
-	/* asm 1: fe_sq(>z_255_5=fe#2,<z_250_0=fe#2); for (uint i = 1; i < 5; ++i) fe_sq(>z_255_5=fe#2,>z_255_5=fe#2); */
-	/* asm 2: fe_sq(>z_255_5=t1,<z_250_0=t1); for (uint i = 1; i < 5; ++i) fe_sq(>z_255_5=t1,>z_255_5=t1); */
-	fe_sq(t1, t1); for (uint i = 1; i < 5; ++i) fe_sq(t1, t1);
 
-	/* qhasm: z_255_21 = z_255_5*z11 */
-	/* asm 1: fe_mul(>z_255_21=fe#12,<z_255_5=fe#2,<z11=fe#1); */
-	/* asm 2: fe_mul(>z_255_21=out,<z_255_5=t1,<z11=t0); */
+	fe_sq(t0, z); 
+	fe_sq(t1, t0); 
+
+	for (uint i = 1; i < 2; ++i) fe_sq(t1, t1);
+
+	fe_mul(t1, z, t1);
+	fe_mul(t0, t0, t1);
+	fe_sq(t2, t0); 
+	fe_mul(t1, t1, t2);
+	fe_sq(t2, t1); 
+
+	for (uint i = 1; i < 5; ++i) fe_sq(t2, t2);
+
+	fe_mul(t1, t2, t1);
+	fe_sq(t2, t1); 
+
+	for (uint i = 1; i < 10; ++i) fe_sq(t2, t2);
+
+	fe_mul(t2, t2, t1);
+
+	fe_sq(t3, t2); 
+
+	for (uint i = 1; i < 20; ++i) fe_sq(t3, t3);
+
+	fe_mul(t2, t3, t2);
+	fe_sq(t2, t2);
+
+	for (uint i = 1; i < 10; ++i) fe_sq(t2, t2);
+
+	fe_mul(t1, t2, t1);
+
+	fe_sq(t2, t1); 
+	for (uint i = 1; i < 50; ++i) fe_sq(t2, t2);
+
+	fe_mul(t2, t2, t1);
+	fe_sq(t3, t2); 
+	for (uint i = 1; i < 100; ++i) fe_sq(t3, t3);
+	fe_mul(t2, t3, t2);
+	fe_sq(t2, t2); 
+	for (uint i = 1; i < 50; ++i) fe_sq(t2, t2);
+
+	fe_mul(t1, t2, t1);
+
+	fe_sq(t1, t1); 
+	for (uint i = 1; i < 5; ++i) fe_sq(t1, t1);
+
 	fe_mul(outp, t1, t0);
-	
-	/* qhasm: return */
 }
 
 /*
@@ -439,11 +276,9 @@ void fe_invert(ref fe outp, in ref fe z)
  Preconditions:
  |f| bounded by 1.1*2^26,1.1*2^25,1.1*2^26,1.1*2^25,etc.
  */
-bool fe_isnegative(in ref fe f)
+bool fe_isnegative(in ref fe f) pure
 {
-	ubyte[32] s;
-	fe_tobytes(s, f);
-	return (s[0] & 1) == 1;
+	return (fe_tobytes(f)[0] & 1) == 1;
 }
 
 /*
@@ -453,11 +288,9 @@ bool fe_isnegative(in ref fe f)
  Preconditions:
  |f| bounded by 1.1*2^26,1.1*2^25,1.1*2^26,1.1*2^25,etc.
  */
-bool fe_isnonzero(in ref fe f)
+bool fe_isnonzero(in ref fe f) pure
 {
-	ubyte[32] s;
-	fe_tobytes(s, f);
-	return !crypto_equals(s, zero);
+	return !crypto_equals(fe_tobytes(f), zero);
 }
 
 /**
@@ -1250,10 +1083,8 @@ void fe_sub(ref fe h, in ref fe f, in ref fe g)
  Have q+2^(-255)x = 2^(-255)(h + 19 2^(-25) h9 + 2^(-1))
  so floor(2^(-255)(h + 19 2^(-25) h9 + 2^(-1))) = q.
  */
-void fe_tobytes(ubyte[] s, in ref fe h)
-in {
-	assert(s.length == 32);
-} body {
+ubyte[32] fe_tobytes(in ref fe h) pure
+{
 	int h0 = h[0];
 	int h1 = h[1];
 	int h2 = h[2];
@@ -1310,7 +1141,8 @@ in {
 	 evidently 2^255 h10-2^255 q = 0.
 	 Goal: Output h0+...+2^230 h9.
 	 */
-	
+
+	ubyte[32] s;
 	s[0] = cast(ubyte) (h0 >> 0);
 	s[1] = cast(ubyte) (h0 >> 8);
 	s[2] = cast(ubyte) (h0 >> 16);
@@ -1343,4 +1175,6 @@ in {
 	s[29] = cast(ubyte) (h9 >> 2);
 	s[30] = cast(ubyte) (h9 >> 10);
 	s[31] = cast(ubyte) (h9 >> 18);
+
+	return s;
 }
