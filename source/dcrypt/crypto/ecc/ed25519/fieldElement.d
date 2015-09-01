@@ -45,20 +45,26 @@ struct fe {
 	}
 
 	fe opBinary(string op)(auto ref const fe rhs) const
-		if (op == "+")
+		if (op == "+" || op == "-")
 	{
 		static if(op == "+") {
 			fe tmp;
 			tmp.value[] = this.value[] + rhs.value[];
 			return tmp;
+		} else static if(op == "-") {
+			fe tmp;
+			tmp.value[] = this.value[] - rhs.value[];
+			return tmp;
 		}
 	}
 
 	ref fe opOpAssign(string op)(auto ref const fe rhs)
-		if(op == "+")
+		if (op == "+" || op == "-")
 	{
 		static if(op == "+") {
 			value[] += rhs.value[];
+		} else static if(op == "-") {
+			value[] -= rhs.value[];
 		}
 
 		return this;
@@ -958,21 +964,21 @@ void fe_sq2(ref fe h, in ref fe f)
 	h[9] = cast(int) h9;
 }
 
-/**
- Returns: h = f - g
- Can overlap h with f or g.
-
- Preconditions:
- |f| bounded by 1.1*2^25,1.1*2^24,1.1*2^25,1.1*2^24,etc.
- |g| bounded by 1.1*2^25,1.1*2^24,1.1*2^25,1.1*2^24,etc.
-
- Postconditions:
- |h| bounded by 1.1*2^26,1.1*2^25,1.1*2^26,1.1*2^25,etc.
- */
-void fe_sub(ref fe h, in ref fe f, in ref fe g)
-{
-	h[] = f[] - g[];
-}
+///**
+// Returns: h = f - g
+// Can overlap h with f or g.
+//
+// Preconditions:
+// |f| bounded by 1.1*2^25,1.1*2^24,1.1*2^25,1.1*2^24,etc.
+// |g| bounded by 1.1*2^25,1.1*2^24,1.1*2^25,1.1*2^24,etc.
+//
+// Postconditions:
+// |h| bounded by 1.1*2^26,1.1*2^25,1.1*2^26,1.1*2^25,etc.
+// */
+//void fe_sub(ref fe h, in ref fe f, in ref fe g)
+//{
+//	h[] = f[] - g[];
+//}
 
 
 /**

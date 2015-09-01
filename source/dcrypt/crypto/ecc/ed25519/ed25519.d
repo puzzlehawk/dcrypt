@@ -271,7 +271,7 @@ in {
 	 */
 	fe_frombytes(u, inp);
 	fe_1(one);
-	fe_sub(uminus1, u, one);
+	uminus1 = u - one;
 	uplus1 = u + one;
 	fe_invert(inv_uplus1, uplus1);
 	fe_mul(y, uminus1, inv_uplus1);

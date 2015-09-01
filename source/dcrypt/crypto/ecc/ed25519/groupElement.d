@@ -115,17 +115,17 @@ void ge_add(ref ge_p1p1 r, in ref ge_p3 p, in ref ge_cached q)
 {
 	fe t0;
 	r.X = p.Y + p.X;
-	fe_sub(r.Y, p.Y, p.X);
+	r.Y = p.Y - p.X;
 	fe_mul(r.Z, r.X, q.YplusX);
 
 	fe_mul(r.Y, r.Y, q.YminusX);
 	fe_mul(r.T, q.T2d, p.T);
 	fe_mul(r.X, p.Z, q.Z);
 	t0 = r.X + r.X;
-	fe_sub(r.X, r.Z, r.Y);
+	r.X = r.Z - r.Y;
 	r.Y = r.Z + r.Y;
 	r.Z = t0 + r.T;
-	fe_sub(r.T, t0, r.T);
+	r.T = t0 - r.T;
 }
 
 
@@ -236,7 +236,7 @@ in {
 	fe_1(h.Z);
 	fe_sq(u, h.Y);
 	fe_mul(v, u,d);
-	fe_sub(u, u, h.Z);       /* u = y^2-1 */
+	u -= h.Z;      /* u = y^2-1 */
 	v += h.Z;       /* v = dy^2+1 */
 	
 	fe_sq(v3,v);
@@ -251,7 +251,7 @@ in {
 	
 	fe_sq(vxx, h.X);
 	fe_mul(vxx,vxx,v);
-	fe_sub(check,vxx, u);    /* vx^2-u */
+	check = vxx - u;    /* vx^2-u */
 	if (check.isNonzero) {
 		check = vxx + u;  /* vx^2+u */
 		if (check.isNonzero) return false;
@@ -273,15 +273,15 @@ void ge_madd(ref ge_p1p1 r, in ref ge_p3 p, in ref ge_precomp q)
 {
 	fe t0;
 	r.X = p.Y + p.X;
-	fe_sub(r.Y, p.Y, p.X);
+	r.Y = p.Y - p.X;
 	fe_mul(r.Z, r.X, q.yplusx);
 	fe_mul(r.Y, r.Y, q.yminusx);
 	fe_mul(r.T, q.xy2d, p.T);
 	t0 = p.Z + p.Z;
-	fe_sub(r.X, r.Z, r.Y);
+	r.X = r.Z - r.Y;
 	r.Y += r.Z;
 	r.Z = t0 + r.T;
-	fe_sub(r.T, t0, r.T);
+	r.T = t0 - r.T;
 }
 
 
@@ -292,14 +292,14 @@ void ge_msub(ref ge_p1p1 r, in ref ge_p3 p, in ref ge_precomp q)
 {
 	fe t0;
 	r.X = p.Y + p.X;
-	fe_sub(r.Y, p.Y, p.X);
+	r.Y = p.Y - p.X;
 	fe_mul(r.Z, r.X, q.yminusx);
 	fe_mul(r.Y, r.Y, q.yplusx);
 	fe_mul(r.T, q.xy2d, p.T);
 	t0 = p.Z + p.Z;
-	fe_sub(r.X, r.Z, r.Y);
+	r.X = r.Z - r.Y;
 	r.Y += r.Z;
-	fe_sub(r.Z, t0, r.T);
+	r.Z = t0 - r.T;
 	r.T += t0;
 }
 
@@ -344,9 +344,9 @@ void ge_p2_dbl(ref ge_p1p1 r, in ref ge_p2 p)
 	r.Y = p.X + p.Y;
 	fe_sq(t0, r.Y);
 	r.Y = r.Z + r.X;
-	fe_sub(r.Z, r.Z, r.X);
-	fe_sub(r.X, t0, r.Y);
-	fe_sub(r.T, r.T, r.Z);
+	r.Z -= r.X;
+	r.X = t0 - r.Y;
+	r.T -= r.Z;
 }
 
 void ge_p3_0(ref ge_p3 h)
@@ -372,22 +372,24 @@ void ge_p3_dbl(ref ge_p1p1 r, in ref ge_p3 p)
 /**
  r = p
  */
-extern void ge_p3_to_cached(ref ge_cached r, in ref ge_p3 p)
+// TODO replace by opCast
+void ge_p3_to_cached(ref ge_cached r, in ref ge_p3 p)
 {
 	r.YplusX = p.Y + p.X;
-	fe_sub(r.YminusX, p.Y, p.X);
-	fe_copy(r.Z, p.Z);
+	r.YminusX = p.Y - p.X;
+	r.Z = p.Z;
 	fe_mul(r.T2d, p.T,d2);
 }
 
 /**
  r = p
  */
-extern void ge_p3_to_p2(ref ge_p2 r, in ref ge_p3 p)
+// TODO replace by opCast
+void ge_p3_to_p2(ref ge_p2 r, in ref ge_p3 p)
 {
-	fe_copy(r.X, p.X);
-	fe_copy(r.Y, p.Y);
-	fe_copy(r.Z, p.Z);
+	r.X = p.X;
+	r.Y = p.Y;
+	r.Z = p.Z;
 }
 
 void ge_p3_tobytes(ubyte[] s, in ref ge_p3 h)
@@ -545,15 +547,15 @@ void ge_sub(ref ge_p1p1 r, in ref ge_p3 p, in ref ge_cached q)
 {
 	fe t0;
 	r.X = p.Y + p.X;
-	fe_sub(r.Y, p.Y, p.X);
+	r.Y = p.Y - p.X;
 	fe_mul(r.Z, r.X, q.YminusX);
 	fe_mul(r.Y, r.Y, q.YplusX);
 	fe_mul(r.T, q.T2d, p.T);
 	fe_mul(r.X, p.Z, q.Z);
 	t0 = r.X + r.X;
-	fe_sub(r.X, r.Z, r.Y);
+	r.X = r.Z - r.Y;
 	r.Y += r.Z;
-	fe_sub(r.Z, t0, r.T);
+	r.Z = t0 - r.T;
 	r.T += t0;
 }
 
