@@ -6,73 +6,29 @@ import dcrypt.crypto.digests.sha2: SHA512;
 unittest {
 	//	draft-josefsson-eddsa-ed25519-03
 	//	-----TEST 1
-	//	SECRET KEY:
-	//	9d61b19deffd5a60ba844af492ec2cc4
-	//	4449c5697b326919703bac031cae7f60
-	//			
-	//	PUBLIC KEY:
-	//	d75a980182b10ab7d54bfed3c964073a
-	//	0ee172f3daa62325af021a68f707511a
 	
-	ubyte[32] sk = cast(const ubyte[]) x"9d61b19deffd5a60ba844af492ec2cc4 4449c5697b326919703bac031cae7f60";
-	immutable ubyte[32] expectedPk = cast(const ubyte[]) x"d75a980182b10ab7d54bfed3c964073a 0ee172f3daa62325af021a68f707511a";
+	immutable ubyte[32] sk = cast(const ubyte[]) x"9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60";
+	immutable ubyte[32] expectedPk = cast(const ubyte[]) x"d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a";
 
-	ubyte[32] pk;
+	ubyte[32] pk = secret_to_public(sk);
 
-	crypto_sign_pubkey(pk, sk);
-
-	assert(pk == expectedPk);
+	assert(pk == expectedPk, "ed25519 crypto_sign_pubkey failed.");
 }
 
-//unittest {
-//	debug import std.stdio;
-//
-//	//	draft-josefsson-eddsa-ed25519-03
-//	//	-----TEST 1
-//	//	SECRET KEY:
-//	//	9d61b19deffd5a60ba844af492ec2cc4
-//	//	4449c5697b326919703bac031cae7f60
-//	//			
-//	//	PUBLIC KEY:
-//	//	d75a980182b10ab7d54bfed3c964073a
-//	//	0ee172f3daa62325af021a68f707511a
-//
-//	ubyte[32] sk = cast(const ubyte[]) x"9d61b19deffd5a60ba844af492ec2cc4 4449c5697b326919703bac031cae7f60";
-////	ubyte[32] sk;
-////	sk[0..5] = [1, 2, 3, 4, 5];
-////	sk[31] = 255;
-//
-//	ubyte[32] pk;
-//	ubyte[64] az;
-//
-//	//crypto_sign_pubkey(pk[], sk[]);
-//
-//	ge_p3 A;
-//	
-//	//randombytes(sk,32);
-//	//crypto_hash_sha512(az,sk,32);
-//	sk[0] &= 248;
-//	sk[31] &= 63;
-//	sk[31] |= 64;
-//	
-//	ge_scalarmult_base(A,sk[0..32]);
-//	writefln("result, A.X, Y, Z, T");
-//	printhex(A.X[]);
-//	printhex(A.Y[]);
-//	printhex(A.Z[]);
-//	printhex(A.T[]);
-//	ge_p3_tobytes(pk,A);
-//
-//
-//	writefln("public key:");
-//	printhex(pk);
-//}
+unittest {
 
-void printhex(T)(in T[] b) {
+	immutable ubyte[32] sk = cast(const ubyte[]) x"9d61b19deffd5a60ba844af492ec2cc4 4449c5697b326919703bac031cae7f60";
+	immutable ubyte[32] pk = secret_to_public(sk);
+
+	immutable ubyte[0] message = cast(const ubyte[]) "";
+
+	immutable ubyte[64] sig = crypto_sign(message, sk);
+
 	import std.stdio;
-	import std.conv: text;
+	writefln("%(%.2x%)", sig);
 
-	writefln(text("\n%(%.", T.sizeof*2,"x%)\n"), b);
+	immutable bool valid = crypto_sign_open(sig, message, pk);
+	//assert(valid, "Ed25519 signature failed.");
 }
 
 /* (Modified by Tor to generate detached signatures.) */
@@ -87,40 +43,66 @@ void printhex(T)(in T[] b) {
 /// m = message
 /// sk = secret key
 /// pk = public key
-public void crypto_sign(
-	ubyte[] sig,
+public ubyte[64] crypto_sign(
 	in ubyte[] m,
-	in ubyte[] sk,
-	in ubyte[] pk
+	in ubyte[] sk
+	//in ubyte[] pk
 	)
 in {
-	assert(sig.length == 64);
-	assert(sk.length == 64);
-	assert(pk.length == 32);
+	assert(sk.length == 32);
+	//assert(pk.length == 32);
 } body {
-	ubyte[64] nonce, hram;
+	ubyte[64] r, h, sig;
 
+	//	def sign(secret, msg):
+	//			a, prefix = secret_expand(secret)
+	//			A = point_compress(point_mul(a, G)) 
+	//			r = sha512_modq(prefix + msg)
+	//			R = point_mul(r, G)
+	//			Rs = point_compress(R)
+	//			h = sha512_modq(Rs + A + msg)
+	//			s = (r + h * a) % q 
+	//			return Rs + int.to_bytes(s, 32, "little")
+	//
 	ge_p3 R;
-	
+
+	immutable ubyte[64] expandedSecret = secret_expand(sk);
+
+	immutable ubyte[32] pk = secret_to_public(sk); // TODO optimize, use expanded secret
+	//ge_scalarmult_base(A, expandedSecret[0..32]);
+
 	// crypto_hash_sha512_2(nonce, sk+32, 32, m, mlen);
+	// sha512_modq
 	SHA512 sha;
-	sha.put(sk[32..64]);
+	sha.put(expandedSecret[32..64]);
 	sha.put(m);
-	nonce = sha.finish();
-	
-	sc_reduce(nonce[]);
-	ge_scalarmult_base(R, nonce[0..32]);
-	ge_p3_tobytes(sig, R);
+	r = sha.finish();
+	r[0..32] = sc_reduce(r[0..64]);
+
+	//r[0..32] = sha512modq(expandedSecret[32..64], m);
+
+	ge_scalarmult_base(R, r[0..32]);
+	ge_p3_tobytes(sig[0..32], R);
 	
 	//crypto_hash_sha512_3(hram, sig, 32, pk, 32, m, mlen);
 	sha.put(sig[0..32]);
 	sha.put(pk[0..32]);
 	sha.put(m);
-	hram = sha.finish();
+	h = sha.finish();
+	h[0..32] = sc_reduce(h);
 
-	sc_reduce(hram);
-	sc_muladd(sig[32..64], hram[0..32], sk[0..32], nonce[0..32]);
+	sig[32..64] = sc_muladd(h[0..32], sk[0..32], r[0..32]);
+
+	return sig;
 }
+
+//private ubyte[32] sha512modq(T)(in T s...) {
+//	SHA512 hash;
+//	foreach(a; s) {
+//		hash.put(a);
+//	}
+//	return sc_reduce(hash.finish());
+//}
 
 /// ref10
 //int crypto_sign(
@@ -169,7 +151,7 @@ in {
 	assert(signature.length == 64);
 	assert(pk.length == 32);
 } body {
-	ubyte[32] pkcopy, rcopy, scopy, rcheck;
+	ubyte[32] pkCopy, rCopy, sCopy, rCheck;
 	ubyte[64] h;
 	ge_p3 A;
 	ge_p2 R;
@@ -181,23 +163,23 @@ in {
 	//	memmove(rcopy,signature,32);
 	//	memmove(scopy,signature + 32,32);
 
-	pkcopy[] = pk[0..32];
-	rcopy[] = signature[0..32];
-	scopy[] = signature[32..64];
+	pkCopy[] = pk[0..32];
+	rCopy[] = signature[0..32];
+	sCopy[] = signature[32..64];
 
 	SHA512 sha;
-	sha.put(rcopy);
-	sha.put(pkcopy);
+	sha.put(rCopy);
+	sha.put(pkCopy);
 	sha.put(m);
 	h = sha.finish();
 	//crypto_hash_sha512_3(h, rcopy, 32, pkcopy, 32, m, mlen);
-	sc_reduce(h);
+	h[0..32] = sc_reduce(h);
 	
-	ge_double_scalarmult_vartime(R, h, A, scopy);
-	ge_tobytes(rcheck, R);
+	ge_double_scalarmult_vartime(R, h, A, sCopy);
+	ge_tobytes(rCheck, R);
 
 	
-	return crypto_equals(rcheck, rcopy);
+	return crypto_equals(rCheck, rCopy);
 }
 
 
@@ -233,30 +215,41 @@ in {
 //}
 
 /// Generate public key from secret key. Secret key must be clamped.
-void crypto_sign_pubkey(ubyte[] pk, in ubyte[] sk)
+ubyte[32] secret_to_public(in ubyte[] sk)
 in {
 	assert(sk.length == 32, "Invalid secret key length. Must be 32.");
-	assert((sk[0] & ~248) == 0 || (sk[31] & ~63) == 0 || (sk[31] & 64) == 64, "Invalid secret key!");
-	assert(pk.length == 32, "Invalid length of 'pk'. Must be 32.");
+	//assert((sk[0] & ~248) == 0 || (sk[31] & ~63) == 0 || (sk[31] & 64) == 64, "Invalid secret key!");
 } body {
 	ge_p3 A;
-	ubyte[32] secret;
+	ubyte[32] secret = secret_expand(sk)[0..32];
+	ubyte[32] pk;
+	assert((secret[0] & ~248) == 0 || (secret[31] & ~63) == 0 || (secret[31] & 64) == 64, "Invalid secret key!");
+	ge_scalarmult_base(A, secret);
+	ge_p3_tobytes(pk[], A);
 
+	return pk;
+}
+
+ubyte[64] secret_expand(in ubyte[] sk) 
+in {
+	assert(sk.length == 32, "Invalid secret key length. Must be 32.");
+} body {
+	ubyte[64] secret;
+	
 	SHA512 hash;
 	hash.put(sk[0..32]);
-	secret = hash.finish()[0..32];
+	secret = hash.finish();
 
-	clamp(secret);
+	clamp(secret[0..32]);
 
-	ge_scalarmult_base(A, secret);
-	ge_p3_tobytes(pk, A);
+	return secret;
 }
 
 /// Transforms 32 random bytes into a valid secret key.
 /// 
 /// Params:
 /// sk = 32 byte secret key.
-void clamp(ubyte[] sk)
+void clamp(ubyte[] sk) pure
 in {
 	assert(sk.length == 32);
 } body {
@@ -283,7 +276,7 @@ void ed25519_ref10_pubkey_from_curve25519_pubkey(ubyte[] outp,
 in {
 	assert(outp.length == 32, "Output buffer size must be 32.");
 	assert(inp.length == 32, "Input size must be 32.");
-
+	assert(signbit == 0 || signbit == 1, "signbit must be either 0 or 1.");
 } body {
 	fe u;
 	fe one;
@@ -309,7 +302,7 @@ in {
 	fe_tobytes(outp, y);
 	
 	/* propagate sign. */
-	outp[31] |= (!!signbit) << 7;
+	outp[31] |= (!!signbit) << 7; // convert non zero values to 128
 }
 
 package:
@@ -323,34 +316,34 @@ package:
  where l = 2^252 + 27742317777372353535851937790883648493.
  Overwrites s in place.
  */
-void sc_reduce(ubyte[] s)
+ubyte[32] sc_reduce(in ubyte[] inp) pure
 in {
-	assert(s.length == 64);
+	assert(inp.length == 64);
 } body {
-	long s0 = 2097151 & load_3(s[0..3]);
-	long s1 = 2097151 & (load_4(s[2..6]) >> 5);
-	long s2 = 2097151 & (load_3(s[5..8]) >> 2);
-	long s3 = 2097151 & (load_4(s[7..11]) >> 7);
-	long s4 = 2097151 & (load_4(s[10..14]) >> 4);
-	long s5 = 2097151 & (load_3(s[13..16]) >> 1);
-	long s6 = 2097151 & (load_4(s[15..19]) >> 6);
-	long s7 = 2097151 & (load_3(s[18..21]) >> 3);
-	long s8 = 2097151 & load_3(s[21..24]);
-	long s9 = 2097151 & (load_4(s[23..27]) >> 5);
-	long s10 = 2097151 & (load_3(s[26..29]) >> 2);
-	long s11 = 2097151 & (load_4(s[28..32]) >> 7);
-	long s12 = 2097151 & (load_4(s[31..35]) >> 4);
-	long s13 = 2097151 & (load_3(s[34..37]) >> 1);
-	long s14 = 2097151 & (load_4(s[36..40]) >> 6);
-	long s15 = 2097151 & (load_3(s[39..42]) >> 3);
-	long s16 = 2097151 & load_3(s[42..45]);
-	long s17 = 2097151 & (load_4(s[44..48]) >> 5);
-	long s18 = 2097151 & (load_3(s[47..50]) >> 2);
-	long s19 = 2097151 & (load_4(s[49..54]) >> 7);
-	long s20 = 2097151 & (load_4(s[52..56]) >> 4);
-	long s21 = 2097151 & (load_3(s[55..58]) >> 1);
-	long s22 = 2097151 & (load_4(s[57..61]) >> 6);
-	long s23 = (load_4(s[60..64]) >> 3);
+	long s0 = 2097151 & load_3(inp[0..3]);
+	long s1 = 2097151 & (load_4(inp[2..6]) >> 5);
+	long s2 = 2097151 & (load_3(inp[5..8]) >> 2);
+	long s3 = 2097151 & (load_4(inp[7..11]) >> 7);
+	long s4 = 2097151 & (load_4(inp[10..14]) >> 4);
+	long s5 = 2097151 & (load_3(inp[13..16]) >> 1);
+	long s6 = 2097151 & (load_4(inp[15..19]) >> 6);
+	long s7 = 2097151 & (load_3(inp[18..21]) >> 3);
+	long s8 = 2097151 & load_3(inp[21..24]);
+	long s9 = 2097151 & (load_4(inp[23..27]) >> 5);
+	long s10 = 2097151 & (load_3(inp[26..29]) >> 2);
+	long s11 = 2097151 & (load_4(inp[28..32]) >> 7);
+	long s12 = 2097151 & (load_4(inp[31..35]) >> 4);
+	long s13 = 2097151 & (load_3(inp[34..37]) >> 1);
+	long s14 = 2097151 & (load_4(inp[36..40]) >> 6);
+	long s15 = 2097151 & (load_3(inp[39..42]) >> 3);
+	long s16 = 2097151 & load_3(inp[42..45]);
+	long s17 = 2097151 & (load_4(inp[44..48]) >> 5);
+	long s18 = 2097151 & (load_3(inp[47..50]) >> 2);
+	long s19 = 2097151 & (load_4(inp[49..53]) >> 7);
+	long s20 = 2097151 & (load_4(inp[52..56]) >> 4);
+	long s21 = 2097151 & (load_3(inp[55..58]) >> 1);
+	long s22 = 2097151 & (load_4(inp[57..61]) >> 6);
+	long s23 = (load_4(inp[60..64]) >> 3);
 	long carry0;
 	long carry1;
 	long carry2;
@@ -532,55 +525,57 @@ in {
 	carry8 = s8 >> 21; s9 += carry8; s8 -= SHL64(carry8,21);
 	carry9 = s9 >> 21; s10 += carry9; s9 -= SHL64(carry9,21);
 	carry10 = s10 >> 21; s11 += carry10; s10 -= SHL64(carry10,21);
-	
-	s[0] = cast(ubyte) s0 >> 0;
-	s[1] = cast(ubyte) s0 >> 8;
+
+	ubyte[32] s;
+	s[0] = cast(ubyte) (s0 >> 0);
+	s[1] = cast(ubyte) (s0 >> 8);
 	s[2] = cast(ubyte) ((s0 >> 16) | SHL64(s1,5));
-	s[3] = cast(ubyte) s1 >> 3;
-	s[4] = cast(ubyte) s1 >> 11;
+	s[3] = cast(ubyte) (s1 >> 3);
+	s[4] = cast(ubyte) (s1 >> 11);
 	s[5] = cast(ubyte) ((s1 >> 19) | SHL64(s2,2));
-	s[6] = cast(ubyte) s2 >> 6;
+	s[6] = cast(ubyte) (s2 >> 6);
 	s[7] = cast(ubyte) ((s2 >> 14) | SHL64(s3,7));
-	s[8] = cast(ubyte) s3 >> 1;
-	s[9] = cast(ubyte) s3 >> 9;
+	s[8] = cast(ubyte) (s3 >> 1);
+	s[9] = cast(ubyte) (s3 >> 9);
 	s[10] = cast(ubyte) ((s3 >> 17) | SHL64(s4,4));
-	s[11] = cast(ubyte) s4 >> 4;
-	s[12] = cast(ubyte) s4 >> 12;
+	s[11] = cast(ubyte) (s4 >> 4);
+	s[12] = cast(ubyte) (s4 >> 12);
 	s[13] = cast(ubyte) ((s4 >> 20) | SHL64(s5,1));
-	s[14] = cast(ubyte) s5 >> 7;
+	s[14] = cast(ubyte) (s5 >> 7);
 	s[15] = cast(ubyte) ((s5 >> 15) | SHL64(s6,6));
-	s[16] = cast(ubyte) s6 >> 2;
-	s[17] = cast(ubyte) s6 >> 10;
+	s[16] = cast(ubyte) (s6 >> 2);
+	s[17] = cast(ubyte) (s6 >> 10);
 	s[18] = cast(ubyte) ((s6 >> 18) | SHL64(s7,3));
-	s[19] = cast(ubyte) s7 >> 5;
-	s[20] = cast(ubyte) s7 >> 13;
-	s[21] = cast(ubyte) s8 >> 0;
-	s[22] = cast(ubyte) s8 >> 8;
+	s[19] = cast(ubyte) (s7 >> 5);
+	s[20] = cast(ubyte) (s7 >> 13);
+	s[21] = cast(ubyte) (s8 >> 0);
+	s[22] = cast(ubyte) (s8 >> 8);
 	s[23] = cast(ubyte) ((s8 >> 16) | SHL64(s9,5));
-	s[24] = cast(ubyte) s9 >> 3;
-	s[25] = cast(ubyte) s9 >> 11;
+	s[24] = cast(ubyte) (s9 >> 3);
+	s[25] = cast(ubyte) (s9 >> 11);
 	s[26] = cast(ubyte) ((s9 >> 19) | SHL64(s10,2));
-	s[27] = cast(ubyte) s10 >> 6;
+	s[27] = cast(ubyte) (s10 >> 6);
 	s[28] = cast(ubyte) ((s10 >> 14) | SHL64(s11,7));
-	s[29] = cast(ubyte) s11 >> 1;
-	s[30] = cast(ubyte) s11 >> 9;
-	s[31] = cast(ubyte) s11 >> 17;
+	s[29] = cast(ubyte) (s11 >> 1);
+	s[30] = cast(ubyte) (s11 >> 9);
+	s[31] = cast(ubyte) (s11 >> 17);
+
+	return s;
 }
 
 
-/**
- Input:
- a[0]+256*a[1]+...+256^31*a[31] = a
- b[0]+256*b[1]+...+256^31*b[31] = b
- c[0]+256*c[1]+...+256^31*c[31] = c
-
- Output:
- s[0]+256*s[1]+...+256^31*s[31] = (ab+c) mod l
- where l = 2^252 + 27742317777372353535851937790883648493.
- */
-void sc_muladd(ubyte[] s, in ubyte[] a, in ubyte[] b, in ubyte[] c)
+/// Calculates (a*b + c) mod l
+/// Input:
+/// a[0]+256*a[1]+...+256^31*a[31] = a
+/// b[0]+256*b[1]+...+256^31*b[31] = b
+/// c[0]+256*c[1]+...+256^31*c[31] = c
+///
+/// Returns:
+/// (a*b + c) mod l
+/// s[0]+256*s[1]+...+256^31*s[31] = (ab+c) mod l
+/// where l = 2^252 + 27742317777372353535851937790883648493.
+ubyte[32] sc_muladd(in ubyte[] a, in ubyte[] b, in ubyte[] c) pure
 in {
-	assert(s.length == 32);
 	assert(a.length == 32);
 	assert(b.length == 32);
 	assert(c.length == 32);
@@ -920,36 +915,52 @@ in {
 	//	s[30] = cast(ubyte) s11 >> 9;
 	//	s[31] = cast(ubyte) s11 >> 17;
 
-	s[0] = cast(ubyte) s0 >> 0;
-	s[1] = cast(ubyte) s0 >> 8;
+	ubyte[32] s;
+	s[0] = cast(ubyte) (s0 >> 0);
+	s[1] = cast(ubyte) (s0 >> 8);
 	s[2] = cast(ubyte) ((s0 >> 16) | SHL64(s1,5));
-	s[3] = cast(ubyte) s1 >> 3;
-	s[4] = cast(ubyte) s1 >> 11;
+	s[3] = cast(ubyte) (s1 >> 3);
+	s[4] = cast(ubyte) (s1 >> 11);
 	s[5] = cast(ubyte) ((s1 >> 19) | SHL64(s2,2));
-	s[6] = cast(ubyte) s2 >> 6;
+	s[6] = cast(ubyte) (s2 >> 6);
 	s[7] = cast(ubyte) ((s2 >> 14) | SHL64(s3,7));
-	s[8] = cast(ubyte) s3 >> 1;
-	s[9] = cast(ubyte) s3 >> 9;
+	s[8] = cast(ubyte) (s3 >> 1);
+	s[9] = cast(ubyte) (s3 >> 9);
 	s[10] = cast(ubyte) ((s3 >> 17) | SHL64(s4,4));
-	s[11] = cast(ubyte) s4 >> 4;
-	s[12] = cast(ubyte) s4 >> 12;
+	s[11] = cast(ubyte) (s4 >> 4);
+	s[12] = cast(ubyte) (s4 >> 12);
 	s[13] = cast(ubyte) ((s4 >> 20) | SHL64(s5,1));
-	s[14] = cast(ubyte) s5 >> 7;
+	s[14] = cast(ubyte) (s5 >> 7);
 	s[15] = cast(ubyte) ((s5 >> 15) | SHL64(s6,6));
-	s[16] = cast(ubyte) s6 >> 2;
-	s[17] = cast(ubyte) s6 >> 10;
+	s[16] = cast(ubyte) (s6 >> 2);
+	s[17] = cast(ubyte) (s6 >> 10);
 	s[18] = cast(ubyte) ((s6 >> 18) | SHL64(s7,3));
-	s[19] = cast(ubyte) s7 >> 5;
-	s[20] = cast(ubyte) s7 >> 13;
-	s[21] = cast(ubyte) s8 >> 0;
-	s[22] = cast(ubyte) s8 >> 8;
+	s[19] = cast(ubyte) (s7 >> 5);
+	s[20] = cast(ubyte) (s7 >> 13);
+	s[21] = cast(ubyte) (s8 >> 0);
+	s[22] = cast(ubyte) (s8 >> 8);
 	s[23] = cast(ubyte) ((s8 >> 16) | SHL64(s9,5));
-	s[24] = cast(ubyte) s9 >> 3;
-	s[25] = cast(ubyte) s9 >> 11;
+	s[24] = cast(ubyte) (s9 >> 3);
+	s[25] = cast(ubyte) (s9 >> 11);
 	s[26] = cast(ubyte) ((s9 >> 19) | SHL64(s10,2));
-	s[27] = cast(ubyte) s10 >> 6;
+	s[27] = cast(ubyte) (s10 >> 6);
 	s[28] = cast(ubyte) ((s10 >> 14) | SHL64(s11,7));
-	s[29] = cast(ubyte) s11 >> 1;
-	s[30] = cast(ubyte) s11 >> 9;
-	s[31] = cast(ubyte) s11 >> 17;
+	s[29] = cast(ubyte) (s11 >> 1);
+	s[30] = cast(ubyte) (s11 >> 9);
+	s[31] = cast(ubyte) (s11 >> 17);
+
+	return s;
+}
+
+// test sc_muladd
+unittest {
+	immutable auto expected = x"4b1aa2e4462a167d92e224e89293eaa7809accfcf60ad08497350a206ce2ec04";
+	immutable ubyte[32] a = cast(const ubyte[]) x"9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60";
+	immutable ubyte[32] b = cast(const ubyte[]) x"d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a";
+	immutable ubyte[32] c = cast(const ubyte[]) x"3e9a9575a249d64080e109b8851daa7026df4135a7195ad2d36252c5a90d0f03";
+
+	// calculate (a*a + a) mod q
+
+	assert(sc_muladd(a, b, c) == expected, "sc_muladd failed.");
+	assert(sc_muladd(b, a, c) == expected, "sc_muladd failed.");
 }

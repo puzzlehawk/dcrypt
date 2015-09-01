@@ -246,15 +246,15 @@ in {
 }
 
 // TODO replace all SHL* with <<
-long SHL64(in long val, in uint shift) {
+long SHL64(in long val, in uint shift) pure nothrow @nogc {
 	return cast(long)(cast(ulong) val << shift);
 }
 
-int SHL32(in int val, in uint shift) {
+int SHL32(in int val, in uint shift) pure nothrow @nogc  {
 	return cast(int)(cast(uint) val << shift);
 }
 
-int SHL8(in byte val, in uint shift) {
+int SHL8(in byte val, in uint shift) pure nothrow @nogc  {
 	return cast(byte)(cast(ubyte) val << shift);
 }
 
