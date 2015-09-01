@@ -24,6 +24,10 @@ unittest {
 
 	immutable ubyte[64] sig = crypto_sign(message, sk);
 
+	immutable auto expectedSig = x"e5564300c360ac729086e2cc806e828a84877f1eb8e5d974d873e065224901555fb8821590a33bacc61e39701cf9b46bd25bf5f0595bbe24655141438e7a100b";
+	assert(sig[0..32] == expectedSig[0..32], "Ed25519 signature: wrong R.");
+	assert(sig[32..64] == expectedSig[32..64], "Ed25519 produced unexpected signature.");
+
 	import std.stdio;
 	writefln("%(%.2x%)", sig);
 
@@ -52,7 +56,8 @@ in {
 	assert(sk.length == 32);
 	//assert(pk.length == 32);
 } body {
-	ubyte[64] r, h, sig;
+	ubyte[64] sig;
+	ubyte[32] r, h;
 
 	//	def sign(secret, msg):
 	//			a, prefix = secret_expand(secret)
@@ -76,22 +81,20 @@ in {
 	SHA512 sha;
 	sha.put(expandedSecret[32..64]);
 	sha.put(m);
-	r = sha.finish();
-	r[0..32] = sc_reduce(r[0..64]);
+	r = sc_reduce(sha.finish());
 
 	//r[0..32] = sha512modq(expandedSecret[32..64], m);
 
-	ge_scalarmult_base(R, r[0..32]);
+	ge_scalarmult_base(R, r);
 	ge_p3_tobytes(sig[0..32], R);
 	
 	//crypto_hash_sha512_3(hram, sig, 32, pk, 32, m, mlen);
 	sha.put(sig[0..32]);
 	sha.put(pk[0..32]);
 	sha.put(m);
-	h = sha.finish();
-	h[0..32] = sc_reduce(h);
+	h = sc_reduce(sha.finish());
 
-	sig[32..64] = sc_muladd(h[0..32], sk[0..32], r[0..32]);
+	sig[32..64] = sc_muladd(h, expandedSecret[0..32], r);
 
 	return sig;
 }
