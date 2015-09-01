@@ -96,49 +96,6 @@ struct ge_cached {
 	fe T2d;
 };
 
-//#define ge_frombytes_negate_vartime crypto_sign_ed25519_ref10_ge_frombytes_negate_vartime
-//#define ge_tobytes crypto_sign_ed25519_ref10_ge_tobytes
-//#define ge_p3_tobytes crypto_sign_ed25519_ref10_ge_p3_tobytes
-//
-//#define ge_p2_0 crypto_sign_ed25519_ref10_ge_p2_0
-//#define ge_p3_0 crypto_sign_ed25519_ref10_ge_p3_0
-//#define ge_precomp_0 crypto_sign_ed25519_ref10_ge_precomp_0
-//#define ge_p3_to_p2 crypto_sign_ed25519_ref10_ge_p3_to_p2
-//#define ge_p3_to_cached crypto_sign_ed25519_ref10_ge_p3_to_cached
-//#define ge_p1p1_to_p2 crypto_sign_ed25519_ref10_ge_p1p1_to_p2
-//#define ge_p1p1_to_p3 crypto_sign_ed25519_ref10_ge_p1p1_to_p3
-//#define ge_p2_dbl crypto_sign_ed25519_ref10_ge_p2_dbl
-//#define ge_p3_dbl crypto_sign_ed25519_ref10_ge_p3_dbl
-//
-//#define ge_madd crypto_sign_ed25519_ref10_ge_madd
-//#define ge_msub crypto_sign_ed25519_ref10_ge_msub
-//#define ge_add crypto_sign_ed25519_ref10_ge_add
-//#define ge_sub crypto_sign_ed25519_ref10_ge_sub
-//#define ge_scalarmult_base crypto_sign_ed25519_ref10_ge_scalarmult_base
-//#define ge_double_scalarmult_vartime crypto_sign_ed25519_ref10_ge_double_scalarmult_vartime
-//
-//extern void ge_tobytes(ubyte[] ,const ge_p2 *);
-//extern void ge_p3_tobytes(ubyte[] ,const ge_p3 *);
-//extern int ge_frombytes_negate_vartime(ge_p3 *, in ubyte[] );
-//
-//extern void ge_p2_0(ge_p2 *);
-//extern void ge_p3_0(ge_p3 *);
-//extern void ge_precomp_0(ge_precomp *);
-//extern void ge_p3_to_p2(ge_p2 *,const ge_p3 *);
-//extern void ge_p3_to_cached(ge_cached *,const ge_p3 *);
-//extern void ge_p1p1_to_p2(ge_p2 *,const ge_p1p1 *);
-//extern void ge_p1p1_to_p3(ge_p3 *,const ge_p1p1 *);
-//extern void ge_p2_dbl(ge_p1p1 *,const ge_p2 *);
-//extern void ge_p3_dbl(ge_p1p1 *,const ge_p3 *);
-//
-//extern void ge_madd(ge_p1p1 *,const ge_p3 *,const ge_precomp *);
-//extern void ge_msub(ge_p1p1 *,const ge_p3 *,const ge_precomp *);
-//extern void ge_add(ge_p1p1 *,const ge_p3 *,const ge_cached *);
-//extern void ge_sub(ge_p1p1 *,const ge_p3 *,const ge_cached *);
-//extern void ge_scalarmult_base(ge_p3 *, in ubyte[] );
-//extern void ge_double_scalarmult_vartime(ge_p2 *, in ubyte[] ,const ge_p3 *, in ubyte[] );
-//
-//#endif
 
 /**
  r = p + q
@@ -146,63 +103,18 @@ struct ge_cached {
 void ge_add(ref ge_p1p1 r, in ref ge_p3 p, in ref ge_cached q)
 {
 	fe t0;
-
-	/* qhasm: YpX1 = Y1+X1 */
-	/* asm 1: fe_add(>YpX1=fe#1,<Y1=fe#12,<X1=fe#11); */
-	/* asm 2: fe_add(>YpX1=r.X,<Y1=p.Y,<X1=p.X); */
 	fe_add(r.X, p.Y, p.X);
-	
-	/* qhasm: YmX1 = Y1-X1 */
-	/* asm 1: fe_sub(>YmX1=fe#2,<Y1=fe#12,<X1=fe#11); */
-	/* asm 2: fe_sub(>YmX1=r.Y,<Y1=p.Y,<X1=p.X); */
 	fe_sub(r.Y, p.Y, p.X);
-	
-	/* qhasm: A = YpX1*YpX2 */
-	/* asm 1: fe_mul(>A=fe#3,<YpX1=fe#1,<YpX2=fe#15); */
-	/* asm 2: fe_mul(>A=r.Z,<YpX1=r.X,<YpX2=q.YplusX); */
 	fe_mul(r.Z, r.X, q.YplusX);
-	
-	/* qhasm: B = YmX1*YmX2 */
-	/* asm 1: fe_mul(>B=fe#2,<YmX1=fe#2,<YmX2=fe#16); */
-	/* asm 2: fe_mul(>B=r.Y,<YmX1=r.Y,<YmX2=q.YminusX); */
+
 	fe_mul(r.Y, r.Y, q.YminusX);
-	
-	/* qhasm: C = T2d2*T1 */
-	/* asm 1: fe_mul(>C=fe#4,<T2d2=fe#18,<T1=fe#14); */
-	/* asm 2: fe_mul(>C=r.T,<T2d2=q.T2d,<T1=p.T); */
 	fe_mul(r.T, q.T2d, p.T);
-	
-	/* qhasm: ZZ = Z1*Z2 */
-	/* asm 1: fe_mul(>ZZ=fe#1,<Z1=fe#13,<Z2=fe#17); */
-	/* asm 2: fe_mul(>ZZ=r.X,<Z1=p.Z,<Z2=q.Z); */
 	fe_mul(r.X, p.Z, q.Z);
-	
-	/* qhasm: D = 2*ZZ */
-	/* asm 1: fe_add(>D=fe#5,<ZZ=fe#1,<ZZ=fe#1); */
-	/* asm 2: fe_add(>D=t0,<ZZ=r.X,<ZZ=r.X); */
 	fe_add(t0, r.X, r.X);
-	
-	/* qhasm: X3 = A-B */
-	/* asm 1: fe_sub(>X3=fe#1,<A=fe#3,<B=fe#2); */
-	/* asm 2: fe_sub(>X3=r.X,<A=r.Z,<B=r.Y); */
 	fe_sub(r.X, r.Z, r.Y);
-	
-	/* qhasm: Y3 = A+B */
-	/* asm 1: fe_add(>Y3=fe#2,<A=fe#3,<B=fe#2); */
-	/* asm 2: fe_add(>Y3=r.Y,<A=r.Z,<B=r.Y); */
 	fe_add(r.Y, r.Z, r.Y);
-	
-	/* qhasm: Z3 = D+C */
-	/* asm 1: fe_add(>Z3=fe#3,<D=fe#5,<C=fe#4); */
-	/* asm 2: fe_add(>Z3=r.Z,<D=t0,<C=r.T); */
 	fe_add(r.Z, t0, r.T);
-	
-	/* qhasm: T3 = D-C */
-	/* asm 1: fe_sub(>T3=fe#4,<D=fe#5,<C=fe#4); */
-	/* asm 2: fe_sub(>T3=r.T,<D=t0,<C=r.T); */
 	fe_sub(r.T, t0, r.T);
-	
-	/* qhasm: return */
 }
 
 
@@ -349,59 +261,16 @@ in {
 void ge_madd(ref ge_p1p1 r, in ref ge_p3 p, in ref ge_precomp q)
 {
 	fe t0;
-
-	
-	/* qhasm: YpX1 = Y1+X1 */
-	/* asm 1: fe_add(>YpX1=fe#1,<Y1=fe#12,<X1=fe#11); */
-	/* asm 2: fe_add(>YpX1=r.X,<Y1=p.Y,<X1=p.X); */
 	fe_add(r.X, p.Y, p.X);
-	
-	/* qhasm: YmX1 = Y1-X1 */
-	/* asm 1: fe_sub(>YmX1=fe#2,<Y1=fe#12,<X1=fe#11); */
-	/* asm 2: fe_sub(>YmX1=r.Y,<Y1=p.Y,<X1=p.X); */
 	fe_sub(r.Y, p.Y, p.X);
-	
-	/* qhasm: A = YpX1*ypx2 */
-	/* asm 1: fe_mul(>A=fe#3,<YpX1=fe#1,<ypx2=fe#15); */
-	/* asm 2: fe_mul(>A=r.Z,<YpX1=r.X,<ypx2=q.yplusx); */
 	fe_mul(r.Z, r.X, q.yplusx);
-	
-	/* qhasm: B = YmX1*ymx2 */
-	/* asm 1: fe_mul(>B=fe#2,<YmX1=fe#2,<ymx2=fe#16); */
-	/* asm 2: fe_mul(>B=r.Y,<YmX1=r.Y,<ymx2=q.yminusx); */
 	fe_mul(r.Y, r.Y, q.yminusx);
-	
-	/* qhasm: C = xy2d2*T1 */
-	/* asm 1: fe_mul(>C=fe#4,<xy2d2=fe#17,<T1=fe#14); */
-	/* asm 2: fe_mul(>C=r.T,<xy2d2=q.xy2d,<T1=p.T); */
 	fe_mul(r.T, q.xy2d, p.T);
-	
-	/* qhasm: D = 2*Z1 */
-	/* asm 1: fe_add(>D=fe#5,<Z1=fe#13,<Z1=fe#13); */
-	/* asm 2: fe_add(>D=t0,<Z1=p.Z,<Z1=p.Z); */
 	fe_add(t0, p.Z, p.Z);
-	
-	/* qhasm: X3 = A-B */
-	/* asm 1: fe_sub(>X3=fe#1,<A=fe#3,<B=fe#2); */
-	/* asm 2: fe_sub(>X3=r.X,<A=r.Z,<B=r.Y); */
 	fe_sub(r.X, r.Z, r.Y);
-	
-	/* qhasm: Y3 = A+B */
-	/* asm 1: fe_add(>Y3=fe#2,<A=fe#3,<B=fe#2); */
-	/* asm 2: fe_add(>Y3=r.Y,<A=r.Z,<B=r.Y); */
 	fe_add(r.Y, r.Z, r.Y);
-	
-	/* qhasm: Z3 = D+C */
-	/* asm 1: fe_add(>Z3=fe#3,<D=fe#5,<C=fe#4); */
-	/* asm 2: fe_add(>Z3=r.Z,<D=t0,<C=r.T); */
 	fe_add(r.Z, t0, r.T);
-	
-	/* qhasm: T3 = D-C */
-	/* asm 1: fe_sub(>T3=fe#4,<D=fe#5,<C=fe#4); */
-	/* asm 2: fe_sub(>T3=r.T,<D=t0,<C=r.T); */
 	fe_sub(r.T, t0, r.T);
-	
-	/* qhasm: return */
 }
 
 
@@ -411,59 +280,16 @@ void ge_madd(ref ge_p1p1 r, in ref ge_p3 p, in ref ge_precomp q)
 void ge_msub(ref ge_p1p1 r, in ref ge_p3 p, in ref ge_precomp q)
 {
 	fe t0;
-
-	
-	/* qhasm: YpX1 = Y1+X1 */
-	/* asm 1: fe_add(>YpX1=fe#1,<Y1=fe#12,<X1=fe#11); */
-	/* asm 2: fe_add(>YpX1=r.X,<Y1=p.Y,<X1=p.X); */
 	fe_add(r.X, p.Y, p.X);
-	
-	/* qhasm: YmX1 = Y1-X1 */
-	/* asm 1: fe_sub(>YmX1=fe#2,<Y1=fe#12,<X1=fe#11); */
-	/* asm 2: fe_sub(>YmX1=r.Y,<Y1=p.Y,<X1=p.X); */
 	fe_sub(r.Y, p.Y, p.X);
-	
-	/* qhasm: A = YpX1*ymx2 */
-	/* asm 1: fe_mul(>A=fe#3,<YpX1=fe#1,<ymx2=fe#16); */
-	/* asm 2: fe_mul(>A=r.Z,<YpX1=r.X,<ymx2=q.yminusx); */
 	fe_mul(r.Z, r.X, q.yminusx);
-	
-	/* qhasm: B = YmX1*ypx2 */
-	/* asm 1: fe_mul(>B=fe#2,<YmX1=fe#2,<ypx2=fe#15); */
-	/* asm 2: fe_mul(>B=r.Y,<YmX1=r.Y,<ypx2=q.yplusx); */
 	fe_mul(r.Y, r.Y, q.yplusx);
-	
-	/* qhasm: C = xy2d2*T1 */
-	/* asm 1: fe_mul(>C=fe#4,<xy2d2=fe#17,<T1=fe#14); */
-	/* asm 2: fe_mul(>C=r.T,<xy2d2=q.xy2d,<T1=p.T); */
 	fe_mul(r.T, q.xy2d, p.T);
-	
-	/* qhasm: D = 2*Z1 */
-	/* asm 1: fe_add(>D=fe#5,<Z1=fe#13,<Z1=fe#13); */
-	/* asm 2: fe_add(>D=t0,<Z1=p.Z,<Z1=p.Z); */
 	fe_add(t0, p.Z, p.Z);
-	
-	/* qhasm: X3 = A-B */
-	/* asm 1: fe_sub(>X3=fe#1,<A=fe#3,<B=fe#2); */
-	/* asm 2: fe_sub(>X3=r.X,<A=r.Z,<B=r.Y); */
 	fe_sub(r.X, r.Z, r.Y);
-	
-	/* qhasm: Y3 = A+B */
-	/* asm 1: fe_add(>Y3=fe#2,<A=fe#3,<B=fe#2); */
-	/* asm 2: fe_add(>Y3=r.Y,<A=r.Z,<B=r.Y); */
 	fe_add(r.Y, r.Z, r.Y);
-	
-	/* qhasm: Z3 = D-C */
-	/* asm 1: fe_sub(>Z3=fe#3,<D=fe#5,<C=fe#4); */
-	/* asm 2: fe_sub(>Z3=r.Z,<D=t0,<C=r.T); */
 	fe_sub(r.Z, t0, r.T);
-	
-	/* qhasm: T3 = D+C */
-	/* asm 1: fe_add(>T3=fe#4,<D=fe#5,<C=fe#4); */
-	/* asm 2: fe_add(>T3=r.T,<D=t0,<C=r.T); */
 	fe_add(r.T, t0, r.T);
-	
-	/* qhasm: return */
 }
 
 /**
@@ -501,53 +327,15 @@ void ge_p2_dbl(ref ge_p1p1 r, in ref ge_p2 p)
 {
 	fe t0;
 
-	
-	/* qhasm: XX=X1^2 */
-	/* asm 1: fe_sq(>XX=fe#1,<X1=fe#11); */
-	/* asm 2: fe_sq(>XX=r.X,<X1=p.X); */
 	fe_sq(r.X, p.X);
-	
-	/* qhasm: YY=Y1^2 */
-	/* asm 1: fe_sq(>YY=fe#3,<Y1=fe#12); */
-	/* asm 2: fe_sq(>YY=r.Z,<Y1=p.Y); */
 	fe_sq(r.Z, p.Y);
-	
-	/* qhasm: B=2*Z1^2 */
-	/* asm 1: fe_sq2(>B=fe#4,<Z1=fe#13); */
-	/* asm 2: fe_sq2(>B=r.T,<Z1=p.Z); */
 	fe_sq2(r.T, p.Z);
-	
-	/* qhasm: A=X1+Y1 */
-	/* asm 1: fe_add(>A=fe#2,<X1=fe#11,<Y1=fe#12); */
-	/* asm 2: fe_add(>A=r.Y,<X1=p.X,<Y1=p.Y); */
 	fe_add(r.Y, p.X, p.Y);
-	
-	/* qhasm: AA=A^2 */
-	/* asm 1: fe_sq(>AA=fe#5,<A=fe#2); */
-	/* asm 2: fe_sq(>AA=t0,<A=r.Y); */
 	fe_sq(t0, r.Y);
-	
-	/* qhasm: Y3=YY+XX */
-	/* asm 1: fe_add(>Y3=fe#2,<YY=fe#3,<XX=fe#1); */
-	/* asm 2: fe_add(>Y3=r.Y,<YY=r.Z,<XX=r.X); */
 	fe_add(r.Y, r.Z, r.X);
-	
-	/* qhasm: Z3=YY-XX */
-	/* asm 1: fe_sub(>Z3=fe#3,<YY=fe#3,<XX=fe#1); */
-	/* asm 2: fe_sub(>Z3=r.Z,<YY=r.Z,<XX=r.X); */
 	fe_sub(r.Z, r.Z, r.X);
-	
-	/* qhasm: X3=AA-Y3 */
-	/* asm 1: fe_sub(>X3=fe#1,<AA=fe#5,<Y3=fe#2); */
-	/* asm 2: fe_sub(>X3=r.X,<AA=t0,<Y3=r.Y); */
 	fe_sub(r.X, t0, r.Y);
-	
-	/* qhasm: T3=B-Z3 */
-	/* asm 1: fe_sub(>T3=fe#4,<B=fe#4,<Z3=fe#3); */
-	/* asm 2: fe_sub(>T3=r.T,<B=r.T,<Z3=r.Z); */
 	fe_sub(r.T, r.T, r.Z);
-	
-	/* qhasm: return */
 }
 
 void ge_p3_0(ref ge_p3 h)
