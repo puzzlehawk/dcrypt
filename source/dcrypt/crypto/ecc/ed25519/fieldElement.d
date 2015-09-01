@@ -4,14 +4,79 @@ import dcrypt.util.pack;
 
 @safe nothrow @nogc:
 
-alias uint[10] fe;
-
 /// fe means field element.
 /// Here the field is \Z/(2^255-19).
 /// An element t, entries t[0]...t[9], represents the integer
 /// t[0]+2^26 t[1]+2^51 t[2]+2^77 t[3]+2^102 t[4]+...+2^230 t[9].
 /// Bounds on each t[i] vary depending on context.
-immutable ubyte[32] zero = 0;
+private immutable ubyte[32] zero = 0;
+
+@safe
+struct fe {
+	private uint[10] value;
+	private alias value this;
+
+	//	this(in ref uint[10] v) {
+	//		value = v;
+	//	}
+	nothrow @nogc:
+
+	this(in uint[] v) 
+	in {
+		assert(v.length == 10, "v.length must be 10.");
+	} body {
+		value = v;
+	}
+
+	// TODO remove
+	this(in uint v) 
+	{
+		value[] = v;
+	}
+
+	fe opAssign(in ref uint[10] v) {
+		value = v;
+		return this;
+	}
+
+	/// Comparing in constant time.
+	bool opEquals()(auto ref const fe rhs) const {
+		return crypto_equals(this.value, rhs.value);
+	}
+
+	fe opBinary(string op)(auto ref const fe rhs) const
+		if (op == "+")
+	{
+		static if(op == "+") {
+			fe tmp;
+			tmp.value[] = this.value[] + rhs.value[];
+			return tmp;
+		}
+	}
+
+	ref fe opOpAssign(string op)(auto ref const fe rhs)
+		if(op == "+")
+	{
+		static if(op == "+") {
+			value[] += rhs.value[];
+		}
+
+		return this;
+	}
+
+	/*
+	 return 1 if f == 0
+	 return 0 if f != 0
+
+	 Preconditions:
+	 |f| bounded by 1.1*2^26,1.1*2^25,1.1*2^26,1.1*2^25,etc.
+	 */
+	@property
+	bool isNonzero() const pure
+	{
+		return !crypto_equals(fe_tobytes(this), zero);
+	}
+}
 
 /// Compares a and b in constant time.
 /// 
@@ -51,22 +116,22 @@ void fe_1(out fe h)
 	h[1..10] = 0;
 }
 
-/// h = f + g
-/// Can overlap h with f or g.
-///
-/// Preconditions:
-///   |f| bounded by 1.1*2^25,1.1*2^24,1.1*2^25,1.1*2^24,etc.
-///   |g| bounded by 1.1*2^25,1.1*2^24,1.1*2^25,1.1*2^24,etc.
-///
-/// Postconditions:
-///  |h| bounded by 1.1*2^26,1.1*2^25,1.1*2^26,1.1*2^25,etc.
-void fe_add(ref fe h, in ref fe f, in ref fe g)
-{
-	//h[] = f[] + g[];
-	foreach(i; 0..10) {
-		h[i] = f[i] + g[i];
-	}
-}
+///// h = f + g
+///// Can overlap h with f or g.
+/////
+///// Preconditions:
+/////   |f| bounded by 1.1*2^25,1.1*2^24,1.1*2^25,1.1*2^24,etc.
+/////   |g| bounded by 1.1*2^25,1.1*2^24,1.1*2^25,1.1*2^24,etc.
+/////
+///// Postconditions:
+/////  |h| bounded by 1.1*2^26,1.1*2^25,1.1*2^26,1.1*2^25,etc.
+//void fe_add(ref fe h, in ref fe f, in ref fe g)
+//{
+//	//h[] = f[] + g[];
+//	foreach(i; 0..10) {
+//		h[i] = f[i] + g[i];
+//	}
+//}
 
 
 /// Conditional move.
@@ -282,17 +347,7 @@ bool fe_isnegative(in ref fe f) pure
 	return (fe_tobytes(f)[0] & 1) == 1;
 }
 
-/*
- return 1 if f == 0
- return 0 if f != 0
 
- Preconditions:
- |f| bounded by 1.1*2^26,1.1*2^25,1.1*2^26,1.1*2^25,etc.
- */
-bool fe_isnonzero(in ref fe f) pure
-{
-	return !crypto_equals(fe_tobytes(f), zero);
-}
 
 /**
  Returns: h = f * g
