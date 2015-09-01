@@ -312,7 +312,7 @@ in {
 	outp[31] |= (!!signbit) << 7; // convert non zero values to 128
 }
 
-package:
+private:
 
 /**
  Input:
@@ -327,29 +327,29 @@ ubyte[32] sc_reduce(in ubyte[] inp) pure
 in {
 	assert(inp.length == 64);
 } body {
-	long s0 = 2097151 & load_3(inp[0..3]);
-	long s1 = 2097151 & (load_4(inp[2..6]) >> 5);
-	long s2 = 2097151 & (load_3(inp[5..8]) >> 2);
-	long s3 = 2097151 & (load_4(inp[7..11]) >> 7);
-	long s4 = 2097151 & (load_4(inp[10..14]) >> 4);
-	long s5 = 2097151 & (load_3(inp[13..16]) >> 1);
-	long s6 = 2097151 & (load_4(inp[15..19]) >> 6);
-	long s7 = 2097151 & (load_3(inp[18..21]) >> 3);
-	long s8 = 2097151 & load_3(inp[21..24]);
-	long s9 = 2097151 & (load_4(inp[23..27]) >> 5);
-	long s10 = 2097151 & (load_3(inp[26..29]) >> 2);
-	long s11 = 2097151 & (load_4(inp[28..32]) >> 7);
-	long s12 = 2097151 & (load_4(inp[31..35]) >> 4);
-	long s13 = 2097151 & (load_3(inp[34..37]) >> 1);
-	long s14 = 2097151 & (load_4(inp[36..40]) >> 6);
-	long s15 = 2097151 & (load_3(inp[39..42]) >> 3);
-	long s16 = 2097151 & load_3(inp[42..45]);
-	long s17 = 2097151 & (load_4(inp[44..48]) >> 5);
-	long s18 = 2097151 & (load_3(inp[47..50]) >> 2);
-	long s19 = 2097151 & (load_4(inp[49..53]) >> 7);
-	long s20 = 2097151 & (load_4(inp[52..56]) >> 4);
-	long s21 = 2097151 & (load_3(inp[55..58]) >> 1);
-	long s22 = 2097151 & (load_4(inp[57..61]) >> 6);
+	long s0 = 0x001FFFFF & load_3(inp[0..3]);
+	long s1 = 0x001FFFFF & (load_4(inp[2..6]) >> 5);
+	long s2 = 0x001FFFFF & (load_3(inp[5..8]) >> 2);
+	long s3 = 0x001FFFFF & (load_4(inp[7..11]) >> 7);
+	long s4 = 0x001FFFFF & (load_4(inp[10..14]) >> 4);
+	long s5 = 0x001FFFFF & (load_3(inp[13..16]) >> 1);
+	long s6 = 0x001FFFFF & (load_4(inp[15..19]) >> 6);
+	long s7 = 0x001FFFFF & (load_3(inp[18..21]) >> 3);
+	long s8 = 0x001FFFFF & load_3(inp[21..24]);
+	long s9 = 0x001FFFFF & (load_4(inp[23..27]) >> 5);
+	long s10 = 0x001FFFFF & (load_3(inp[26..29]) >> 2);
+	long s11 = 0x001FFFFF & (load_4(inp[28..32]) >> 7);
+	long s12 = 0x001FFFFF & (load_4(inp[31..35]) >> 4);
+	long s13 = 0x001FFFFF & (load_3(inp[34..37]) >> 1);
+	long s14 = 0x001FFFFF & (load_4(inp[36..40]) >> 6);
+	long s15 = 0x001FFFFF & (load_3(inp[39..42]) >> 3);
+	long s16 = 0x001FFFFF & load_3(inp[42..45]);
+	long s17 = 0x001FFFFF & (load_4(inp[44..48]) >> 5);
+	long s18 = 0x001FFFFF & (load_3(inp[47..50]) >> 2);
+	long s19 = 0x001FFFFF & (load_4(inp[49..53]) >> 7);
+	long s20 = 0x001FFFFF & (load_4(inp[52..56]) >> 4);
+	long s21 = 0x001FFFFF & (load_3(inp[55..58]) >> 1);
+	long s22 = 0x001FFFFF & (load_4(inp[57..61]) >> 6);
 	long s23 = (load_4(inp[60..64]) >> 3);
 	long carry0;
 	long carry1;
@@ -588,43 +588,43 @@ in {
 	assert(c.length == 32);
 } body {
 	// assign 21-bit slices to a*, b*, c*
-	long a0 = 2097151 & load_3(a[0..3]);
-	long a1 = 2097151 & (load_4(a[2..6]) >> 5);
-	long a2 = 2097151 & (load_3(a[5..8]) >> 2);
-	long a3 = 2097151 & (load_4(a[7..11]) >> 7);
-	long a4 = 2097151 & (load_4(a[10..14]) >> 4);
-	long a5 = 2097151 & (load_3(a[13..16]) >> 1);
-	long a6 = 2097151 & (load_4(a[15..19]) >> 6);
-	long a7 = 2097151 & (load_3(a[18..21]) >> 3);
-	long a8 = 2097151 & load_3(a[21..24]);
-	long a9 = 2097151 & (load_4(a[23..27]) >> 5);
-	long a10 = 2097151 & (load_3(a[26..29]) >> 2);
+	long a0 = 0x001FFFFF & load_3(a[0..3]);
+	long a1 = 0x001FFFFF & (load_4(a[2..6]) >> 5);
+	long a2 = 0x001FFFFF & (load_3(a[5..8]) >> 2);
+	long a3 = 0x001FFFFF & (load_4(a[7..11]) >> 7);
+	long a4 = 0x001FFFFF & (load_4(a[10..14]) >> 4);
+	long a5 = 0x001FFFFF & (load_3(a[13..16]) >> 1);
+	long a6 = 0x001FFFFF & (load_4(a[15..19]) >> 6);
+	long a7 = 0x001FFFFF & (load_3(a[18..21]) >> 3);
+	long a8 = 0x001FFFFF & load_3(a[21..24]);
+	long a9 = 0x001FFFFF & (load_4(a[23..27]) >> 5);
+	long a10 = 0x001FFFFF & (load_3(a[26..29]) >> 2);
 	long a11 = (load_4(a[28..32]) >> 7);
 
-	long b0 = 2097151 & load_3(b[0..3]);
-	long b1 = 2097151 & (load_4(b[2..6]) >> 5);
-	long b2 = 2097151 & (load_3(b[5..8]) >> 2);
-	long b3 = 2097151 & (load_4(b[7..11]) >> 7);
-	long b4 = 2097151 & (load_4(b[10..14]) >> 4);
-	long b5 = 2097151 & (load_3(b[13..16]) >> 1);
-	long b6 = 2097151 & (load_4(b[15..19]) >> 6);
-	long b7 = 2097151 & (load_3(b[18..21]) >> 3);
-	long b8 = 2097151 & load_3(b[21..24]);
-	long b9 = 2097151 & (load_4(b[23..27]) >> 5);
-	long b10 = 2097151 & (load_3(b[26..29]) >> 2);
+	long b0 = 0x001FFFFF & load_3(b[0..3]);
+	long b1 = 0x001FFFFF & (load_4(b[2..6]) >> 5);
+	long b2 = 0x001FFFFF & (load_3(b[5..8]) >> 2);
+	long b3 = 0x001FFFFF & (load_4(b[7..11]) >> 7);
+	long b4 = 0x001FFFFF & (load_4(b[10..14]) >> 4);
+	long b5 = 0x001FFFFF & (load_3(b[13..16]) >> 1);
+	long b6 = 0x001FFFFF & (load_4(b[15..19]) >> 6);
+	long b7 = 0x001FFFFF & (load_3(b[18..21]) >> 3);
+	long b8 = 0x001FFFFF & load_3(b[21..24]);
+	long b9 = 0x001FFFFF & (load_4(b[23..27]) >> 5);
+	long b10 = 0x001FFFFF & (load_3(b[26..29]) >> 2);
 	long b11 = (load_4(b[28..32]) >> 7);
 
-	long c0 = 2097151 & load_3(c[0..3]);
-	long c1 = 2097151 & (load_4(c[2..6]) >> 5);
-	long c2 = 2097151 & (load_3(c[5..8]) >> 2);
-	long c3 = 2097151 & (load_4(c[7..11]) >> 7);
-	long c4 = 2097151 & (load_4(c[10..14]) >> 4);
-	long c5 = 2097151 & (load_3(c[13..16]) >> 1);
-	long c6 = 2097151 & (load_4(c[15..19]) >> 6);
-	long c7 = 2097151 & (load_3(c[18..21]) >> 3);
-	long c8 = 2097151 & load_3(c[21..24]);
-	long c9 = 2097151 & (load_4(c[23..27]) >> 5);
-	long c10 = 2097151 & (load_3(c[26..29]) >> 2);
+	long c0 = 0x001FFFFF & load_3(c[0..3]);
+	long c1 = 0x001FFFFF & (load_4(c[2..6]) >> 5);
+	long c2 = 0x001FFFFF & (load_3(c[5..8]) >> 2);
+	long c3 = 0x001FFFFF & (load_4(c[7..11]) >> 7);
+	long c4 = 0x001FFFFF & (load_4(c[10..14]) >> 4);
+	long c5 = 0x001FFFFF & (load_3(c[13..16]) >> 1);
+	long c6 = 0x001FFFFF & (load_4(c[15..19]) >> 6);
+	long c7 = 0x001FFFFF & (load_3(c[18..21]) >> 3);
+	long c8 = 0x001FFFFF & load_3(c[21..24]);
+	long c9 = 0x001FFFFF & (load_4(c[23..27]) >> 5);
+	long c10 = 0x001FFFFF & (load_3(c[26..29]) >> 2);
 	long c11 = (load_4(c[28..32]) >> 7);
 
 	long s0;
@@ -888,39 +888,6 @@ in {
 	carry8 = s8 >> 21; s9 += carry8; s8 -= SHL64(carry8,21);
 	carry9 = s9 >> 21; s10 += carry9; s9 -= SHL64(carry9,21);
 	carry10 = s10 >> 21; s11 += carry10; s10 -= SHL64(carry10,21);
-	
-	//	s[0] = cast(ubyte) s0 >> 0;
-	//	s[1] = cast(ubyte) s0 >> 8;
-	//	s[2] = cast(ubyte) ((s0 >> 16) | SHL64(s1,5));
-	//	s[3] = cast(ubyte) s1 >> 3;
-	//	s[4] = cast(ubyte) s1 >> 11;
-	//	s[5] = cast(ubyte) (s1 >> 19) | SHL64(s2,2);
-	//	s[6] = cast(ubyte) s2 >> 6;
-	//	s[7] = cast(ubyte) (s2 >> 14) | SHL64(s3,7);
-	//	s[8] = cast(ubyte) s3 >> 1;
-	//	s[9] = cast(ubyte) s3 >> 9;
-	//	s[10] = cast(ubyte) (s3 >> 17) | SHL64(s4,4);
-	//	s[11] = cast(ubyte) s4 >> 4;
-	//	s[12] = cast(ubyte) s4 >> 12;
-	//	s[13] = cast(ubyte) (s4 >> 20) | SHL64(s5,1);
-	//	s[14] = cast(ubyte) s5 >> 7;
-	//	s[15] = cast(ubyte) (s5 >> 15) | SHL64(s6,6);
-	//	s[16] = cast(ubyte) s6 >> 2;
-	//	s[17] = cast(ubyte) s6 >> 10;
-	//	s[18] = cast(ubyte) (s6 >> 18) | SHL64(s7,3);
-	//	s[19] = cast(ubyte) s7 >> 5;
-	//	s[20] = cast(ubyte) s7 >> 13;
-	//	s[21] = cast(ubyte) s8 >> 0;
-	//	s[22] = cast(ubyte) s8 >> 8;
-	//	s[23] = cast(ubyte) (s8 >> 16) | SHL64(s9,5);
-	//	s[24] = cast(ubyte) s9 >> 3;
-	//	s[25] = cast(ubyte) s9 >> 11;
-	//	s[26] = cast(ubyte) (s9 >> 19) | SHL64(s10,2);
-	//	s[27] = cast(ubyte) s10 >> 6;
-	//	s[28] = cast(ubyte) (s10 >> 14) | SHL64(s11,7);
-	//	s[29] = cast(ubyte) s11 >> 1;
-	//	s[30] = cast(ubyte) s11 >> 9;
-	//	s[31] = cast(ubyte) s11 >> 17;
 
 	ubyte[32] s;
 	s[0] = cast(ubyte) (s0 >> 0);
