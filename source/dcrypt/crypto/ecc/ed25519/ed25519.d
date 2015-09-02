@@ -72,7 +72,7 @@ in {
 	r = sc_reduce(sha.finish());
 
 	R = ge_scalarmult_base(r);
-	ge_p3_tobytes(sig[0..32], R);
+	sig[0..32] = R.toBytes;
 
 	// sha512modq
 	sha.put(sig[0..32]);
@@ -165,10 +165,8 @@ in {
 	immutable ubyte[32] h = sc_reduce(sha.finish());
 	
 	ge_double_scalarmult_vartime(R, h, A, sCopy);
-	ge_tobytes(rCheck, R);
-
-	
-	return crypto_equals(rCheck, rCopy);
+		
+	return crypto_equals(R.toBytes, rCopy);
 }
 
 
@@ -214,9 +212,8 @@ in {
 	ubyte[32] pk;
 	assert((secret[0] & ~248) == 0 || (secret[31] & ~63) == 0 || (secret[31] & 64) == 64, "Invalid secret key!");
 	A = ge_scalarmult_base(secret);
-	ge_p3_tobytes(pk[], A);
 
-	return pk;
+	return A.toBytes;
 }
 
 ubyte[64] secret_expand(in ubyte[] sk) 

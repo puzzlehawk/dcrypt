@@ -36,6 +36,18 @@ struct ge_p2 {
 		Z = z;
 	}
 
+	@property
+	ubyte[32] toBytes() const {
+		ubyte[32] s;
+		fe recip = Z.inverse;
+		fe x = X * recip;
+		fe y = Y * recip;
+		
+		s[0..32] = y.toBytes;
+		s[31] ^= x.isNegative << 7;
+		return s;
+	}
+
 }
 
 /// ge_p3 (extended): (X:Y:Z:T) satisfying x=X/Z, y=Y/Z, XY=ZT
@@ -61,6 +73,18 @@ struct ge_p3 {
 
 	ge_cached opCast(G: ge_cached)() const {
 		return ge_cached(X+Y, Y-X, Z, T*d2);
+	}
+
+	@property
+	ubyte[32] toBytes() const {
+		ubyte[32] s;
+		fe recip = Z.inverse;
+		fe x = X * recip;
+		fe y = Y * recip;
+		
+		s[0..32] = y.toBytes;
+		s[31] ^= x.isNegative << 7;
+		return s;
 	}
 }
 
@@ -352,20 +376,6 @@ void ge_p3_dbl(ref ge_p1p1 r, in ref ge_p3 p)
 }
 
 
-
-void ge_p3_tobytes(ubyte[] s, in ref ge_p3 h)
-in {
-	assert(s.length == 32);
-} body {
-	fe recip = h.Z.inverse;
-	fe x = h.X * recip;
-	fe y = h.Y * recip;
-
-	s[0..32] = y.toBytes;
-	s[31] ^= x.isNegative << 7;
-}
-
-
 bool equal(in byte b, in byte c) pure
 {
 	ubyte x = b ^ c; /* 0: yes; 1..255: no */
@@ -505,18 +515,6 @@ void ge_sub(ref ge_p1p1 r, in ref ge_p3 p, in ref ge_cached q)
 	r.Y += r.Z;
 	r.Z = t0 - r.T;
 	r.T += t0;
-}
-
-void ge_tobytes(ubyte[] s, in ref ge_p2 h)
-in {
-	assert(s.length == 32);
-} body {
-	fe recip = h.Z.inverse;
-	fe x = h.X * recip;
-	fe y = h.Y * recip;
-
-	s[0..32] = y.toBytes;
-	s[31] ^= x.isNegative << 7;
 }
 
 // constants
