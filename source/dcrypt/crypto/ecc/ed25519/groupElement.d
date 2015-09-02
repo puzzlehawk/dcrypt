@@ -326,7 +326,7 @@ void ge_p1p1_to_p3(ref ge_p3 r, in ref ge_p1p1 p)
 
 void ge_p2_0(ref ge_p2 h)
 {
-	fe_0(h.X);
+	h.X = fe.zero;
 	h.Y = fe.one;
 	h.Z = fe.one;
 }
@@ -351,10 +351,10 @@ void ge_p2_dbl(ref ge_p1p1 r, in ref ge_p2 p)
 
 void ge_p3_0(ref ge_p3 h)
 {
-	fe_0(h.X);
+	h.X = fe.zero;
 	h.Y = fe.one;
 	h.Z = fe.one;
-	fe_0(h.T);
+	h.T = fe.zero;
 }
 
 /**
@@ -409,7 +409,7 @@ void ge_precomp_0(ref ge_precomp h)
 {
 	h.yplusx = fe.one;
 	h.yminusx = fe.one;
-	fe_0(h.xy2d);
+	h.xy2d = fe.zero;
 }
 
 

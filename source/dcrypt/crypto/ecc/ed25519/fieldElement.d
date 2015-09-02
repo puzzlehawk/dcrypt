@@ -9,11 +9,11 @@ import dcrypt.util.pack;
 /// An element t, entries t[0]...t[9], represents the integer
 /// t[0]+2^26 t[1]+2^51 t[2]+2^77 t[3]+2^102 t[4]+...+2^230 t[9].
 /// Bounds on each t[i] vary depending on context.
-private immutable ubyte[32] zero = 0;
 
 @safe
 struct fe {
 
+	enum fe zero = 0;
 	enum fe one = [1,0,0,0,0,0,0,0,0,0];
 
 	private uint[10] value;
@@ -97,6 +97,7 @@ struct fe {
 	@property
 	bool isNonzero() const
 	{
+		immutable ubyte[32] zero = 0;
 		return !crypto_equals(fe_tobytes(this), zero);
 	}
 
@@ -144,16 +145,12 @@ in {
 // test crypto_equals
 unittest {
 	ubyte[32] f = 0;
+	immutable ubyte[32] zero = 0;
 	assert(crypto_equals(f[], zero[]));
 	f[8] = 1;
 	assert(!crypto_equals(f[], zero[]));
 }
 
-/// h = 0
-void fe_0(out fe h)
-{
-	h[] = 0;
-}
 
 ///// h = f + g
 ///// Can overlap h with f or g.
