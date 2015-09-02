@@ -274,7 +274,7 @@ in {
 	uplus1 = u + fe.one;
 	y = uminus1 * uplus1.inverse;
 	
-	outp[0..32] = fe_tobytes(y);
+	outp[0..32] = y.toBytes;
 	
 	/* propagate sign. */
 	outp[31] |= (!!signbit) << 7; // convert non zero values to 128

@@ -24,19 +24,29 @@ import dcrypt.crypto.ecc.ed25519.base;
 /// ge_p2 (projective): (X:Y:Z) satisfying x=X/Z, y=Y/Z
 struct ge_p2 {
 
+	enum ge_p2 zero = ge_p2(fe.zero, fe.one, fe.one);
+	
+	fe X = fe.zero;
+	fe Y = fe.zero;
+	fe Z = fe.one;
+
 	this(fe x, fe y, fe z) {
 		X = x;
 		Y = y;
 		Z = z;
 	}
 
-	fe X;
-	fe Y;
-	fe Z;
 }
 
 /// ge_p3 (extended): (X:Y:Z:T) satisfying x=X/Z, y=Y/Z, XY=ZT
 struct ge_p3 {
+
+	enum ge_p3 zero = ge_p3(fe.zero, fe.one, fe.one, fe.zero);
+
+	fe X = fe.zero;
+	fe Y = fe.one;
+	fe Z = fe.one;
+	fe T = fe.zero;
 
 	this(fe x, fe y, fe z, fe t) {
 		X = x;
@@ -45,10 +55,6 @@ struct ge_p3 {
 		T = t;
 	}
 
-	fe X;
-	fe Y;
-	fe Z;
-	fe T;
 }
 
 /// ge_p1p1 (completed): ((X:Z),(Y:T)) satisfying x=X/Z, y=Y/T
@@ -70,6 +76,12 @@ struct ge_p1p1 {
 /// ge_precomp (Duif): (y+x,y-x,2dxy)
 struct ge_precomp {
 
+	enum ge_precomp zero = ge_precomp(fe.one, fe.one, fe.zero);
+
+	fe yplusx = fe.one;
+	fe yminusx = fe.one;
+	fe xy2d = fe.zero;
+
 	this(fe yplusx, fe yminusx, fe xy2d) {
 		this.yplusx = yplusx;
 		this.yminusx = yminusx;
@@ -86,13 +98,14 @@ struct ge_precomp {
 		this.yminusx = yminusx;
 		this.xy2d = xy2d;
 	}
-
-	fe yplusx;
-	fe yminusx;
-	fe xy2d;
 }
 
 struct ge_cached {
+	
+	fe YplusX;
+	fe YminusX;
+	fe Z;
+	fe T2d;
 
 	this(fe yplusx, fe yminusx, fe z, fe t2d) {
 		YplusX = yplusx;
@@ -100,11 +113,6 @@ struct ge_cached {
 		Z = z;
 		T2d = t2d;
 	}
-
-	fe YplusX;
-	fe YminusX;
-	fe Z;
-	fe T2d;
 };
 
 
@@ -122,11 +130,48 @@ void ge_add(ref ge_p1p1 r, in ref ge_p3 p, in ref ge_cached q)
 	r.X = p.Z * q.Z;
 	t0 = r.X + r.X;
 	r.X = r.Z - r.Y;
-	r.Y = r.Z + r.Y;
+	r.Y += r.Z;
 	r.Z = t0 + r.T;
 	r.T = t0 - r.T;
 }
 
+
+/**
+ r = p + q
+ */
+void ge_madd(ref ge_p1p1 r, in ref ge_p3 p, in ref ge_precomp q)
+{
+	fe t0;
+	r.X = p.Y + p.X;
+	r.Y = p.Y - p.X;
+	r.Z = r.X * q.yplusx;
+	r.Y *= q.yminusx;
+	r.T = q.xy2d * p.T;
+	t0 = p.Z + p.Z;
+	r.X = r.Z - r.Y;
+	r.Y += r.Z;
+	r.Z = t0 + r.T;
+	r.T = t0 - r.T;
+}
+
+
+/**
+ r = p - q
+ */
+void ge_msub(ref ge_p1p1 r, in ref ge_p3 p, in ref ge_precomp q)
+{
+	fe t0;
+	r.X = p.Y + p.X;
+	r.Y = p.Y - p.X;
+	r.Z = r.X * q.yminusx;
+	r.Y *= q.yplusx;
+	r.T = q.xy2d * p.T;
+	t0 = p.Z + p.Z;
+	r.X = r.Z - r.Y;
+	r.Y += r.Z;
+	r.Z = t0 - r.T;
+	r.T += t0;
+}
 
 // TODO pre conditions
 void slide(byte[] r, in ubyte[] a)
@@ -190,7 +235,7 @@ void ge_double_scalarmult_vartime(ref ge_p2 r, in ubyte[] a, in ref ge_p3 A, in 
 	ge_add(t, A2, Ai[5]); ge_p1p1_to_p3(u, t); ge_p3_to_cached(Ai[6], u);
 	ge_add(t, A2, Ai[6]); ge_p1p1_to_p3(u, t); ge_p3_to_cached(Ai[7], u);
 	
-	ge_p2_0(r);
+	r = ge_p2.zero;
 	
 	for (i = 255; i >= 0; --i) {
 		if (aslide[i] || bslide[i]) break;
@@ -266,42 +311,6 @@ in {
 }
 
 
-/**
- r = p + q
- */
-void ge_madd(ref ge_p1p1 r, in ref ge_p3 p, in ref ge_precomp q)
-{
-	fe t0;
-	r.X = p.Y + p.X;
-	r.Y = p.Y - p.X;
-	r.Z = r.X * q.yplusx;
-	r.Y *= q.yminusx;
-	r.T = q.xy2d * p.T;
-	t0 = p.Z + p.Z;
-	r.X = r.Z - r.Y;
-	r.Y += r.Z;
-	r.Z = t0 + r.T;
-	r.T = t0 - r.T;
-}
-
-
-/**
- r = p - q
- */
-void ge_msub(ref ge_p1p1 r, in ref ge_p3 p, in ref ge_precomp q)
-{
-	fe t0;
-	r.X = p.Y + p.X;
-	r.Y = p.Y - p.X;
-	r.Z = r.X * q.yminusx;
-	r.Y *= q.yplusx;
-	r.T = q.xy2d * p.T;
-	t0 = p.Z + p.Z;
-	r.X = r.Z - r.Y;
-	r.Y += r.Z;
-	r.Z = t0 - r.T;
-	r.T += t0;
-}
 
 /**
  r = p
@@ -324,12 +333,7 @@ void ge_p1p1_to_p3(ref ge_p3 r, in ref ge_p1p1 p)
 	r.T = p.X * p.Y;
 }
 
-void ge_p2_0(ref ge_p2 h)
-{
-	h.X = fe.zero;
-	h.Y = fe.one;
-	h.Z = fe.one;
-}
+
 
 /**
  r = 2 * p
@@ -349,13 +353,6 @@ void ge_p2_dbl(ref ge_p1p1 r, in ref ge_p2 p)
 	r.T -= r.Z;
 }
 
-void ge_p3_0(ref ge_p3 h)
-{
-	h.X = fe.zero;
-	h.Y = fe.one;
-	h.Z = fe.one;
-	h.T = fe.zero;
-}
 
 /**
  r = 2 * p
@@ -400,18 +397,9 @@ in {
 	fe x = h.X * recip;
 	fe y = h.Y * recip;
 
-	s[0..32] = fe_tobytes(y);
+	s[0..32] = y.toBytes;
 	s[31] ^= x.isNegative << 7;
 }
-
-
-void ge_precomp_0(ref ge_precomp h)
-{
-	h.yplusx = fe.one;
-	h.yminusx = fe.one;
-	h.xy2d = fe.zero;
-}
-
 
 
 bool equal(in byte b, in byte c) pure
@@ -434,9 +422,7 @@ unittest {
 /// TODO replace with <
 bool negative(in byte b) pure
 {
-	ulong x = b; /* 18446744073709551361..18446744073709551615: yes; 0..255: no */
-	x >>= 63; /* 1: yes; 0: no */
-	return x != 0;
+	return b < 0;
 }
 
 /// Conditional move: t = u, if and only if b != 0.
@@ -456,7 +442,7 @@ in {
 /// Select ge_precomp from base table in constant time.
 /// Params:
 /// b = 
-void select(ref ge_precomp t, in int pos, in byte b)
+ge_precomp select(in int pos, in byte b)
 {
 	ge_precomp minust;
 	immutable bool bnegative = negative(b);
@@ -464,7 +450,7 @@ void select(ref ge_precomp t, in int pos, in byte b)
 
 	assert((b >= 0 && babs == b) || (b < 0 && babs == -b));
 	
-	ge_precomp_0(t);
+	ge_precomp t;
 	cmov(t, base[pos][0], babs == 1);
 	cmov(t, base[pos][1], babs == 2);
 	cmov(t, base[pos][2], babs == 3);
@@ -477,6 +463,7 @@ void select(ref ge_precomp t, in int pos, in byte b)
 	minust.yminusx = t.yplusx;
 	minust.xy2d = -t.xy2d;
 	cmov(t, minust, bnegative);
+	return t;
 }
 
 /**
@@ -516,9 +503,9 @@ in {
 	e[63] += carry;
 	/* each e[i] is between -8 and 8 */
 	
-	ge_p3_0(h);
+	h = ge_p3.zero;
 	for (uint i = 1; i < 64; i += 2) {
-		select(t, i / 2, e[i]);
+		t = select(i / 2, e[i]);
 		ge_madd(r, h, t);
 		ge_p1p1_to_p3(h, r);
 	}
@@ -529,7 +516,7 @@ in {
 	ge_p2_dbl(r, s); ge_p1p1_to_p3(h, r);
 	
 	for (uint i = 0; i < 64; i += 2) {
-		select(t, i / 2, e[i]);
+		t = select(i / 2, e[i]);
 		ge_madd(r, h, t);
 		ge_p1p1_to_p3(h, r);
 	}
@@ -564,7 +551,7 @@ in {
 	fe x = h.X * recip;
 	fe y = h.Y * recip;
 
-	s[0..32] = fe_tobytes(y);
+	s[0..32] = y.toBytes;
 	s[31] ^= x.isNegative << 7;
 }
 

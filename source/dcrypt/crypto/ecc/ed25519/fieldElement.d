@@ -111,7 +111,7 @@ struct fe {
 	@property
 	bool isNegative() const
 	{
-		return (fe_tobytes(this)[0] & 1) == 1;
+		return (toBytes[0] & 1) == 1;
 	}
 
 	@property
@@ -122,6 +122,11 @@ struct fe {
 	/// Changes the sign.
 	void negate() {
 		value[] = -value[];
+	}
+
+	@property
+	ubyte[32] toBytes() const {
+		return fe_tobytes(this);
 	}
 }
 
@@ -1026,7 +1031,7 @@ void fe_sq2(ref fe h, in ref fe f)
  Have q+2^(-255)x = 2^(-255)(h + 19 2^(-25) h9 + 2^(-1))
  so floor(2^(-255)(h + 19 2^(-25) h9 + 2^(-1))) = q.
  */
-ubyte[32] fe_tobytes(in ref fe h) pure
+private ubyte[32] fe_tobytes(in ref fe h) pure
 {
 	int h0 = h[0];
 	int h1 = h[1];
