@@ -48,6 +48,25 @@ struct ge_p2 {
 		return s;
 	}
 
+	/// Returns: r = 2*p
+	ge_p1p1 dbl() const
+	{
+		fe t0;
+		ge_p1p1 r;
+
+		r.X = X.sq;
+		r.Z = Y.sq;
+		r.T = Z.sq2;
+		r.Y = X + Y;
+		t0 = r.Y.sq;
+		r.Y = r.Z + r.X;
+		r.Z -= r.X;
+		r.X = t0 - r.Y;
+		r.T -= r.Z;
+		
+		return r;
+	}
+
 }
 
 /// ge_p3 (extended): (X:Y:Z:T) satisfying x=X/Z, y=Y/Z, XY=ZT
@@ -86,6 +105,14 @@ struct ge_p3 {
 		s[31] ^= x.isNegative << 7;
 		return s;
 	}
+
+
+	/// Returns: r = 2*p
+	ge_p1p1 dbl() const
+	{
+		return (cast(ge_p2) this).dbl();
+	}
+
 }
 
 /// ge_p1p1 (completed): ((X:Z),(Y:T)) satisfying x=X/Z, y=Y/T
@@ -174,6 +201,24 @@ void ge_add(ref ge_p1p1 r, in ref ge_p3 p, in ref ge_cached q)
 	r.T = t0 - r.T;
 }
 
+/**
+ r = p - q
+ */
+void ge_sub(ref ge_p1p1 r, in ref ge_p3 p, in ref ge_cached q)
+{
+	fe t0;
+	r.X = p.Y + p.X;
+	r.Y = p.Y - p.X;
+	r.Z = r.X * q.YminusX;
+	r.Y *= q.YplusX;
+	r.T = q.T2d * p.T;
+	r.X = p.Z * q.Z;
+	t0 = r.X + r.X;
+	r.X = r.Z - r.Y;
+	r.Y += r.Z;
+	r.Z = t0 - r.T;
+	r.T += t0;
+}
 
 /**
  r = p + q
@@ -264,7 +309,7 @@ void ge_double_scalarmult_vartime(ref ge_p2 r, in ubyte[] a, in ref ge_p3 A, in 
 	slide(bslide, b);
 	
 	Ai[0] = cast(ge_cached) A;
-	ge_p3_dbl(t, A); A2 = cast(ge_p3) t;
+	t = A.dbl(); A2 = cast(ge_p3) t;
 	foreach(i; 0..7) {
 		ge_add(t, A2, Ai[i]); u = cast(ge_p3) t; Ai[i+1] = cast(ge_cached) u;
 	}
@@ -277,8 +322,7 @@ void ge_double_scalarmult_vartime(ref ge_p2 r, in ubyte[] a, in ref ge_p3 A, in 
 	}
 	
 	for (; i >= 0; --i) {
-		ge_p2_dbl(t, r);
-		
+		t = r.dbl();
 		if (aslide[i] > 0) {
 			u = cast(ge_p3) t;
 			ge_add(t, u, Ai[aslide[i]/2]);
@@ -313,22 +357,22 @@ in {
 	
 	fe_frombytes(h.Y,s);
 	h.Z = fe.one;
-	fe_sq(u, h.Y);
+	u = h.Y.sq;
 	v = u * d;
 	u -= h.Z;      /* u = y^2-1 */
 	v += h.Z;       /* v = dy^2+1 */
-	
-	fe_sq(v3,v);
+
+	v3 = v.sq;
 	v3 *= v;		/* v3 = v^3 */
-	fe_sq(h.X,v3);
-	h.X *= v; // TODO h.X *= v*u;
-	h.X *= u;   /* x = uv^7 */
-	
-	fe_pow22523(h.X, h.X); /* x = (uv^7)^((q-5)/8) */
+	h.X = v3.sq;
+	h.X *= v*u; /* x = uv^7 */
+
+	h.X = fe_pow22523(h.X); /* x = (uv^7)^((q-5)/8) */
+	//h.X = h.X.cpow!22523;
 	h.X *= v3;
 	h.X *= u;    /* x = uv^3(uv^7)^((q-5)/8) */
-	
-	fe_sq(vxx, h.X);
+
+	vxx = h.X.sq;
 	vxx *= v;
 	check = vxx - u;    /* vx^2-u */
 	if (check.isNonzero) {
@@ -343,36 +387,6 @@ in {
 
 	h.T = h.X * h.Y;
 	return true;
-}
-
-
-/**
- r = 2 * p
- */
-void ge_p2_dbl(ref ge_p1p1 r, in ref ge_p2 p)
-{
-	fe t0;
-
-	fe_sq(r.X, p.X);
-	fe_sq(r.Z, p.Y);
-	fe_sq2(r.T, p.Z);
-	r.Y = p.X + p.Y;
-	fe_sq(t0, r.Y);
-	r.Y = r.Z + r.X;
-	r.Z -= r.X;
-	r.X = t0 - r.Y;
-	r.T -= r.Z;
-}
-
-
-/**
- r = 2 * p
- */
-void ge_p3_dbl(ref ge_p1p1 r, in ref ge_p3 p)
-{
-	ge_p2 q;
-	q = cast(ge_p2) p;
-	ge_p2_dbl(r, q);
 }
 
 
@@ -409,9 +423,6 @@ in {
 	fe_cmov(t.xy2d, u.xy2d, b);
 }
 
-/* Rename this so as not to interfere with select() which torint.h apparently
- * grabs. :p */
-//#define select ed25519_ref10_select
 
 /// Select ge_precomp from base table in constant time.
 /// Params:
@@ -484,11 +495,12 @@ in {
 		h = cast(ge_p3) r;
 	}
 
-	ge_p3_dbl(r, h); s = cast(ge_p2) r;
-	ge_p2_dbl(r, s); s = cast(ge_p2) r;
-	ge_p2_dbl(r, s); s = cast(ge_p2) r;
-	ge_p2_dbl(r, s); h = cast(ge_p3) r;
-	
+	// TODO optimize
+	r = h.dbl(); s = cast(ge_p2) r;
+	r = s.dbl(); s = cast(ge_p2) r;
+	r = s.dbl(); s = cast(ge_p2) r;
+	r = s.dbl(); h = cast(ge_p3) r;
+		
 	for (uint i = 0; i < 64; i += 2) {
 		t = select(i / 2, e[i]);
 		ge_madd(r, h, t);
@@ -498,24 +510,7 @@ in {
 	return h;
 }
 
-/**
- r = p - q
- */
-void ge_sub(ref ge_p1p1 r, in ref ge_p3 p, in ref ge_cached q)
-{
-	fe t0;
-	r.X = p.Y + p.X;
-	r.Y = p.Y - p.X;
-	r.Z = r.X * q.YminusX;
-	r.Y *= q.YplusX;
-	r.T = q.T2d * p.T;
-	r.X = p.Z * q.Z;
-	t0 = r.X + r.X;
-	r.X = r.Z - r.Y;
-	r.Y += r.Z;
-	r.Z = t0 - r.T;
-	r.T += t0;
-}
+
 
 // constants
 

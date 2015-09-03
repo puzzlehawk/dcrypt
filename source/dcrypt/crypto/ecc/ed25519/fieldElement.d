@@ -47,7 +47,7 @@ struct fe {
 		return crypto_equals(this.value, rhs.value);
 	}
 
-	fe opBinary(string op)(auto ref const fe rhs) const
+	fe opBinary(string op)(auto ref const fe rhs) const pure
 		if (op == "+" || op == "-" || op == "*")
 	{
 		static if(op == "+") {
@@ -73,7 +73,7 @@ struct fe {
 		}
 	}
 
-	ref fe opOpAssign(string op)(auto ref const fe rhs)
+	ref fe opOpAssign(string op)(auto ref const fe rhs) pure
 		if (op == "+" || op == "-" || op == "*")
 	{
 		static if(op == "+") {
@@ -127,6 +127,33 @@ struct fe {
 	@property
 	ubyte[32] toBytes() const {
 		return fe_tobytes(this);
+	}
+
+	/// Returns: f*f
+	@property
+	fe sq() const pure {
+		return fe_sq(this);
+	}
+
+	/// Returns: 2*f*f
+	@property
+	fe sq2() const pure {
+		return fe_sq2(this);
+	}
+
+	/// Power by squaring in constant time.
+	@property
+	fe cpow(uint power)() const {
+		fe r = fe.one;
+		fe sq = this;
+		for(uint p = power; p > 0; p >>= 1) {
+			if((p & 1) == 1) {
+				r *= sq;
+			}
+			sq = sq.sq;
+		}
+
+		return r;
 	}
 }
 
@@ -320,52 +347,50 @@ private fe fe_invert(in ref fe z)
 	fe t2;
 	fe t3;
 
-	fe_sq(t0, z); 
-	fe_sq(t1, t0); 
-
-	for (uint i = 1; i < 2; ++i) fe_sq(t1, t1);
+	t0 = z.sq; 
+	t1 = t0.sq.sq; 
 
 	t1 *= z;
 	t0 *= t1;
-	fe_sq(t2, t0);
+	t2 = t0.sq;
 	t1 *= t2;
-	fe_sq(t2, t1); 
+	t2 = t1.sq;
 
-	for (uint i = 1; i < 5; ++i) fe_sq(t2, t2);
+	for (uint i = 1; i < 5; ++i) t2 = t2.sq;
 
 	t1 *= t2;
-	fe_sq(t2, t1); 
+	t2 = t1.sq; 
 
-	for (uint i = 1; i < 10; ++i) fe_sq(t2, t2);
+	for (uint i = 1; i < 10; ++i) t2 = t2.sq;
 
 	t2 *= t1;
 
-	fe_sq(t3, t2); 
+	t3 = t2.sq; 
 
-	for (uint i = 1; i < 20; ++i) fe_sq(t3, t3);
+	for (uint i = 1; i < 20; ++i) t3 = t3.sq;
 
 	t2 *= t3;
-	fe_sq(t2, t2);
+	t2 = t2.sq;
 
-	for (uint i = 1; i < 10; ++i) fe_sq(t2, t2);
+	for (uint i = 1; i < 10; ++i) t2 = t2.sq;
 
 	t1 *= t2;
 
-	fe_sq(t2, t1); 
-	for (uint i = 1; i < 50; ++i) fe_sq(t2, t2);
+	t2 = t1.sq;
+	for (uint i = 1; i < 50; ++i) t2 = t2.sq;
 
 	t2 *= t1;
-	fe_sq(t3, t2); 
-	for (uint i = 1; i < 100; ++i) fe_sq(t3, t3);
+	t3 = t2.sq;
+	for (uint i = 1; i < 100; ++i) t3 = t3.sq;
 
 	t2 *= t3;
-	fe_sq(t2, t2); 
-	for (uint i = 1; i < 50; ++i) fe_sq(t2, t2);
+	t2 = t2.sq;
+	for (uint i = 1; i < 50; ++i) t2 = t2.sq;
 
 	t1 *= t2;
 
-	fe_sq(t1, t1); 
-	for (uint i = 1; i < 5; ++i) fe_sq(t1, t1);
+	t1 = t1.sq;
+	for (uint i = 1; i < 5; ++i) t1 = t1.sq;
 
 	return t1 * t0;
 }
@@ -404,7 +429,7 @@ private fe fe_invert(in ref fe z)
 
  With tighter constraints on inputs can squeeze carries into int32.
  */
-private fe fe_mul(in ref fe f, in ref fe g)
+private fe fe_mul(in ref fe f, in ref fe g) pure
 {
 	int f0 = f[0];
 	int f1 = f[1];
@@ -625,63 +650,57 @@ private fe fe_mul(in ref fe f, in ref fe g)
 	return h;
 }
 
-///**
-// Returns: h = -f
-//
-// Preconditions:
-// |f| bounded by 1.1*2^25,1.1*2^24,1.1*2^25,1.1*2^24,etc.
-//
-// Postconditions:
-// |h| bounded by 1.1*2^25,1.1*2^24,1.1*2^25,1.1*2^24,etc.
-// */
-//void fe_neg(ref fe h, in ref fe f)
-//{
-//	h[] = -f[];
-//}
-
-//// test fe_neg with overlapping arrays
-//unittest {
-//	fe f = 1;
-//	fe_neg(f, f);
-//	assert(f[0] == cast(uint)(-1));
-//}
-
-void fe_pow22523(ref fe outp, in ref fe z)
+fe fe_pow22523(in ref fe z) pure
 {
 	fe t0;
 	fe t1;
 	fe t2;
-	fe_sq(t0, z);
-	fe_sq(t1, t0);
-	fe_sq(t1, t1);
+	t0 = z.sq;
+	t1 = t0.sq.sq;
+
 	t1 *= z;
 	t0 *= t1;
-	fe_sq(t0, t0);
+	t0 = t0.sq;
 	t0 *= t1;
-	fe_sq(t1, t0); 
-	for (uint i = 1; i < 5; ++i) fe_sq(t1, t1);
-	t0 *= t1;
-	fe_sq(t1, t0); 
-	for (uint i = 1; i < 10; ++i) fe_sq(t1, t1);
-	t1 *= t0;
-	fe_sq(t2, t1); 
-	for (uint i = 1; i < 20; ++i) fe_sq(t2, t2);
-	t1 *= t2;
-	fe_sq(t1, t1); 
-	for (uint i = 1; i < 10; ++i) fe_sq(t1, t1);
-	t0 *= t1;
-	fe_sq(t1, t0); 
-	for (uint i = 1; i < 50; ++i) fe_sq(t1, t1);
-	t1 *= t0;
-	fe_sq(t2, t1);
-	for (uint i = 1; i < 100; ++i) fe_sq(t2, t2);
-	t1 *= t2;
-	fe_sq(t1, t1); for (uint i = 1; i < 50; ++i) fe_sq(t1, t1);
-	t0 *= t1;
-	fe_sq(t0, t0);
-	fe_sq(t0, t0);
 
-	outp = t0 * z;
+	t1 = t0.sq; 
+	for (uint i = 1; i < 5; ++i) t1 = t1.sq;
+
+	t0 *= t1;
+
+	t1 = t0.sq; 
+	for (uint i = 1; i < 10; ++i) t1 = t1.sq;
+
+	t1 *= t0;
+
+	t2 = t1.sq; 
+	for (uint i = 1; i < 20; ++i) t2 = t2.sq;
+
+	t1 *= t2;
+
+	t1 = t1.sq; 
+	for (uint i = 1; i < 10; ++i) t1 = t1.sq;
+
+	t0 *= t1;
+
+	t1 = t0.sq; 
+	for (uint i = 1; i < 50; ++i) t1 = t1.sq;
+
+	t1 *= t0;
+
+	t2 = t1.sq;
+	for (uint i = 1; i < 100; ++i) t2 = t2.sq;
+
+	t1 *= t2;
+
+	t1 = t1.sq;
+	for (uint i = 1; i < 50; ++i) t1 = t1.sq;
+
+	t0 *= t1;
+	t0 = t0.sq;
+	t0 = t0.sq;
+
+	return t0 * z;
 }
 
 
@@ -698,7 +717,7 @@ void fe_pow22523(ref fe outp, in ref fe z)
  Note:
  See fe_mul.c for discussion of implementation strategy.
  */
-void fe_sq(ref fe h, in ref fe f)
+private fe fe_sq(in ref fe f) pure
 {
 	int f0 = f[0];
 	int f1 = f[1];
@@ -817,7 +836,8 @@ void fe_sq(ref fe h, in ref fe f)
 	carry9 = (h9 + cast(long) (1<<24)) >> 25; h0 += carry9 * 19; h9 -= SHL64(carry9,25);
 	
 	carry0 = (h0 + cast(long) (1<<25)) >> 26; h1 += carry0; h0 -= SHL64(carry0,26);
-	
+
+	fe h;
 	h[0] = cast(int) h0;
 	h[1] = cast(int) h1;
 	h[2] = cast(int) h2;
@@ -828,6 +848,7 @@ void fe_sq(ref fe h, in ref fe f)
 	h[7] = cast(int) h7;
 	h[8] = cast(int) h8;
 	h[9] = cast(int) h9;
+	return h;
 }
 
 /**
@@ -843,7 +864,7 @@ void fe_sq(ref fe h, in ref fe f)
  Note:
  See fe_mul.c for discussion of implementation strategy.
  */
-void fe_sq2(ref fe h, in ref fe f)
+private fe fe_sq2(in ref fe f) pure
 {
 	int f0 = f[0];
 	int f1 = f[1];
@@ -973,7 +994,8 @@ void fe_sq2(ref fe h, in ref fe f)
 	carry9 = (h9 + cast(long) (1<<24)) >> 25; h0 += carry9 * 19; h9 -= SHL64(carry9,25);
 	
 	carry0 = (h0 + cast(long) (1<<25)) >> 26; h1 += carry0; h0 -= SHL64(carry0,26);
-	
+
+	fe h;
 	h[0] = cast(int) h0;
 	h[1] = cast(int) h1;
 	h[2] = cast(int) h2;
@@ -984,6 +1006,7 @@ void fe_sq2(ref fe h, in ref fe f)
 	h[7] = cast(int) h7;
 	h[8] = cast(int) h8;
 	h[9] = cast(int) h9;
+	return h;
 }
 
 ///**
