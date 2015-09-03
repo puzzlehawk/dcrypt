@@ -4,20 +4,17 @@ import dcrypt.crypto.ecc.ed25519.fieldElement;
 
 /// Generate a public key from a secret. 
 /// Test vectors from http://cr.yp.to/highspeed/naclcrypto-20090310.pdf
-//unittest {
-//	alias ubyte[32] key_t;
-//	
-//	key_t secretKey = cast(key_t) x"77076d0a7318a57d3c16c17251b26645df4c2f87ebc0992ab177fba51db92c2a";
-//	
-//	key_t publicKey = crypto_scalarmult(secretKey);
-//	
-//	auto expectedPublic = x"8520f0098930a754748b7ddcb43ef75a0dbf3a0d26381af4eba4a98eaa9b4e6a";
-//
-//	import std.stdio;
-//	writefln("%(%.2x%)", publicKey);
-//
-//	assert(publicKey == expectedPublic, "crypto_scalarmult with base point failed!");
-//}
+unittest {
+	alias ubyte[32] key_t;
+	
+	key_t secretKey = cast(key_t) x"77076d0a7318a57d3c16c17251b26645df4c2f87ebc0992ab177fba51db92c2a";
+	
+	key_t publicKey = crypto_scalarmult(secretKey);
+	
+	auto expectedPublic = x"8520f0098930a754748b7ddcb43ef75a0dbf3a0d26381af4eba4a98eaa9b4e6a";
+
+	assert(publicKey == expectedPublic, "crypto_scalarmult with base point failed!");
+}
 
 unittest {
 	alias ubyte[32] key_t;
@@ -35,8 +32,21 @@ unittest {
 
 public enum ubyte[32] publicBasePoint = cast(immutable (ubyte[32]) ) x"0900000000000000000000000000000000000000000000000000000000000000";
 
-ubyte[32] crypto_scalarmult(in ref ubyte[32] n,
-	in ref ubyte[32] p = publicBasePoint)
+/// 
+/// 
+/// Params:
+/// n = your secret key, the 'exponent'
+/// p = public key. Default: base point 9
+/// 
+/// Returns: p^n.
+/// 
+/// Examples:
+/// 
+/// ubyte[32] publicKey = crypto_scalarmult(secretKey);
+/// 
+/// ubyte[32] sharedKey = crypto_scalarmult(mySecretKey, herPublicKey);
+/// 
+ubyte[32] crypto_scalarmult(in ref ubyte[32] n, in ref ubyte[32] p = publicBasePoint)
 {
 	ubyte[32] e;
 	uint i;
