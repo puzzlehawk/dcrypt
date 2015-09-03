@@ -1,7 +1,7 @@
 ﻿module dcrypt.benchmark.curve25519;
 
 import dcrypt.benchmark.Benchmark;
-import dcrypt.crypto.ecc.curve25519;
+import dcrypt.crypto.ecc.curve25519donna;
 import std.conv;
 
 public class Curve25519Benchmark: Benchmark {

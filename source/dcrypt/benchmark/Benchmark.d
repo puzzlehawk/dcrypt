@@ -61,7 +61,28 @@ public class Benchmark {
 		auto bench = new Curve25519Benchmark;
 		printTabbed(bench.benchmark(length));
 		stdout.flush();
+	}
+
+	public static void doCurved25519Benchmark(ulong length) {
+		import dcrypt.benchmark.curved25519;
 		
+		writeln();
+		printTabbed(Curved25519Benchmark.header);
+		writeln();
+		auto bench = new Curved25519Benchmark;
+		printTabbed(bench.benchmark(length));
+		stdout.flush();
+	}
+
+	public static void doEd25519Benchmark(ulong length) {
+		import dcrypt.benchmark.curved25519;
+		
+		writeln();
+		printTabbed(Ed25519Benchmark.header);
+		writeln();
+		auto bench = new Ed25519Benchmark;
+		printTabbed(bench.benchmark(length));
+		stdout.flush();
 	}
 
 	//	public static void doBenchmark(T)(PKCS5S2ParametersGenerator!T[] gen...) {

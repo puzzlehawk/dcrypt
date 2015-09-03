@@ -87,14 +87,10 @@ version (Benchmark) {
 		
 		Benchmark.doBenchmark(len, aeadCiphers);
 
-		Benchmark.doCurve25519Benchmark(256);
-		
-		//	PKCS5S2ParametersGenerator[] gen = [
-		//		new PKCS5S2ParametersGenerator(new SHA1Digest),
-		//		new PKCS5S2ParametersGenerator(new SHA256Digest),
-		//		new PKCS5S2ParametersGenerator(new SHA512Digest)];
-		//Benchmark.doBenchmark(gen);
-		
+		Benchmark.doCurve25519Benchmark(512);
+		Benchmark.doCurved25519Benchmark(512);
+		Benchmark.doEd25519Benchmark(512);
+				
 	}
 } else {
 //	public void main(string[] args) {
