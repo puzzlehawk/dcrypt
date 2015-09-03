@@ -369,7 +369,7 @@ private fe fe_invert(in ref fe z)
 	fe t1;
 	fe t2;
 	fe t3;
-
+	// pow225521
 	t0 = z.sq; 
 	t1 = t0.sq.sq; 
 
@@ -1300,4 +1300,20 @@ in {
 	g[7] = g7 ^ x7;
 	g[8] = g8 ^ x8;
 	g[9] = g9 ^ x9;
+}
+
+unittest {
+	fe a;
+	fe b;
+	a[] = 1;
+	b[] = 2;
+	fe A = 1;
+	fe B = 2;
+
+	fe_cswap(A, B, 0);
+	assert(A == a);
+	assert(B == b);
+	fe_cswap(A, B, 1);
+	assert(A == b);
+	assert(B == a);
 }
