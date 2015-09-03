@@ -24,6 +24,14 @@ struct fe {
 	//	}
 	nothrow @nogc:
 
+	/// Create fe from 32 bytes.
+	static fe fromBytes(in ubyte[] bytes)
+	in {
+		assert(bytes.length == 32, "bytes.length must be 32.");
+	} body {
+		return fe_frombytes(bytes);
+	}
+
 	this(in uint[] v) 
 	in {
 		assert(v.length == 10, "v.length must be 10.");
@@ -64,7 +72,7 @@ struct fe {
 	}
 
 	fe opUnary(string op)() const
-	if(op == "-")
+		if(op == "-")
 	{
 		static if(op == "-") {
 			fe tmp;
@@ -129,10 +137,22 @@ struct fe {
 		return fe_tobytes(this);
 	}
 
-	/// Returns: f*f
+	/// Params:
+	/// repeat = Repeat squaring n times.
+	/// Returns: f^2 or f^(2^repeat).
 	@property
-	fe sq() const pure {
-		return fe_sq(this);
+	fe sq(uint repeat = 1)() const pure 
+		if(repeat > 0) 
+	{
+		fe f = fe_sq(this);
+
+		static if(repeat > 1) {
+			foreach(i; 1..repeat) {
+				f = f.sq!1;
+			}
+		}
+
+		return f;
 	}
 
 	/// Returns: 2*f*f
@@ -142,6 +162,7 @@ struct fe {
 	}
 
 	/// Power by squaring in constant time.
+	/// Returns f^power
 	@property
 	fe cpow(uint power)() const {
 		fe r = fe.one;
@@ -273,7 +294,7 @@ in {
 /*
  Ignores top bit of h.
  */
-void fe_frombytes(out fe h, in ubyte[] s)
+private fe fe_frombytes(in ubyte[] s) pure
 in {
 	assert(s.length == 32);
 } body {
@@ -310,7 +331,8 @@ in {
 	carry4 = (h4 + cast(long) (1<<25)) >> 26; h5 += carry4; h4 -= SHL64(carry4,26);
 	carry6 = (h6 + cast(long) (1<<25)) >> 26; h7 += carry6; h6 -= SHL64(carry6,26);
 	carry8 = (h8 + cast(long) (1<<25)) >> 26; h9 += carry8; h8 -= SHL64(carry8,26);
-	
+
+	fe h;
 	h[0] = cast(int) h0;
 	h[1] = cast(int) h1;
 	h[2] = cast(int) h2;
@@ -321,6 +343,7 @@ in {
 	h[7] = cast(int) h7;
 	h[8] = cast(int) h8;
 	h[9] = cast(int) h9;
+	return h;
 }
 
 // TODO replace all SHL* with <<
@@ -354,43 +377,32 @@ private fe fe_invert(in ref fe z)
 	t0 *= t1;
 	t2 = t0.sq;
 	t1 *= t2;
-	t2 = t1.sq;
 
-	for (uint i = 1; i < 5; ++i) t2 = t2.sq;
+	t2 = t1.sq!5;
 
 	t1 *= t2;
-	t2 = t1.sq; 
-
-	for (uint i = 1; i < 10; ++i) t2 = t2.sq;
+	t2 = t1.sq!10; 
 
 	t2 *= t1;
 
-	t3 = t2.sq; 
-
-	for (uint i = 1; i < 20; ++i) t3 = t3.sq;
+	t3 = t2.sq!20;
 
 	t2 *= t3;
-	t2 = t2.sq;
-
-	for (uint i = 1; i < 10; ++i) t2 = t2.sq;
+	t2 = t2.sq!10;
 
 	t1 *= t2;
 
-	t2 = t1.sq;
-	for (uint i = 1; i < 50; ++i) t2 = t2.sq;
+	t2 = t1.sq!50;
 
 	t2 *= t1;
-	t3 = t2.sq;
-	for (uint i = 1; i < 100; ++i) t3 = t3.sq;
+	t3 = t2.sq!100;
 
 	t2 *= t3;
-	t2 = t2.sq;
-	for (uint i = 1; i < 50; ++i) t2 = t2.sq;
+	t2 = t2.sq!50;
 
 	t1 *= t2;
 
-	t1 = t1.sq;
-	for (uint i = 1; i < 5; ++i) t1 = t1.sq;
+	t1 = t1.sq!5;
 
 	return t1 * t0;
 }
@@ -663,42 +675,37 @@ fe fe_pow22523(in ref fe z) pure
 	t0 = t0.sq;
 	t0 *= t1;
 
-	t1 = t0.sq; 
-	for (uint i = 1; i < 5; ++i) t1 = t1.sq;
+//		t1 = z.cpow!9;
+//		t0 = z.cpow!31;
+
+	t1 = t0.sq!5;
 
 	t0 *= t1;
 
-	t1 = t0.sq; 
-	for (uint i = 1; i < 10; ++i) t1 = t1.sq;
+	t1 = t0.sq!10;
 
 	t1 *= t0;
 
-	t2 = t1.sq; 
-	for (uint i = 1; i < 20; ++i) t2 = t2.sq;
+	t2 = t1.sq!20;
 
 	t1 *= t2;
 
-	t1 = t1.sq; 
-	for (uint i = 1; i < 10; ++i) t1 = t1.sq;
+	t1 = t1.sq!10;
 
 	t0 *= t1;
 
-	t1 = t0.sq; 
-	for (uint i = 1; i < 50; ++i) t1 = t1.sq;
+	t1 = t0.sq!50;
 
 	t1 *= t0;
 
-	t2 = t1.sq;
-	for (uint i = 1; i < 100; ++i) t2 = t2.sq;
+	t2 = t1.sq!100;
 
 	t1 *= t2;
 
-	t1 = t1.sq;
-	for (uint i = 1; i < 50; ++i) t1 = t1.sq;
+	t1 = t1.sq!50;
 
 	t0 *= t1;
-	t0 = t0.sq;
-	t0 = t0.sq;
+	t0 = t0.sq.sq;
 
 	return t0 * z;
 }

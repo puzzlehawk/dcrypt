@@ -41,19 +41,23 @@ unittest {
 
 @safe nothrow @nogc:
 
+/// Sign a message with your secret key.
+/// 
 /// Params:
 /// sig = buffer for signature
 /// m = message
 /// sk = secret key
-/// pk = public key
+/// pk = public key. Not necessary to provide it, but a bit faster.
 public ubyte[64] sign(
 	in ubyte[] m,
-	in ubyte[] sk
-	//in ubyte[] pk
+	in ubyte[] sk,
+	in ubyte[] publicKey = null
 	)
 in {
-	assert(sk.length == 32);
-	//assert(pk.length == 32);
+	assert(sk.length == 32, "Secret key must be 32 bytes.");
+	if(publicKey !is null) {
+		assert(publicKey.length == 32, "Public key must be 32 bytes.");
+	}
 } body {
 	ubyte[64] sig;
 	ubyte[32] r, h;
@@ -62,7 +66,7 @@ in {
 
 	immutable ubyte[64] expandedSecret = secret_expand(sk);
 
-	immutable ubyte[32] pk = secret_to_public(sk); // TODO optimize, use expanded secret
+	immutable ubyte[32] pk = (publicKey !is null) ? publicKey[0..32] : secret_to_public(sk); // TODO optimize, use expanded secret
 	//ge_scalarmult_base(A, expandedSecret[0..32]);
 
 	// sha512_modq
@@ -93,43 +97,7 @@ in {
 //	return sc_reduce(hash.finish());
 //}
 
-/// ref10
-//int crypto_sign(
-//	unsigned char *sm,unsigned long long *smlen,
-//	const unsigned char *m,unsigned long long mlen,
-//	const unsigned char *sk
-//	)
-//{
-//	unsigned char pk[32];
-//	unsigned char az[64];
-//	unsigned char nonce[64];
-//	unsigned char hram[64];
-//	ge_p3 R;
-//	
-//	memmove(pk,sk + 32,32);
-//	
-//	crypto_hash_sha512(az,sk,32);
-//	az[0] &= 248;
-//	az[31] &= 63;
-//	az[31] |= 64;
-//	
-//	*smlen = mlen + 64;
-//	memmove(sm + 64,m,mlen);
-//	memmove(sm + 32,az + 32,32);
-//	crypto_hash_sha512(nonce,sm + 32,mlen + 32);
-//	memmove(sm + 32,pk,32);
-//	
-//	sc_reduce(nonce);
-//	ge_scalarmult_base(&R,nonce);
-//	ge_p3_tobytes(sm,&R);
-//	
-//	crypto_hash_sha512(hram,sm,mlen + 64);
-//	sc_reduce(hram);
-//	sc_muladd(sm + 32,hram,az,nonce);
-//	
-//	return 0;
-//}
-
+/// Verify a signature `sig` of message `m` with public key `pk`.
 /// Params:
 /// signature = 64 bytes signature.
 /// m = The signed message.
@@ -165,7 +133,7 @@ in {
 	immutable ubyte[32] h = sc_reduce(sha.finish());
 	
 	ge_double_scalarmult_vartime(R, h, A, sCopy);
-		
+	
 	return crypto_equals(R.toBytes, rCopy);
 }
 
@@ -201,7 +169,7 @@ in {
 //	clamp(sk[0..32]);
 //}
 
-/// Generate public key from secret key. Secret key must be clamped.
+/// Generate public key from secret key.
 ubyte[32] secret_to_public(in ubyte[] sk)
 in {
 	assert(sk.length == 32, "Invalid secret key length. Must be 32.");
@@ -216,7 +184,7 @@ in {
 	return A.toBytes;
 }
 
-ubyte[64] secret_expand(in ubyte[] sk) 
+private ubyte[64] secret_expand(in ubyte[] sk) 
 in {
 	assert(sk.length == 32, "Invalid secret key length. Must be 32.");
 } body {
@@ -266,7 +234,7 @@ in {
 
 	 y = (u-1)/(u+1)
 	 */
-	fe_frombytes(u, inp);
+	u = fe.fromBytes(inp);
 	uminus1 = u - fe.one;
 	uplus1 = u + fe.one;
 	y = uminus1 * uplus1.inverse;

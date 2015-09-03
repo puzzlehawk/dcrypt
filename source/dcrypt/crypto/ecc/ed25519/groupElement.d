@@ -355,17 +355,15 @@ in {
 	fe vxx;
 	fe check;
 	
-	fe_frombytes(h.Y,s);
+	h.Y = fe.fromBytes(s);
 	h.Z = fe.one;
 	u = h.Y.sq;
 	v = u * d;
 	u -= h.Z;      /* u = y^2-1 */
 	v += h.Z;       /* v = dy^2+1 */
 
-	v3 = v.sq;
-	v3 *= v;		/* v3 = v^3 */
-	h.X = v3.sq;
-	h.X *= v*u; /* x = uv^7 */
+	v3 = v.cpow!3;	/* v3 = v^3 */
+	h.X = u * v3.sq * v; /* x = uv^7 */
 
 	h.X = fe_pow22523(h.X); /* x = (uv^7)^((q-5)/8) */
 	//h.X = h.X.cpow!22523;
