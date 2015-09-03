@@ -46,7 +46,7 @@ public enum ubyte[32] publicBasePoint = cast(immutable (ubyte[32]) ) x"090000000
 /// 
 /// ubyte[32] sharedKey = crypto_scalarmult(mySecretKey, herPublicKey);
 /// 
-ubyte[32] crypto_scalarmult(in ref ubyte[32] n, in ref ubyte[32] p = publicBasePoint)
+ubyte[32] crypto_scalarmult(in ref ubyte[32] n, in ref ubyte[32] p = publicBasePoint) @safe nothrow @nogc
 {
 	ubyte[32] e;
 	uint i;

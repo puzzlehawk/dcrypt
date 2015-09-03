@@ -87,6 +87,8 @@ version (Benchmark) {
 		Benchmark.doBenchmark(len, aeadCiphers);
 
 		Benchmark.doCurve25519Benchmark(256);
+		Benchmark.doCurved25519Benchmark(256);
+		Benchmark.doEd25519Benchmark(256);
 		
 		//	PKCS5S2ParametersGenerator[] gen = [
 		//		new PKCS5S2ParametersGenerator(new SHA1Digest),

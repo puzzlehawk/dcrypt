@@ -132,7 +132,7 @@ unittest {
 	
 }
 
-@safe pure nothrow @nogc:
+@safe nothrow @nogc:
 
 public enum publicBasePoint = cast(immutable (ubyte[32]) ) x"0900000000000000000000000000000000000000000000000000000000000000";
 
@@ -151,7 +151,7 @@ public enum publicBasePoint = cast(immutable (ubyte[32]) ) x"0900000000000000000
 /// 
 /// ubyte[32] sharedKey = curve25519(mySecretKey, herPublicKey);
 /// 
-public ubyte[32] curve25519(in ref ubyte[32] secret, in ref ubyte[32] basepoint = publicBasePoint) 
+public ubyte[32] curve25519(in ref ubyte[32] secret, in ref ubyte[32] basepoint = publicBasePoint) nothrow @nogc @safe
 in {
 	assert(secret.length == 32);
 	assert(basepoint.length == 32);
