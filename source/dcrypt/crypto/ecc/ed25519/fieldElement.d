@@ -662,7 +662,78 @@ private fe fe_mul(in ref fe f, in ref fe g) pure
 	return h;
 }
 
-fe fe_pow22523(in ref fe z) pure
+
+/*
+ h = f * 121666
+ Can overlap h with f.
+
+ Preconditions:
+ |f| bounded by 1.1*2^26,1.1*2^25,1.1*2^26,1.1*2^25,etc.
+
+ Postconditions:
+ |h| bounded by 1.1*2^25,1.1*2^24,1.1*2^25,1.1*2^24,etc.
+ */
+package fe fe_mul121666(in ref fe f) pure
+{
+	int f0 = f[0];
+	int f1 = f[1];
+	int f2 = f[2];
+	int f3 = f[3];
+	int f4 = f[4];
+	int f5 = f[5];
+	int f6 = f[6];
+	int f7 = f[7];
+	int f8 = f[8];
+	int f9 = f[9];
+	long h0 = f0 * cast(long) 121666;
+	long h1 = f1 * cast(long) 121666;
+	long h2 = f2 * cast(long) 121666;
+	long h3 = f3 * cast(long) 121666;
+	long h4 = f4 * cast(long) 121666;
+	long h5 = f5 * cast(long) 121666;
+	long h6 = f6 * cast(long) 121666;
+	long h7 = f7 * cast(long) 121666;
+	long h8 = f8 * cast(long) 121666;
+	long h9 = f9 * cast(long) 121666;
+	long carry0;
+	long carry1;
+	long carry2;
+	long carry3;
+	long carry4;
+	long carry5;
+	long carry6;
+	long carry7;
+	long carry8;
+	long carry9;
+	
+	carry9 = (h9 + cast(long) (1<<24)) >> 25; h0 += carry9 * 19; h9 -= carry9 << 25;
+	carry1 = (h1 + cast(long) (1<<24)) >> 25; h2 += carry1; h1 -= carry1 << 25;
+	carry3 = (h3 + cast(long) (1<<24)) >> 25; h4 += carry3; h3 -= carry3 << 25;
+	carry5 = (h5 + cast(long) (1<<24)) >> 25; h6 += carry5; h5 -= carry5 << 25;
+	carry7 = (h7 + cast(long) (1<<24)) >> 25; h8 += carry7; h7 -= carry7 << 25;
+	
+	carry0 = (h0 + cast(long) (1<<25)) >> 26; h1 += carry0; h0 -= carry0 << 26;
+	carry2 = (h2 + cast(long) (1<<25)) >> 26; h3 += carry2; h2 -= carry2 << 26;
+	carry4 = (h4 + cast(long) (1<<25)) >> 26; h5 += carry4; h4 -= carry4 << 26;
+	carry6 = (h6 + cast(long) (1<<25)) >> 26; h7 += carry6; h6 -= carry6 << 26;
+	carry8 = (h8 + cast(long) (1<<25)) >> 26; h9 += carry8; h8 -= carry8 << 26;
+	
+	fe h;
+	h[0] = cast(uint) h0;
+	h[1] = cast(uint) h1;
+	h[2] = cast(uint) h2;
+	h[3] = cast(uint) h3;
+	h[4] = cast(uint) h4;
+	h[5] = cast(uint) h5;
+	h[6] = cast(uint) h6;
+	h[7] = cast(uint) h7;
+	h[8] = cast(uint) h8;
+	h[9] = cast(uint) h9;
+
+	return h;
+}
+
+package fe fe_pow22523(in ref fe z) pure
 {
 	fe t0;
 	fe t1;
@@ -1155,4 +1226,78 @@ private ubyte[32] fe_tobytes(in ref fe h) pure
 	s[31] = cast(ubyte) (h9 >> 18);
 
 	return s;
+}
+
+/// Conditional swap.
+/// Replace (f,g) with (g,f) if b == 1;
+/// replace (f,g) with (f,g) if b == 0.
+/// Params:
+/// b = 0 or 1
+void fe_cswap(ref fe f, ref fe g, uint b)
+in {
+	assert(b == 0 || b == 1);
+} body
+{
+	// TODO refactor
+	int f0 = f[0];
+	int f1 = f[1];
+	int f2 = f[2];
+	int f3 = f[3];
+	int f4 = f[4];
+	int f5 = f[5];
+	int f6 = f[6];
+	int f7 = f[7];
+	int f8 = f[8];
+	int f9 = f[9];
+	int g0 = g[0];
+	int g1 = g[1];
+	int g2 = g[2];
+	int g3 = g[3];
+	int g4 = g[4];
+	int g5 = g[5];
+	int g6 = g[6];
+	int g7 = g[7];
+	int g8 = g[8];
+	int g9 = g[9];
+	int x0 = f0 ^ g0;
+	int x1 = f1 ^ g1;
+	int x2 = f2 ^ g2;
+	int x3 = f3 ^ g3;
+	int x4 = f4 ^ g4;
+	int x5 = f5 ^ g5;
+	int x6 = f6 ^ g6;
+	int x7 = f7 ^ g7;
+	int x8 = f8 ^ g8;
+	int x9 = f9 ^ g9;
+	b = -b;
+	x0 &= b;
+	x1 &= b;
+	x2 &= b;
+	x3 &= b;
+	x4 &= b;
+	x5 &= b;
+	x6 &= b;
+	x7 &= b;
+	x8 &= b;
+	x9 &= b;
+	f[0] = f0 ^ x0;
+	f[1] = f1 ^ x1;
+	f[2] = f2 ^ x2;
+	f[3] = f3 ^ x3;
+	f[4] = f4 ^ x4;
+	f[5] = f5 ^ x5;
+	f[6] = f6 ^ x6;
+	f[7] = f7 ^ x7;
+	f[8] = f8 ^ x8;
+	f[9] = f9 ^ x9;
+	g[0] = g0 ^ x0;
+	g[1] = g1 ^ x1;
+	g[2] = g2 ^ x2;
+	g[3] = g3 ^ x3;
+	g[4] = g4 ^ x4;
+	g[5] = g5 ^ x5;
+	g[6] = g6 ^ x6;
+	g[7] = g7 ^ x7;
+	g[8] = g8 ^ x8;
+	g[9] = g9 ^ x9;
 }
