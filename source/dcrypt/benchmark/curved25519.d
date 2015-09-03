@@ -23,7 +23,7 @@ public class Curved25519Benchmark: Benchmark {
 		
 		sw.start();
 		foreach(size_t i; 0 .. length) {
-			secretKey = crypto_scalarmult(secretKey);
+			secretKey = curve25519_scalarmult(secretKey);
 		}
 		sw.stop();
 		

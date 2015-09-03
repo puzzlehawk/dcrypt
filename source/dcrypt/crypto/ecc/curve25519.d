@@ -2,6 +2,12 @@
 
 import dcrypt.crypto.ecc.curved25519.fieldElement;
 
+
+/// Implementation of Curve25519.
+///
+///
+
+
 /// Generate a public key from a secret. 
 /// Test vectors from http://cr.yp.to/highspeed/naclcrypto-20090310.pdf
 unittest {
@@ -9,11 +15,49 @@ unittest {
 	
 	key_t secretKey = cast(key_t) x"77076d0a7318a57d3c16c17251b26645df4c2f87ebc0992ab177fba51db92c2a";
 	
-	key_t publicKey = crypto_scalarmult(secretKey);
+	key_t publicKey = curve25519_scalarmult(secretKey);
 	
 	auto expectedPublic = x"8520f0098930a754748b7ddcb43ef75a0dbf3a0d26381af4eba4a98eaa9b4e6a";
+	
+	assert(publicKey == expectedPublic, "curve25519 public key generation failed!");
+}
 
-	assert(publicKey == expectedPublic, "crypto_scalarmult with base point failed!");
+/// Generate a public key from a secret. 
+/// Test vectors from http://cr.yp.to/highspeed/naclcrypto-20090310.pdf
+unittest {
+	alias ubyte[32] key_t;
+	
+	key_t secretKey = cast(key_t) x"5dab087e624a8a4b79e17f8b83800ee66f3bb1292618b6fd1c2f8b27ff88e0eb";
+	
+	key_t publicKey = curve25519_scalarmult(secretKey);
+	
+	auto expectedPublic = x"de9edb7d7b7dc1b4d35b61c2ece435373f8343c85b78674dadfc7e146f882b4f";
+	
+	assert(publicKey == expectedPublic, "curve25519 public key generation failed!");
+}
+
+/// DH key exchange
+/// Test vectors from http://cr.yp.to/highspeed/naclcrypto-20090310.pdf
+unittest {
+	alias ubyte[32] key_t;
+	
+	key_t priv1, priv2, pub1, pub2;
+	priv1[] = cast(key_t) x"77076d0a7318a57d3c16c17251b26645df4c2f87ebc0992ab177fba51db92c2a";
+	priv2[] = cast(key_t) x"5dab087e624a8a4b79e17f8b83800ee66f3bb1292618b6fd1c2f8b27ff88e0eb";
+	
+	pub1 = curve25519_scalarmult(priv1);
+	pub2 = curve25519_scalarmult(priv2);
+	
+	key_t shared1, shared2;
+	
+	// Generate the shared keys. Both should be equal.
+	shared1 = curve25519_scalarmult(priv1, pub2);
+	shared2 = curve25519_scalarmult(priv2, pub1);
+	
+	auto expectedSharedSecret = x"4a5d9d5ba4ce2de1728e3bf480350f25e07e21c947d19e3376f09b3c1e161742";
+	
+	assert(shared1 == expectedSharedSecret, "curve25519 DH key agreement failed!");
+	assert(shared1 == shared2, "curve25519 DH key agreement failed!");
 }
 
 unittest {
@@ -21,32 +65,33 @@ unittest {
 	key_t a = 1;
 	key_t b = 2;
 
-	key_t A = crypto_scalarmult(a);
-	key_t B = crypto_scalarmult(b);
+	key_t A = curve25519_scalarmult(a);
+	key_t B = curve25519_scalarmult(b);
 
-	key_t sa = crypto_scalarmult(a, B);
-	key_t sb = crypto_scalarmult(b, A);
+	key_t sa = curve25519_scalarmult(a, B);
+	key_t sb = curve25519_scalarmult(b, A);
 
 	assert(sa == sb, "DH failed.");
 }
 
+/// The default public base point.
 public enum ubyte[32] publicBasePoint = cast(immutable (ubyte[32]) ) x"0900000000000000000000000000000000000000000000000000000000000000";
 
 /// 
 /// 
 /// Params:
-/// n = your secret key, the 'exponent'
-/// p = public key. Default: base point 9
+/// secret = Your secret key, the 'exponent'.
+/// p = Receivers public key. Default base point = 9.
 /// 
-/// Returns: p^n.
+/// Returns: p^secret.
 /// 
 /// Examples:
 /// 
-/// ubyte[32] publicKey = crypto_scalarmult(secretKey);
+/// ubyte[32] publicKey = curve25519_scalarmult(secretKey);
 /// 
-/// ubyte[32] sharedKey = crypto_scalarmult(mySecretKey, herPublicKey);
+/// ubyte[32] sharedKey = curve25519_scalarmult(mySecretKey, herPublicKey);
 /// 
-ubyte[32] crypto_scalarmult(in ref ubyte[32] n, in ref ubyte[32] p = publicBasePoint) @safe nothrow @nogc
+ubyte[32] curve25519_scalarmult(in ref ubyte[32] secret, in ref ubyte[32] p = publicBasePoint) @safe nothrow @nogc
 {
 	ubyte[32] e;
 	uint i;
@@ -61,7 +106,7 @@ ubyte[32] crypto_scalarmult(in ref ubyte[32] n, in ref ubyte[32] p = publicBaseP
 	uint swap, b;
 
 	// TODO refactor
-	for (i = 0;i < 32;++i) e[i] = n[i];
+	for (i = 0;i < 32;++i) e[i] = secret[i];
 	e[0] &= 248;
 	e[31] &= 127;
 	e[31] |= 64;

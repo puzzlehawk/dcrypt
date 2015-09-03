@@ -2,6 +2,8 @@
 
 import dcrypt.crypto.ecc.curved25519.groupElement: ge_precomp;
 
+package:
+
 /* base[i][j] = (j+1)*256^i*B */
 immutable ge_precomp[8][32] base = [
 	[
