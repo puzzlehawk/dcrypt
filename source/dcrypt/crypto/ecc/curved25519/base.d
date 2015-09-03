@@ -1,6 +1,6 @@
-﻿module dcrypt.crypto.ecc.ed25519.base;
+﻿module dcrypt.crypto.ecc.curved25519.base;
 
-import dcrypt.crypto.ecc.ed25519.groupElement: ge_precomp;
+import dcrypt.crypto.ecc.curved25519.groupElement: ge_precomp;
 
 /* base[i][j] = (j+1)*256^i*B */
 immutable ge_precomp[8][32] base = [

@@ -1,6 +1,6 @@
-﻿module dcrypt.crypto.ecc.ed25519.ed25519;
+﻿module dcrypt.crypto.ecc.ed25519;
 
-import dcrypt.crypto.ecc.ed25519.groupElement;
+import dcrypt.crypto.ecc.curved25519.groupElement;
 import dcrypt.crypto.digests.sha2: SHA512;
 
 /// Generate a ed25519 public key from a secret key.

@@ -1,4 +1,4 @@
-﻿module dcrypt.crypto.ecc.ed25519.ed25519test;
+﻿module dcrypt.crypto.ecc.curved25519.ed25519test;
 
 /// Extended tests for ed25519 from http://ed25519.cr.yp.to/python/sign.input.
 
@@ -6,7 +6,7 @@ private:
 
 version(unittest) {
 
-	import dcrypt.crypto.ecc.ed25519.ed25519;
+	import dcrypt.crypto.ecc.ed25519;
 	import std.algorithm;
 
 	unittest {

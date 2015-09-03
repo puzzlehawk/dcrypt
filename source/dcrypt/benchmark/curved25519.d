@@ -1,8 +1,8 @@
 ﻿module dcrypt.benchmark.curved25519;
 
 import dcrypt.benchmark.Benchmark;
-import dcrypt.crypto.ecc.ed25519.curve25519;
-import dcrypt.crypto.ecc.ed25519.ed25519;
+import dcrypt.crypto.ecc.curve25519;
+import dcrypt.crypto.ecc.ed25519;
 import std.conv;
 
 public class Curved25519Benchmark: Benchmark {
@@ -71,7 +71,7 @@ public class Ed25519Benchmark: Benchmark {
 		ulong speedVerify = cast(ulong) (1e9 * length / sw.peek().nsecs());
 
 
-		return ["64b msg", text(speedSign), text(speedVerify)];
+		return ["", text(speedSign), text(speedVerify)];
 	}
 	
 }

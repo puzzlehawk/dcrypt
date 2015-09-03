@@ -1,7 +1,7 @@
-﻿module dcrypt.crypto.ecc.ed25519.groupElement;
+﻿module dcrypt.crypto.ecc.curved25519.groupElement;
 
-public import dcrypt.crypto.ecc.ed25519.fieldElement;
-import dcrypt.crypto.ecc.ed25519.base;
+public import dcrypt.crypto.ecc.curved25519.fieldElement;
+import dcrypt.crypto.ecc.curved25519.base;
 
 @safe nothrow @nogc:
 
@@ -22,7 +22,7 @@ import dcrypt.crypto.ecc.ed25519.base;
 // #include "fe.h"
 
 /// ge_p2 (projective): (X:Y:Z) satisfying x=X/Z, y=Y/Z
-struct ge_p2 {
+public struct ge_p2 {
 	@safe nothrow @nogc:
 	enum ge_p2 zero = ge_p2(fe.zero, fe.one, fe.one);
 	
@@ -70,7 +70,7 @@ struct ge_p2 {
 }
 
 /// ge_p3 (extended): (X:Y:Z:T) satisfying x=X/Z, y=Y/Z, XY=ZT
-struct ge_p3 {
+public struct ge_p3 {
 	@safe nothrow @nogc:
 	enum ge_p3 zero = ge_p3(fe.zero, fe.one, fe.one, fe.zero);
 
@@ -116,7 +116,7 @@ struct ge_p3 {
 }
 
 /// ge_p1p1 (completed): ((X:Z),(Y:T)) satisfying x=X/Z, y=Y/T
-struct ge_p1p1 {
+public struct ge_p1p1 {
 	@safe nothrow @nogc:
 	fe X;
 	fe Y;
@@ -140,7 +140,7 @@ struct ge_p1p1 {
 }
 
 /// ge_precomp (Duif): (y+x,y-x,2dxy)
-struct ge_precomp {
+public struct ge_precomp {
 	@safe nothrow @nogc:
 	enum ge_precomp zero = ge_precomp(fe.one, fe.one, fe.zero);
 
@@ -166,7 +166,7 @@ struct ge_precomp {
 	}
 }
 
-struct ge_cached {
+public struct ge_cached {
 	@safe nothrow @nogc:
 	fe YplusX;
 	fe YminusX;
