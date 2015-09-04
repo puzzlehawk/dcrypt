@@ -2,7 +2,6 @@ module dcrypt.crypto.generators.pkcs5s2;
 
 import dcrypt.crypto.macs.hmac;
 import dcrypt.crypto.digest;
-import dcrypt.crypto.params.keyparameter;
 import dcrypt.exceptions;
 import std.datetime;
 import std.algorithm: min;

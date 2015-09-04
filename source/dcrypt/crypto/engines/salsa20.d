@@ -1,7 +1,6 @@
 ﻿module dcrypt.crypto.engines.salsa20;
 
 public import dcrypt.crypto.streamcipher;
-public import dcrypt.crypto.params.keyparameter;
 
 import dcrypt.util.bitmanip: rotl=rotateLeft;
 

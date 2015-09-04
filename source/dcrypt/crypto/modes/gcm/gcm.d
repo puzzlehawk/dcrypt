@@ -1,7 +1,6 @@
 ﻿module dcrypt.crypto.modes.gcm.gcm;
 
 public import dcrypt.crypto.modes.aead;
-public import dcrypt.crypto.params.keyparameter;
 import dcrypt.crypto.modes.gcm.ghash;
 import dcrypt.crypto.modes.gcm.multiplier;
 

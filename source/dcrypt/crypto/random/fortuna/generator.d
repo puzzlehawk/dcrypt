@@ -5,7 +5,6 @@ import std.range: chunks;
 import dcrypt.crypto.random.prng;
 import dcrypt.crypto.blockcipher;
 import dcrypt.crypto.digest;
-import dcrypt.crypto.params.keyparameter;
 
 ///	generate a deterministic PRNG sequence
 @safe unittest {

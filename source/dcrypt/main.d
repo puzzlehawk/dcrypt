@@ -4,7 +4,6 @@ import std.stdio;
 import std.conv;
 import dcrypt.crypto.engines.rc4;
 import dcrypt.crypto.streamcipher;
-import dcrypt.crypto.params.keyparameter;
 import dcrypt.util.encoders.hex;
 import dcrypt.crypto.digest;
 import dcrypt.crypto.digests.sha1;

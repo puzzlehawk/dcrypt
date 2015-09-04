@@ -1,6 +1,5 @@
 module dcrypt.crypto.streamcipher;
 
-public import dcrypt.crypto.params.keyparameter;
 
 /// test if struct is a stream cipher
 @safe

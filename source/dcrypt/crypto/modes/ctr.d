@@ -1,7 +1,6 @@
 module dcrypt.crypto.modes.ctr;
 
 import dcrypt.crypto.blockcipher;
-import dcrypt.crypto.params.keyparameter;
 
 
 

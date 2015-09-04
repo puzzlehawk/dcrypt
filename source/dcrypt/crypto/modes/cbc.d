@@ -2,7 +2,6 @@ module dcrypt.crypto.modes.cbc;
 
 import std.algorithm: fill;
 import dcrypt.crypto.blockcipher;
-import dcrypt.crypto.params.keyparameter;
 import dcrypt.errors, dcrypt.exceptions;
 
 
@@ -90,29 +89,6 @@ public struct CBC(Cipher) if(isBlockCipher!Cipher)
 		return cipher;
 	}
 
-	
-	/// Initialize the cipher and, possibly, the initialization vector (IV).
-	///
-	/// Params: 
-	/// forEncryption = if true the cipher is initialized for encryption, if false for decryption.
-	/// params = the key and other data required by the cipher.
-	public void start(bool forEncryption, KeyParameter keyParam) nothrow
-	in {
-		assert(keyParam !is null, "Nullpointer!");
-	}
-	body {
-
-		if (ParametersWithIV ivParam = cast(ParametersWithIV) keyParam)
-		{
-			start(forEncryption, ivParam.getKey(), ivParam.getIV());
-		}
-		else
-		{
-			start(forEncryption, keyParam.getKey());
-		}
-	}
-
-	
 	/// Initialize the cipher and, possibly, the initialization vector (IV).
 	/// If the cipher is already initialized a new IV can be set without the overhead
 	/// of a new key setup: init(forEncryption, null, newIV)
