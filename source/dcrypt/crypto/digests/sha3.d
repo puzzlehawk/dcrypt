@@ -8,7 +8,7 @@ import dcrypt.crypto.digest;
 import dcrypt.util.bitmanip: rol;
 import dcrypt.util.pack;
 
-import std.conv:text;
+import std.conv: text;
 import std.algorithm: min;
 
 alias WrapperDigest!Keccak224 Keccak224Digest;
@@ -254,7 +254,8 @@ public struct Keccak(uint bitLength)
 		ubyte[rate / 8] dataQueue;
 	}
 
-	private nothrow @nogc:
+private:
+nothrow @nogc:
 
 	void clearDataQueueSection(in size_t off, in size_t len) {
 		dataQueue[off..off+len] = 0;
@@ -301,7 +302,7 @@ public struct Keccak(uint bitLength)
 		bitsInQueue = 0;
 	}
 
-	void absorbBits(in ubyte partialByte, in ulong bitLen) 
+	package void absorbBits(in ubyte partialByte, in ulong bitLen) 
 	in {
 		assert(bitLen < 8, "bitLen must be < 8.");
 		assert ((bitsInQueue % 8) == 0, "attempt to absorb with odd length queue.");
@@ -377,8 +378,8 @@ public struct Keccak(uint bitLength)
 		squeezing = true;
 	}
 
-	
-	void squeeze(ubyte[] output)
+
+	package void squeeze(ubyte[] output)
 	{
 		immutable size_t outputLength = output.length*8;
 		uint partialBlock;
@@ -576,4 +577,58 @@ private @safe {
 		
 		return keccakRhoOffsets;
 	}
+}
+
+alias SHAKE!(128, true) RawSHAKE128;
+alias SHAKE!(256, true) RawSHAKE256;
+alias SHAKE!(128, false) SHAKE128;
+alias SHAKE!(128, false) SHAKE256;
+
+public struct SHAKE(uint bitsize, bool raw) if(bitsize == 128 || bitsize == 256) {
+
+	public enum name = text("RawSHAKE", bitsize);
+
+	private {
+		Keccak!(bitsize*2) keccak;
+		bool squeezing = false;
+	}
+
+	public void start() {
+		keccak.start();
+		squeezing = false;
+	}
+
+	public void put(in ubyte[] b...) {
+		assert(!squeezing, name~": Illegal state. Can't absorb data while after extracting some. Use start() to reset.");
+
+		keccak.put(b);
+	}
+
+	public void nextBytes(ubyte[] buf) {
+
+		if(!squeezing) {
+			// switch to squeezing
+			static if(raw) {
+				keccak.absorbBits(0b11, 2);
+			} else {
+				keccak.absorbBits(0b1111, 4);
+			}
+			squeezing = true;
+		}
+
+		keccak.squeeze(buf);
+	}
+
+}
+
+unittest {
+	import std.stdio;
+
+	SHAKE128 shake;
+	ubyte[64] buf;
+
+	shake.put(1, 2, 3);
+	shake.nextBytes(buf);
+
+	writefln("SHAKE128: %(%0.2x%)", buf);
 }
