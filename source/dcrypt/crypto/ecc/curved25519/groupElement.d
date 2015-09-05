@@ -293,7 +293,7 @@ private ge_p1p1 ge_msub(in ref ge_p3 p, in ref ge_precomp q) pure
 }
 
 // TODO pre conditions
-void slide(byte[] r, in ubyte[] a)
+private void slide(byte[] r, in ubyte[] a)
 {	
 	for (uint i = 0; i < 256; ++i) {
 		r[i] = 1 & (a[i >> 3] >> (i & 7));
@@ -424,23 +424,6 @@ in {
 }
 
 
-bool equal(in byte b, in byte c) pure
-{
-	ubyte x = b ^ c; /* 0: yes; 1..255: no */
-	uint y = x; /* 0: yes; 1..255: no */
-	y -= 1; /* 4294967295: yes; 0..254: no */
-	y >>= 31; /* 1: yes; 0: no */
-	return y != 0;
-}
-
-unittest {
-	assert(equal(0, 1) == 0);
-	assert(equal(1, 1) == 1);
-	assert(equal(127, 126) == 0);
-	assert(equal(127, 127) == 1);
-}
-
-
 /// Conditional move: t = u, if and only if b != 0.
 void cmov(ref ge_precomp t, in ref ge_precomp u, in bool b)
 in {
@@ -455,7 +438,7 @@ in {
 /// Select ge_precomp from base table in constant time.
 /// Params:
 /// b = 
-ge_precomp select(in int pos, in byte b)
+private ge_precomp select(in int pos, in byte b)
 {
 	ge_precomp minust;
 	immutable bool bnegative = b < 0;
@@ -536,7 +519,7 @@ in {
 
 
 // constants
-
+private:
 immutable fe d = [-10913610,13857413,-15372611,6949391,114729,-8787816,-6275908,-3247719,-18696448,-12055116];
 immutable fe d2 = [-21827239,-5839606,-30745221,13898782,229458,15978800,-12551817,-6495438,29715968,9444199];
 immutable fe sqrtm1 = [-32595792,-7943725,9377950,3500415,12389472,-272473,-25146209,-2005654,326686,11406482];
