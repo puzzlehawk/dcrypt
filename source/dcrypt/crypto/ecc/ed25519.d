@@ -1,6 +1,7 @@
 ﻿module dcrypt.crypto.ecc.ed25519;
 
 import dcrypt.crypto.ecc.curved25519.groupElement;
+import dcrypt.crypto.ecc.curve25519: clamp;
 import dcrypt.crypto.digests.sha2: SHA512;
 
 /// Generate a ed25519 public key from a secret key.
@@ -66,8 +67,15 @@ in {
 
 	immutable ubyte[64] expandedSecret = secret_expand(sk);
 
-	immutable ubyte[32] pk = (publicKey !is null) ? publicKey[0..32] : secret_to_public(sk); // TODO optimize, use expanded secret
-	//ge_scalarmult_base(A, expandedSecret[0..32]);
+	ubyte[32] pk; /// public key
+
+	if(publicKey !is null) {
+		pk = publicKey;
+	} else {
+		// shortcut for: pk = secret_to_public(sk);
+		pk = ge_scalarmult_base(expandedSecret[0..32]).toBytes;
+	}
+
 
 	// sha512_modq
 	SHA512 sha;
@@ -121,7 +129,7 @@ in {
 	//crypto_hash_sha512_3(h, rcopy, 32, pkcopy, 32, m, mlen);
 	immutable ubyte[32] h = sc_reduce(sha.finish());
 	
-	ge_double_scalarmult_vartime(R, h, A, sCopy);
+	R = ge_double_scalarmult_vartime(h, A, sCopy);
 	
 	return crypto_equals(R.toBytes, rCopy);
 }
@@ -132,13 +140,12 @@ in {
 	assert(sk.length == 32, "Invalid secret key length. Must be 32.");
 	//assert((sk[0] & ~248) == 0 || (sk[31] & ~63) == 0 || (sk[31] & 64) == 64, "Invalid secret key!");
 } body {
-	ge_p3 A;
-	ubyte[32] secret = secret_expand(sk)[0..32];
-	ubyte[32] pk;
-	assert((secret[0] & ~248) == 0 || (secret[31] & ~63) == 0 || (secret[31] & 64) == 64, "Invalid secret key!");
-	A = ge_scalarmult_base(secret);
 
-	return A.toBytes;
+	ubyte[32] secret = secret_expand(sk)[0..32];
+
+	assert((secret[0] & ~248) == 0 || (secret[31] & ~63) == 0 || (secret[31] & 64) == 64, "Invalid secret key!");
+
+	return ge_scalarmult_base(secret).toBytes;
 }
 
 private ubyte[64] secret_expand(in ubyte[] sk) 
@@ -191,19 +198,6 @@ in {
 //}
 
 private:
-
-/// Transforms 32 random bytes into a valid secret key.
-/// 
-/// Params:
-/// sk = 32 byte secret key.
-void clamp(ubyte[] sk) pure
-in {
-	assert(sk.length == 32);
-} body {
-	sk[0] &= 248;
-	sk[31] &= 63;
-	sk[31] |= 64;
-}
 
 /**
  Input:

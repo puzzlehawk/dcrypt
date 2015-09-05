@@ -113,6 +113,27 @@ public struct ge_p3 {
 		return (cast(ge_p2) this).dbl();
 	}
 
+	ge_p1p1 opBinary(string op, G)(auto ref const G rhs) const pure
+		if ((op == "+" || op == "-") && (is(G == ge_cached) || is(G == ge_precomp)))
+	{
+		ge_p1p1 result;
+		static if(is(G == ge_cached)) {
+			static if(op == "+") {
+				result = ge_add(this, rhs);
+			} else static if(op == "-") {
+				result = ge_sub(this, rhs);
+			}
+		} else {
+			static if(op == "+") {
+				result = ge_madd(this, rhs);
+			} else static if(op == "-") {
+				result = ge_msub(this, rhs);
+			}
+		}
+
+		return result;
+	}
+
 }
 
 /// ge_p1p1 (completed): ((X:Z),(Y:T)) satisfying x=X/Z, y=Y/T
@@ -136,6 +157,11 @@ public struct ge_p1p1 {
 
 	ge_p3 opCast(G: ge_p3)() const {
 		return ge_p3(X*T, Y*Z, Z*T, X*Y);
+	}
+
+	ge_cached opCast(G: ge_cached)() const {
+		//return ge_cached(X*T+Y*Z, Y*Z-X*T, Z*T, X*Y*d2);
+		return cast(ge_cached) cast(ge_p3) this;
 	}
 }
 
@@ -185,8 +211,9 @@ public struct ge_cached {
 /**
  r = p + q
  */
-void ge_add(ref ge_p1p1 r, in ref ge_p3 p, in ref ge_cached q)
+private ge_p1p1 ge_add(in ref ge_p3 p, in ref ge_cached q) pure
 {
+	ge_p1p1 r;
 	fe t0;
 	r.X = p.Y + p.X;
 	r.Y = p.Y - p.X;
@@ -199,13 +226,15 @@ void ge_add(ref ge_p1p1 r, in ref ge_p3 p, in ref ge_cached q)
 	r.Y += r.Z;
 	r.Z = t0 + r.T;
 	r.T = t0 - r.T;
+	return r;
 }
 
 /**
  r = p - q
  */
-void ge_sub(ref ge_p1p1 r, in ref ge_p3 p, in ref ge_cached q)
+private ge_p1p1 ge_sub(in ref ge_p3 p, in ref ge_cached q) pure
 {
+	ge_p1p1 r;
 	fe t0;
 	r.X = p.Y + p.X;
 	r.Y = p.Y - p.X;
@@ -218,13 +247,15 @@ void ge_sub(ref ge_p1p1 r, in ref ge_p3 p, in ref ge_cached q)
 	r.Y += r.Z;
 	r.Z = t0 - r.T;
 	r.T += t0;
+	return r;
 }
 
 /**
  r = p + q
  */
-void ge_madd(ref ge_p1p1 r, in ref ge_p3 p, in ref ge_precomp q)
+private ge_p1p1 ge_madd(in ref ge_p3 p, in ref ge_precomp q) pure
 {
+	ge_p1p1 r;
 	fe t0;
 	r.X = p.Y + p.X;
 	r.Y = p.Y - p.X;
@@ -236,14 +267,17 @@ void ge_madd(ref ge_p1p1 r, in ref ge_p3 p, in ref ge_precomp q)
 	r.Y += r.Z;
 	r.Z = t0 + r.T;
 	r.T = t0 - r.T;
+
+	return r;
 }
 
 
 /**
  r = p - q
  */
-void ge_msub(ref ge_p1p1 r, in ref ge_p3 p, in ref ge_precomp q)
+private ge_p1p1 ge_msub(in ref ge_p3 p, in ref ge_precomp q) pure
 {
+	ge_p1p1 r;
 	fe t0;
 	r.X = p.Y + p.X;
 	r.Y = p.Y - p.X;
@@ -255,6 +289,7 @@ void ge_msub(ref ge_p1p1 r, in ref ge_p3 p, in ref ge_precomp q)
 	r.Y += r.Z;
 	r.Z = t0 - r.T;
 	r.T += t0;
+	return r;
 }
 
 // TODO pre conditions
@@ -296,7 +331,7 @@ void slide(byte[] r, in ubyte[] a)
 /// b = b[0]+256*b[1]+...+256^31 b[31].
 /// Returns: r = a * A + b * B
 
-void ge_double_scalarmult_vartime(ref ge_p2 r, in ubyte[] a, in ref ge_p3 A, in ubyte[] b)
+ge_p2 ge_double_scalarmult_vartime(in ubyte[] a, in ref ge_p3 A, in ubyte[] b)
 {
 	byte[256] aslide, bslide;
 
@@ -304,14 +339,15 @@ void ge_double_scalarmult_vartime(ref ge_p2 r, in ubyte[] a, in ref ge_p3 A, in 
 	ge_p1p1 t;
 	ge_p3 u;
 	ge_p3 A2;
+	ge_p2 r; /// result
 	
 	slide(aslide,a);
 	slide(bslide, b);
 	
 	Ai[0] = cast(ge_cached) A;
-	t = A.dbl(); A2 = cast(ge_p3) t;
+	A2 = cast(ge_p3) A.dbl();
 	foreach(i; 0..7) {
-		ge_add(t, A2, Ai[i]); u = cast(ge_p3) t; Ai[i+1] = cast(ge_cached) u;
+		Ai[i+1] = cast(ge_cached) (A2 + Ai[i]);
 	}
 	
 	r = ge_p2.zero;
@@ -323,24 +359,24 @@ void ge_double_scalarmult_vartime(ref ge_p2 r, in ubyte[] a, in ref ge_p3 A, in 
 	
 	for (; i >= 0; --i) {
 		t = r.dbl();
+		u = cast(ge_p3) t;
 		if (aslide[i] > 0) {
-			u = cast(ge_p3) t;
-			ge_add(t, u, Ai[aslide[i]/2]);
+			t = u + Ai[aslide[i]/2];
 		} else if (aslide[i] < 0) {
-			u = cast(ge_p3) t;
-			ge_sub(t, u, Ai[(-aslide[i])/2]);
+			t = u - Ai[(-aslide[i])/2];
 		}
 		
+		u = cast(ge_p3) t;
 		if (bslide[i] > 0) {
-			u = cast(ge_p3) t;
-			ge_madd(t, u, Bi[bslide[i]/2]);
+			t = u + Bi[bslide[i]/2];
 		} else if (bslide[i] < 0) {
-			u = cast(ge_p3) t;
-			ge_msub(t, u, Bi[(-bslide[i])/2]);
+			t = u - Bi[(-bslide[i])/2];
 		}
 
 		r = cast(ge_p2) t;
 	}
+
+	return r;
 }
 
 
@@ -404,12 +440,6 @@ unittest {
 	assert(equal(127, 127) == 1);
 }
 
-/// Returns: true if b is negative
-/// TODO replace with <
-bool negative(in byte b) pure
-{
-	return b < 0;
-}
 
 /// Conditional move: t = u, if and only if b != 0.
 void cmov(ref ge_precomp t, in ref ge_precomp u, in bool b)
@@ -428,7 +458,7 @@ in {
 ge_precomp select(in int pos, in byte b)
 {
 	ge_precomp minust;
-	immutable bool bnegative = negative(b);
+	immutable bool bnegative = b < 0;
 	immutable ubyte babs = cast(ubyte) (b - (cast(byte)((-cast(int)(bnegative)) & cast(ubyte)b) << 1)); // abs(b)
 
 	assert((b >= 0 && babs == b) || (b < 0 && babs == -b));
@@ -459,11 +489,11 @@ ge_precomp select(in int pos, in byte b)
  */
 ge_p3 ge_scalarmult_base(in ubyte[] a)
 in {
-	assert(a.length == 32);
+	assert(a.length == 32, "'a' is expected to be 32 bytes.");
 	assert(a[31] <= 127);
 } body {
 	byte[64] e;
-	byte carry;
+
 	ge_p1p1 r;
 	ge_p2 s;
 	ge_precomp t;
@@ -476,33 +506,28 @@ in {
 	/* each e[i] is between 0 and 15 */
 	/* e[63] is between 0 and 7 */
 	
-	carry = 0;
+	byte carry = 0;
 	for (uint i = 0; i < 63; ++i) {
 		e[i] += carry;
 		carry = cast(byte) (e[i] + 8);
+		e[i] -= carry & 0xF0;
 		carry >>= 4;
-		e[i] -= SHL8(carry,4);
 	}
 	e[63] += carry;
 	/* each e[i] is between -8 and 8 */
 	
 	h = ge_p3.zero;
 	for (uint i = 1; i < 64; i += 2) {
-		t = select(i / 2, e[i]);
-		ge_madd(r, h, t);
-		h = cast(ge_p3) r;
+		h = cast(ge_p3) (h + select(i / 2, e[i]));
 	}
 
-	// TODO optimize
-	r = h.dbl(); s = cast(ge_p2) r;
-	r = s.dbl(); s = cast(ge_p2) r;
-	r = s.dbl(); s = cast(ge_p2) r;
-	r = s.dbl(); h = cast(ge_p3) r;
+	s = cast(ge_p2) h.dbl();
+	s = cast(ge_p2) s.dbl();
+	s = cast(ge_p2) s.dbl();
+	h = cast(ge_p3) s.dbl();
 		
 	for (uint i = 0; i < 64; i += 2) {
-		t = select(i / 2, e[i]);
-		ge_madd(r, h, t);
-		h = cast(ge_p3) r;
+		h = cast(ge_p3) (h + select(i / 2, e[i]));
 	}
 
 	return h;
