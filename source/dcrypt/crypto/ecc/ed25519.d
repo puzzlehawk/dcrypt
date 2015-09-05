@@ -130,7 +130,7 @@ in {
 	immutable ubyte[32] h = sc_reduce(sha.finish());
 	
 	R = ge_double_scalarmult_vartime(h, A, sCopy);
-	
+		
 	return crypto_equals(R.toBytes, rCopy);
 }
 

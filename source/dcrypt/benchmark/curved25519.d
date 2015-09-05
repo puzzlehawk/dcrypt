@@ -12,7 +12,7 @@ public class Curved25519Benchmark: Benchmark {
 	
 	@property
 	static string[] header() {
-		return ["curved25519", "operations/s"];
+		return ["curved25519", "scalar mult/s"];
 	}
 	
 	override string[] benchmark(ulong length) {
@@ -29,7 +29,7 @@ public class Curved25519Benchmark: Benchmark {
 		
 		
 		ulong speed = cast(ulong) (1e9 * length / sw.peek().nsecs());
-		return ["key-gen", text(speed)];
+		return ["", text(speed)];
 	}
 	
 }

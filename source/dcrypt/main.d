@@ -86,7 +86,6 @@ version (Benchmark) {
 		
 		Benchmark.doBenchmark(len, aeadCiphers);
 
-		Benchmark.doCurve25519Benchmark(512);
 		Benchmark.doCurved25519Benchmark(512);
 		Benchmark.doEd25519Benchmark(512);
 				
