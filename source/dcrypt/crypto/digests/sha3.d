@@ -1,6 +1,6 @@
 module dcrypt.crypto.digests.sha3;
 
-/// Implementation of Keccak and SHA3.
+/// Implementation of Keccak, SHA3 and extendable output functions SHAKE128/256.
 /// 
 /// Standard: FIPS 202, SHA 3
 
