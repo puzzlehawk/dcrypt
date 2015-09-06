@@ -11,17 +11,11 @@ import dcrypt.util.pack;
 import std.conv: text;
 import std.algorithm: min;
 
-alias WrapperDigest!Keccak224 Keccak224Digest;
-alias WrapperDigest!Keccak256 Keccak256Digest;
-alias WrapperDigest!Keccak288 Keccak288Digest;
-alias WrapperDigest!Keccak384 Keccak384Digest;
-alias WrapperDigest!Keccak512 Keccak512Digest;
-
-alias Keccak!224 Keccak224;
-alias Keccak!256 Keccak256;
-alias Keccak!288 Keccak288;
-alias Keccak!384 Keccak384;
-alias Keccak!512 Keccak512;
+alias Keccak!(224*2) Keccak224;
+alias Keccak!(256*2) Keccak256;
+alias Keccak!(288*2) Keccak288;
+alias Keccak!(384*2) Keccak384;
+alias Keccak!(512*2) Keccak512;
 
 alias SHA3!224 SHA3_224;
 alias SHA3!256 SHA3_256;
@@ -35,7 +29,6 @@ alias WrapperDigest!SHA3_512 SHA3_512Digest;
 
 static assert(isDigest!Keccak224);
 static assert(isDigest!Keccak256);
-static assert(isDigest!Keccak288);
 static assert(isDigest!Keccak384);
 static assert(isDigest!Keccak512);
 
@@ -81,23 +74,33 @@ unittest {
 	
 
 	for(size_t i = 0; i < plaintexts.length; ++i) {
-		Digest digest;
-
 		const (ubyte)[] plain = cast(const ubyte[]) plaintexts[i];
 		const ubyte[] expectedHash = cast(const ubyte[]) hexHashes[i];
+		ubyte[] actualHash;
 
 		switch(expectedHash.length*8) {
-			case 224: digest = new Keccak224Digest; break;
-			case 256: digest = new Keccak256Digest; break;
-			case 384: digest = new Keccak384Digest; break;
-			case 512: digest = new Keccak512Digest; break;
+			case 224: 
+				Keccak224 k;
+				k.put(plain);
+				actualHash = k.finish!224();
+				break;
+			case 256: 
+				Keccak256 k;
+				k.put(plain);
+				actualHash = k.finish!256();
+				break;
+			case 384: 
+				Keccak384 k;
+				k.put(plain);
+				actualHash = k.finish!384();
+				break;
+			case 512: 
+				Keccak512 k;
+				k.put(plain);
+				actualHash = k.finish!512();
+				break;
 			default: assert(0);
 		}
-		
-		digest.start();
-		digest.put(plain);
-		
-		ubyte[] actualHash = digest.finish();
 		
 		assert(expectedHash == actualHash, "produced wrong hash: " ~ toHexStr(actualHash)
 			~ " instead of " ~ toHexStr(expectedHash));
@@ -160,12 +163,13 @@ unittest {
 public struct SHA3(uint bitLength)
 	if(bitLength == 224 || bitLength == 256 || bitLength == 384 || bitLength == 512)
 {
-	private Keccak!bitLength keccak;
+	private Keccak!(bitLength*2) keccak;
 
 	enum name = text("SHA3-", bitLength);
 	enum digestLength = keccak.digestLength;
 	enum byteLength = keccak.byteLength; /// size of block that the compression function is applied to in bytes
-	enum blockSize = 0;
+
+	enum blockSize = [224: 144, 256: 136, 384: 104, 512: 72][bitLength]; /// Block size for HMAC as defined in FIPS 202, section 7, table 3.
 
 	void start() nothrow @nogc {
 		keccak.start();
@@ -175,15 +179,16 @@ public struct SHA3(uint bitLength)
 		keccak.put(b);
 	}
 
-	
 	/// Calculate the final hash value.
 	/// Params:
 	/// output = buffer for hash value.
 	/// Returns: length of hash value in bytes.
-	ubyte[] finish(ubyte[] output) nothrow @nogc {
+	ubyte[] finish(ubyte[] output) nothrow @nogc
+	in {
+		assert(output.length == digestLength, "output.length != digestLength.");
+	} body {
 
-		enum ubyte tail = 0b00000010;
-		keccak.absorbBits(tail, 2);
+		keccak.absorbBits(0b10, 2);
 
 		return keccak.finish(output);
 	}
@@ -200,13 +205,15 @@ public struct SHA3(uint bitLength)
 
 /// Implementation of SHA-3 based on following KeccakNISTInterface.c from http://keccak.noekeon.org/
 @safe
-public struct Keccak(uint bitLength)
-	if(bitLength == 224 || bitLength == 256 || bitLength == 288 || bitLength == 384 || bitLength == 512)
+public struct Keccak(uint capacity, uint rate = 1600 - capacity)
+	//if(bitLength == 224 || bitLength == 256 || bitLength == 288 || bitLength == 384 || bitLength == 512)
+	if(rate + capacity == 1600)
 {
 
 	public {
-
-		enum name = text("Keccak", bitLength);
+		enum bitLength = capacity / 2;
+		//static assert(bitLength == 224 || bitLength == 256 || bitLength == 288 || bitLength == 384 || bitLength == 512);
+		enum name = text("Keccak[", capacity, ", ", rate, "]");
 		enum digestLength = bitLength / 8;
 		enum byteLength = rate / 8; /// size of block that the compression function is applied to in bytes
 		enum blockSize = 0;
@@ -214,23 +221,28 @@ public struct Keccak(uint bitLength)
 		@nogc
 		void put(in ubyte[] input...) nothrow
 		{
-			doUpdate(input, input.length*8);
+			absorb(input);
 		}
 
-		/// Calculate the final hash value.
+		/// Fills the output buffer with the hash value.
+		/// Note: Hash will be as long as the output buffer.
 		/// Params:
 		/// output = buffer for hash value.
 		/// Returns: Slice of `output` containing the hash.
 		ubyte[] finish(ubyte[] output) nothrow @nogc {
 			squeeze(output);
 			start();
-			return output[0..bitLength/8];
+			return output;
 		}
 
 		/// Calculate the final hash value.
+		/// Params:
+		/// outputLen = Hash size in bits.
 		/// Returns: the hash value
-		ubyte[digestLength] finish() nothrow @nogc {
-			ubyte[digestLength] buf;
+		ubyte[outputLen/8] finish(uint outputLen = bitLength)() nothrow @nogc 
+		if (outputLen % 8 == 0)
+		{
+			ubyte[outputLen/8] buf;
 			finish(buf);
 			return buf;
 		}
@@ -243,9 +255,7 @@ public struct Keccak(uint bitLength)
 
 	private {
 
-		enum capacity = bitLength*2;
-		enum rate = 1600 - capacity;
-		enum byteStateLength = 1600 / 8;
+		enum byteStateLength = (rate+capacity) / 8;
 
 		uint bitsInQueue;
 		bool squeezing;
@@ -255,7 +265,7 @@ public struct Keccak(uint bitLength)
 	}
 
 private:
-nothrow @nogc:
+	nothrow @nogc:
 
 	void clearDataQueueSection(in size_t off, in size_t len) {
 		dataQueue[off..off+len] = 0;
@@ -378,7 +388,7 @@ nothrow @nogc:
 		squeezing = true;
 	}
 
-
+	
 	package void squeeze(ubyte[] output)
 	{
 		immutable size_t outputLength = output.length*8;
@@ -579,14 +589,16 @@ private @safe {
 	}
 }
 
+alias SHAKE!128 SHAKE128;
+alias SHAKE!256 SHAKE256;
 alias SHAKE!(128, true) RawSHAKE128;
 alias SHAKE!(256, true) RawSHAKE256;
-alias SHAKE!(128, false) SHAKE128;
-alias SHAKE!(128, false) SHAKE256;
 
-public struct SHAKE(uint bitsize, bool raw) if(bitsize == 128 || bitsize == 256) {
+/// Implementation of the SHAKE extendable output function (XOF).
+/// Standard: FIPS 202, SHA 3, Section 6.3
+public struct SHAKE(uint bitsize, bool raw = false) if(bitsize == 128 || bitsize == 256) {
 
-	public enum name = text("RawSHAKE", bitsize);
+	public enum name = text(raw ? "RawSHAKE" : "SHAKE", bitsize);
 
 	private {
 		Keccak!(bitsize*2) keccak;
@@ -621,14 +633,31 @@ public struct SHAKE(uint bitsize, bool raw) if(bitsize == 128 || bitsize == 256)
 
 }
 
+/// Test SHAKE128
 unittest {
 	import std.stdio;
 
 	SHAKE128 shake;
-	ubyte[64] buf;
+	ubyte[32] buf;
 
-	shake.put(1, 2, 3);
 	shake.nextBytes(buf);
 
-	writefln("SHAKE128: %(%0.2x%)", buf);
+	assert(buf == x"7f9c2ba4e88f827d616045507605853ed73b8093f6efbc88eb1a6eacfa66ef26", shake.name~" failed.");
+
+	shake.start();
+	shake.put(cast(const ubyte[]) "The quick brown fox jumps over the lazy dog");
+	shake.nextBytes(buf);
+	assert(buf == x"f4202e3c5852f9182a0430fd8144f0a74b95e7417ecae17db0f8cfeed0e3e66e", shake.name~" failed.");
+}
+
+/// Test SHAKE256
+unittest {
+	import std.stdio;
+	
+	SHAKE256 shake;
+	ubyte[64] buf;
+	
+	shake.nextBytes(buf);
+	
+	assert(buf == x"46b9dd2b0ba88d13233b3feb743eeb243fcd52ea62b81b82b50c27646ed5762fd75dc4ddd8c0f200cb05019d67b592f6fc821c49479ab48640292eacb3b7c4be", shake.name~" failed.");
 }
