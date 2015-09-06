@@ -205,12 +205,12 @@ public struct SHA3(uint bitLength)
 
 /// Implementation of SHA-3 based on following KeccakNISTInterface.c from http://keccak.noekeon.org/
 @safe
-public struct Keccak(uint capacity, uint rate = 1600 - capacity)
-	//if(bitLength == 224 || bitLength == 256 || bitLength == 288 || bitLength == 384 || bitLength == 512)
-	if(rate + capacity == 1600)
+public struct Keccak(uint capacity)
+	if(capacity % 8 == 0)
 {
 
 	public {
+		enum rate = 1600 - capacity;
 		enum bitLength = capacity / 2;
 		//static assert(bitLength == 224 || bitLength == 256 || bitLength == 288 || bitLength == 384 || bitLength == 512);
 		enum name = text("Keccak[", capacity, ", ", rate, "]");
@@ -240,7 +240,7 @@ public struct Keccak(uint capacity, uint rate = 1600 - capacity)
 		/// outputLen = Hash size in bits.
 		/// Returns: the hash value
 		ubyte[outputLen/8] finish(uint outputLen = bitLength)() nothrow @nogc 
-		if (outputLen % 8 == 0)
+			if (outputLen % 8 == 0)
 		{
 			ubyte[outputLen/8] buf;
 			finish(buf);
@@ -255,7 +255,8 @@ public struct Keccak(uint capacity, uint rate = 1600 - capacity)
 
 	private {
 
-		enum byteStateLength = (rate+capacity) / 8;
+		enum byteStateLength = 1600 / 8;
+		enum rounds = 24;
 
 		uint bitsInQueue;
 		bool squeezing;
@@ -308,7 +309,7 @@ private:
 
 	void absorbQueue()
 	{
-		KeccakAbsorb(state, dataQueue[0..rate / 8]);
+		KeccakAbsorb!rounds(state, dataQueue[0..rate / 8]);
 		bitsInQueue = 0;
 	}
 
@@ -346,7 +347,7 @@ private:
 			{
 				while(iBuf.length > rate/8)
 				{
-					KeccakAbsorb(state, iBuf[0..rate / 8]);
+					KeccakAbsorb!rounds(state, iBuf[0..rate / 8]);
 					iBuf = iBuf[rate / 8..$];
 				}
 			} else {
@@ -383,6 +384,7 @@ private:
 		absorbQueue();
 
 		KeccakExtract(state, dataQueue, rate / 64);
+
 		bitsAvailableForSqueezing = rate;
 		
 		squeezing = true;
@@ -403,7 +405,7 @@ private:
 		{
 			if (bitsAvailableForSqueezing == 0)
 			{
-				keccakPermutation(state);
+				keccakPermutation!rounds(state);
 
 				KeccakExtract(state, dataQueue, rate / 64);
 				bitsAvailableForSqueezing = rate;
@@ -418,26 +420,18 @@ private:
 		}
 	}
 
-	static void keccakPermutation(ref ubyte[byteStateLength] state) pure
+	static void keccakPermutation(uint rounds)(ref ubyte[byteStateLength] state) pure
 	{
 		ulong[25] longState;
 
 		fromLittleEndian(state[], longState[]);
-		keccakPermutationOnWords(longState);
+		keccakPermutation!rounds(longState);
 		toLittleEndian(longState[], state[]);
 	}
 
-	static void keccakPermutationAfterXor(ref ubyte[byteStateLength] state, in ubyte[] data) pure
-	in {
-		assert(data.length <= state.length);
-	} body {
-		state[0..data.length] ^= data[];
-		keccakPermutation(state);
-	}
-
-	static void keccakPermutationOnWords(ref ulong[25] state) pure
+	static void keccakPermutation(uint rounds)(ref ulong[25] state) pure
 	{
-		foreach (uint i; 0..24)
+		foreach (uint i; 0..rounds)
 		{
 			theta(state);
 			rho(state);
@@ -512,9 +506,12 @@ private:
 		A[0] ^= KeccakRoundConstants[indexRound];
 	}
 
-	static void KeccakAbsorb(ref ubyte[byteStateLength] byteState, in ubyte[] data) pure
-	{
-		keccakPermutationAfterXor(byteState, data);
+	static void KeccakAbsorb(uint rounds)(ref ubyte[byteStateLength] byteState, in ubyte[] data) pure
+	in {
+		assert(data.length <= byteState.length);
+	} body {
+		byteState[0..data.length] ^= data[];
+		keccakPermutation!rounds(byteState);
 	}
 
 	static void KeccakExtract(in ubyte[] byteState, ubyte[] data, in uint laneCount) pure
