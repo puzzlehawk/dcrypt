@@ -49,7 +49,7 @@ unittest {
 // Test XSalsa
 unittest {
 	
-	// test vectors generated with bouncycastle Salsa20 implementation
+	// test vectors generated with bouncycastle XSalsa20 implementation
 	string[] keys = [
 		x"86e2f31305b14bc42caf3f9c7fb4112cc7ae64cf43e0d429a27fa63b70d0939e",
 		x"b96baefe0fa3144455926da4a8583643107bda7926b2ea4577776f9ca89a9d00",
@@ -122,8 +122,6 @@ public struct Salsa(uint rounds = 20, bool xsalsa = false)
 
 	@safe @nogc nothrow
 	~this() {
-		import dcrypt.util.util: wipe;
-		
 		wipe(engineState);
 		wipe(keyStream);
 	}
