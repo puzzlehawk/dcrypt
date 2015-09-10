@@ -1,4 +1,4 @@
-﻿module dcrypt.crypto.engines.salsa20;
+﻿module dcrypt.crypto.engines.salsa;
 
 public import dcrypt.crypto.streamcipher;
 
@@ -44,6 +44,7 @@ unittest {
 	streamCipherTest(new Salsa20Engine, keys, plains, ciphers, ivs);
 }
 
+alias Salsa!20 Salsa20;
 alias StreamCipherWrapper!Salsa20 Salsa20Engine;
 
 static assert(isStreamCipher!Salsa20, "Salsa20 is not a stream cipher!");
@@ -52,7 +53,9 @@ static assert(isStreamCipher!Salsa20, "Salsa20 is not a stream cipher!");
 ///	implementation of the Salsa20/20 stream cipher
 ///
 @safe
-public struct Salsa20 {
+public struct Salsa(rounds)
+	if(rounds == 12 || rounds == 20)
+{
 
 	public enum stateSize = 16; // 16, 32 bit ints = 64 bytes
 	public enum name = "Salsa20";
@@ -310,7 +313,7 @@ private:
 	}
 	body {
 		uint[stateSize] x;
-		salsaCore!20(engineState, x[]);
+		salsaCore!rounds(engineState, x[]);
 		toLittleEndian(x[], output);
 	}
 
