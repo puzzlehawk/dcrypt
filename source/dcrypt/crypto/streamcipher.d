@@ -169,8 +169,8 @@ body {
 		c.processBytes(plain, buf);
 		
 		//debug writeln(hexEncode(buf));
-		assert(buf == ciphertext, text(c.name(), " encryption failed: ", hexEncode(buf),
-				" != ", hexEncode(ciphertext)));
+		assert(buf == ciphertext, text(c.name(), " encryption failed: ", buf.toHexStr(),
+				" != ", ciphertext.toHexStr));
 	}
 
 	if(ivs !is null) {

@@ -11,7 +11,7 @@ import dcrypt.exceptions;
 import std.algorithm: min;
 import std.conv: text;
 
-// test different keys, ivs and plain texts
+// Test Salsa20
 unittest {
 	
 	// test vectors generated with bouncycastle Salsa20 implementation
@@ -46,6 +46,38 @@ unittest {
 	streamCipherTest(new Salsa20Engine, keys, plains, ciphers, ivs);
 }
 
+// Test XSalsa
+unittest {
+	
+	// test vectors generated with bouncycastle Salsa20 implementation
+	string[] keys = [
+		x"86e2f31305b14bc42caf3f9c7fb4112cc7ae64cf43e0d429a27fa63b70d0939e",
+		x"b96baefe0fa3144455926da4a8583643107bda7926b2ea4577776f9ca89a9d00",
+		x"a5f519c06ede84d97d0d6dc8a9cfa52cfe532908e0dfdb03a875a948866cd77b",
+		x"c758bac8a6a4a405aa057a9d90621afa9f23eeb5157f65474e0cdb11284bea77",
+	];
+	string[] ivs = [
+		x"24eaeaac41c512e3eb77bc051c4e98ab565122ea4d274b4f",
+		x"17af8f7d0a89e15c6587d3a4f6bb20a75a7ea9d70c96e01c",
+		x"0a702d29a25362429c5a5f5e3dd86580c733fb94aff70037",
+		x"4201c53a16675ee4b95a85572c59c6e6cdc2faad8c77bc49",
+	];
+	string[] plains = [
+		x"dfe73782b7b40e000084dcd8170f95549180c8b546b8cce7823a38b11fd78f0fb94fa0720cffae5411e5108c9bd186b9f6ab7630477d8b2ca4160c9deeda271ded4a6dd782962b68315c0b9220b122a70bfee4d426eda7f1a44b562659c525bf23a5c692c8c79bb37d11e4386e5a8a096c333038ac590598ef59b6dd7b8969d6",
+		x"1107c901f7330c80f24d02581bcd027c6a58cbc2809eebfd1c9182227875571da45c9db20e51421d2b970846e5c72ef1b5b8fdae6e7b59ad9d583dc87133c47686b123627b98e0422fb86495f73060c882302b9c20d310e4e0eddd5daca2f028952d925394afe04a9718f3e5fbe7879665c618a9e05c86bb286dc455898f53da",
+		x"a2262bc781d520f799b31a18ad51501072670fa33e6d1c799c7e9c97322485b44800f33f81d9c85c750045f8acedfd61b31f064c4c36771586ea86b2441273936af2644644c3aa8a521ee03ddabdcb6a05177ebab78143ea0dcfd98ef3301f5b76f1f847fb24464f41bba616feb75c2cbb8629807b3dc9fe63bb7b4abcf94a60",
+		x"a840111122d4db70f5fbfdea485a37f3ab621855ff44b29843b49d26499f6acbc809bd51d19f7ebab48d99265dddab8832795b526ab688048ce80a0f6b2e938e9568bdb7e90aae58f665f653a1c5b606b0cfac4a8fdb48e340a9c128a5aadea33c8258ea57d1660096cf0858c0e5bb98c7431121b7435e82c62df79ce11a99a1",
+	];
+	string[] ciphers = [
+		x"7b64de1c7c6dec7eb70b79edf5c9d5812309a344e0f9ca53f18c922f03604d616a8008363bd82fc53341c32825ddb8ae371b242fa8eed90afdd38659a2304c13c774816e6c1b3022eebb8092971d3393406f8c70c8a02471146813906ac74e66751bb3dbb21a07913a69c1fcd8e9af0d3b23f13c74872da21eeef0a8578e5873",
+		x"80d4be693aa49d763ec1dffa251a6bb0f83402902a8175f5759d40046bc2e0ced8a8239f5a2d2caf28846f8b0e8e0b471ec6d61ed19b268c5d4ed2aff87bb1f07adf0297d305767b70eda08a29c16f04825b7edefdcbc77fcfbd2c9fad63e0d8409dc7a661add37babf814d76aec15ad435b8d9393793189c76f3e51cce31e3b",
+		x"8303327859df863abf0b932e3609b862b0e2399f277bbdc194fe19d9f6ad83685f0f2881db383677962d0ef5ae15e30c80cd03b994abc20a5e27a2b7c4c23ab2b045df862a315e5b5329e41183c98acfb2434ebccdf19005204b4d0c7541c3c517bbfc555c54c5d164be5b50ce22182dcb37b9e1a42a19390107683160e97c00",
+		x"b8c77c22f789d71679afd50aeb51dcbca26066fc55cee32e5ce3647d89de1bc664f9760ca6ae3037104387ffd1ae6aaae76f7ea1a3c2cac7dc5e5fedf581f8ba3c5025c163cfe7f03337a5ada2e34c573da2149994e805101f829e774e91338e730f07ad870b94bf71a575af3dd029fabe8e874eb655843d8f37bc01a5cfc818",
+	];
+
+	streamCipherTest(new XSalsa20Engine, keys, plains, ciphers, ivs);
+}
+
 alias Salsa!20 Salsa20;
 alias StreamCipherWrapper!Salsa20 Salsa20Engine;
 
@@ -66,7 +98,7 @@ public struct Salsa(uint rounds = 20, bool xsalsa = false)
 	if(rounds == 12 || rounds == 20)
 {
 
-	public enum name = text("Salsa20/", rounds);
+	public enum name = text(xsalsa ? "X" : "", "Salsa20/", rounds);
 
 	private {
 
@@ -336,6 +368,24 @@ public void salsaCore(uint rounds)(in uint[] input, uint[] output) pure nothrow 
 	
 	uint[16] x = input;
 	
+	salsaDoubleRound!rounds(x);
+
+	// element wise addition
+	x[] += input[];
+	output[] = x[];
+	
+}
+
+/// Executes the double round function rounds/2 times.
+///
+/// Params:
+/// rounds = number of rounds.
+/// x = the state. 
+private void salsaDoubleRound(uint rounds)(uint[] x) pure nothrow @nogc
+	if(rounds % 2 == 0 || rounds > 0)
+	in {
+		assert(x.length == 16, "invalid state length");
+} body {
 	foreach (i; 0..rounds/2)
 	{
 		x[ 4] ^= rotl((x[ 0]+x[12]), 7);
@@ -371,10 +421,6 @@ public void salsaCore(uint rounds)(in uint[] input, uint[] output) pure nothrow 
 		x[14] ^= rotl((x[13]+x[12]),13);
 		x[15] ^= rotl((x[14]+x[13]),18);
 	}
-	
-	// element wise addition
-	output[] = x[] + input[];
-	
 }
 
 /// HSalsa as defined in http://cr.yp.to/snuffle/xsalsa-20110204.pdf
@@ -402,12 +448,12 @@ ubyte[32] HSalsa(uint rounds = 20)(in ubyte[] key, in ubyte[] nonce) pure nothro
 	x[10] = sigma[2];
 	x[15] = sigma[3];
 
-	fromLittleEndian!uint(key[0..4], x[1..5]);
-	fromLittleEndian!uint(key[4..8], x[11..15]);
+	fromLittleEndian!uint(key[0*4..4*4], x[1..5]);
+	fromLittleEndian!uint(key[4*4..8*4], x[11..15]);
 
 	fromLittleEndian!uint(nonce, x[6..10]);
 
-	salsaCore!rounds(x, x);
+	salsaDoubleRound!rounds(x);
 
 	z[0] = x[0];
 	z[1] = x[5];
