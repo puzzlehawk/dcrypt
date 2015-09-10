@@ -3,7 +3,7 @@
 import std.range;
 import std.parallelism;
 
-import dcrypt.crypto.engines.salsa20;
+import dcrypt.crypto.engines.salsa;
 import dcrypt.crypto.digests.sha2;
 import dcrypt.crypto.generators.pkcs5s2;
 import dcrypt.util.pack;

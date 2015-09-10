@@ -8,6 +8,7 @@ import dcrypt.util.pack;
 import dcrypt.exceptions;
 
 import std.algorithm: min;
+import std.conv: text;
 
 // test different keys, ivs and plain texts
 unittest {
@@ -52,26 +53,29 @@ static assert(isStreamCipher!Salsa20, "Salsa20 is not a stream cipher!");
 ///
 ///	implementation of the Salsa20/20 stream cipher
 ///
+/// Params:
+/// rounds = Number of rounds. 12 and 20 are allowed. Default is 20.
+///
 @safe
-public struct Salsa(rounds)
+public struct Salsa(uint rounds = 20)
 	if(rounds == 12 || rounds == 20)
 {
 
-	public enum stateSize = 16; // 16, 32 bit ints = 64 bytes
-	public enum name = "Salsa20";
+	public enum name = text("Salsa20/", rounds);
 
 	private {
 		// constants
 
-		enum ubyte[16] sigma	= cast(immutable ubyte[16])"expand 32-byte k";
-		enum ubyte[16] tau		= cast(immutable ubyte[16])"expand 16-byte k";
+		enum uint[4] sigma	= [0x61707865, 0x3320646e, 0x79622d32, 0x6b206574]; //cast(ubyte[16])"expand 32-byte k";
+		enum uint[4] tau	= [0x61707865, 0x3120646e, 0x79622d36, 0x6b206574]; //cast(ubyte[16])"expand 16-byte k";
 
+		enum stateSize = 16; // 16, 32 bit ints = 64 bytes
 		
 		/*
 		 * variables to hold the state of the engine
 		 * during encryption and decryption
 		 */
-		uint					index = 0;
+		uint				index = 0;
 		uint[stateSize]		engineState; /// state
 		ubyte[stateSize*4]	keyStream; /// expanded state, 64 bytes
 		bool				initialized = false;
@@ -80,7 +84,7 @@ public struct Salsa(rounds)
 		 * internal counter
 		 */
 		uint cW0, cW1, cW2;
-				
+		
 	}
 
 	@safe @nogc nothrow
@@ -180,13 +184,13 @@ public struct Salsa(rounds)
 			output = output[len..$];
 		}
 
-
+		
 		return initialOutputSlice[0..input.length];
 	}
 
 	/// reset the cipher to its initial state
 	deprecated("The reset() function might lead to insecure use of a stream cipher.")
-	public void reset() nothrow @nogc
+		public void reset() nothrow @nogc
 	in {
 		assert(initialized, "not yet initialized");
 	}
@@ -197,27 +201,22 @@ public struct Salsa(rounds)
 	}
 
 	
-	/**
-	 * Salsa20 function
-	 *
-	 * Params:
-	 * rounds = number of rounds (20 in default implementation)
-	 * input = input data
-	 * x = output buffer where keystream gets written to
-	 */    
+	/// Salsa20 function
+	///
+	/// Params:
+	/// rounds = number of rounds (20 in default implementation)
+	/// input = input data
+	/// x = output buffer where keystream gets written to   
 	public final static void salsaCore(uint rounds)(in uint[] input, uint[] output) pure nothrow @nogc
-	in {
-		assert(input.length == stateSize, "invalid input length");
-		assert(output.length == stateSize, "x: invalid length");
-
-	}
-	body {
-
-		static assert(rounds % 2 == 0 || rounds > 0, "rounds must be a even number and > 0");
+		if(rounds % 2 == 0 || rounds > 0)
+		in {
+			assert(input.length == stateSize, "invalid input length");
+			assert(output.length == stateSize, "invalid output buffer length");
+		} body {
 
 		uint[stateSize] x = input;
 		
-		for (int i = rounds; i > 0; i -= 2)
+		foreach (i; 0..rounds/2)
 		{
 			x[ 4] ^= rotl((x[ 0]+x[12]), 7);
 			x[ 8] ^= rotl((x[ 4]+x[ 0]), 9);
@@ -276,27 +275,27 @@ private:
 
 		index = 0;
 		resetCounter();
-		ubyte[sigma.length] constants;
+		uint[4] constants;
 		
 		// Key
 		fromLittleEndian(keyBytes[0..16], engineState[1..5]);
 		
 		if (keyBytes.length == 32)
 		{
-			constants[] = sigma[];
+			constants = sigma;
 
 			fromLittleEndian(keyBytes[16..32], engineState[11..15]);
 		}
 		else
 		{
-			constants[] = tau[];
+			constants = tau;
 			fromLittleEndian(keyBytes[0..16], engineState[11..15]);
 		}
 
-		engineState[0] = fromLittleEndian!uint(constants[0..$]);
-		engineState[5] = fromLittleEndian!uint(constants[4..$]);
-		engineState[10] = fromLittleEndian!uint(constants[8..$]);
-		engineState[15] = fromLittleEndian!uint(constants[12..$]);
+		engineState[0] = constants[0];
+		engineState[5] = constants[1];
+		engineState[10] = constants[2];
+		engineState[15] = constants[3];
 
 		// IV
 		fromLittleEndian!uint(ivBytes[0..$], engineState[6..8]);
@@ -313,8 +312,8 @@ private:
 	}
 	body {
 		uint[stateSize] x;
-		salsaCore!rounds(engineState, x[]);
-		toLittleEndian(x[], output);
+		salsaCore!rounds(engineState, x);
+		toLittleEndian!uint(x, output);
 	}
 
 	void resetCounter() nothrow @nogc
@@ -355,3 +354,38 @@ private:
 	}
 }
 
+void HSalsa(uint rounds = 20)(ubyte[] output, in ubyte[] key, in ubyte[] nonce)
+	if(rounds == 12 || rounds == 20)
+in {
+		assert(output.length == 16, "HSalsa requires 128 bit output buffer.");
+		assert(key.length == 32, "HSalsa requires 256 bit key.");
+		assert(nonce.length == 24, "HSalsa requires 192 bit nonce.");
+} body {
+	uint[16] x;
+	uint[8] z;
+
+	scope(exit) {
+		wipe(x);
+		wipe(z);
+	}
+
+	x[0] = Salsa.sigma[0];
+	x[5] = Salsa.sigma[1];
+	x[10] = Salsa.sigma[2];
+	x[15] = Salsa.sigma[3];
+
+	fromLittleEndian!uint(key[0..4], x[1..5]);
+	fromLittleEndian!uint(key[4..8], x[11..15]);
+
+	fromLittleEndian!uint(nonce, x[6..10]);
+
+	Salsa.salsaCore!rounds(x, x);
+
+	z[0] = x[0];
+	z[1] = x[5];
+	z[2] = x[10];
+	z[3] = x[15];
+	z[4..8] = x[6..10];
+
+	toLittleEndian!uint(z, output);
+}
