@@ -209,7 +209,7 @@ private:
 		{
 			X2[] = B[BOff..$] ^ X1[];
 
-			Salsa20.salsaCore!8(X2, X1);
+			salsaCore!8(X2, X1);
 
 			Y[YOff..YOff+16] = X1[0..16];
 			

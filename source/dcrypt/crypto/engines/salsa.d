@@ -3,6 +3,7 @@
 public import dcrypt.crypto.streamcipher;
 
 import dcrypt.util.bitmanip: rotl=rotateLeft;
+import dcrypt.util.util: wipe;
 
 import dcrypt.util.pack;
 import dcrypt.exceptions;
@@ -48,7 +49,11 @@ unittest {
 alias Salsa!20 Salsa20;
 alias StreamCipherWrapper!Salsa20 Salsa20Engine;
 
+alias Salsa!(20, true) XSalsa20;
+alias StreamCipherWrapper!XSalsa20 XSalsa20Engine;
+
 static assert(isStreamCipher!Salsa20, "Salsa20 is not a stream cipher!");
+static assert(isStreamCipher!XSalsa20, "XSalsa20 is not a stream cipher!");
 
 ///
 ///	implementation of the Salsa20/20 stream cipher
@@ -57,17 +62,13 @@ static assert(isStreamCipher!Salsa20, "Salsa20 is not a stream cipher!");
 /// rounds = Number of rounds. 12 and 20 are allowed. Default is 20.
 ///
 @safe
-public struct Salsa(uint rounds = 20)
+public struct Salsa(uint rounds = 20, bool xsalsa = false)
 	if(rounds == 12 || rounds == 20)
 {
 
 	public enum name = text("Salsa20/", rounds);
 
 	private {
-		// constants
-
-		enum uint[4] sigma	= [0x61707865, 0x3320646e, 0x79622d32, 0x6b206574]; //cast(ubyte[16])"expand 32-byte k";
-		enum uint[4] tau	= [0x61707865, 0x3120646e, 0x79622d36, 0x6b206574]; //cast(ubyte[16])"expand 16-byte k";
 
 		enum stateSize = 16; // 16, 32 bit ints = 64 bytes
 		
@@ -103,11 +104,24 @@ public struct Salsa(uint rounds = 20)
 	/// iv = Use a unique nonce per key.
 	public void start(bool forEncryption, in ubyte[] key, in ubyte[] iv) nothrow @nogc
 	in {
-		assert(key.length == 16 || key.length == 32, "Salsa20 needs 128 or 256 bit keys.");
-		assert(iv.length == 8, "Salsa20 needs a 8 byte IV.");
+		static if(xsalsa) {
+			assert(key.length == 32, "XSalsa requires a 256 bit key.");
+			assert(iv.length == 24, "XSalsa needs a 192 bit nonce.");
+		} else {
+			assert(key.length == 16 || key.length == 32, "Salsa20 needs 128 or 256 bit keys.");
+			assert(iv.length == 8, "Salsa20 needs a 8 byte IV.");
+		}
 	}
 	body {
-		setKey(key, iv);
+		static if(xsalsa) {
+			// XSalsa
+			ubyte[32] xkey = HSalsa(key, iv[0..16]);
+			setKey(xkey, iv[16..24]);
+			wipe(xkey);
+		} else {
+			// Salsa
+			setKey(key, iv);
+		}
 	}
 
 	/// 
@@ -201,62 +215,6 @@ public struct Salsa(uint rounds = 20)
 	}
 
 	
-	/// Salsa20 function
-	///
-	/// Params:
-	/// rounds = number of rounds (20 in default implementation)
-	/// input = input data
-	/// x = output buffer where keystream gets written to   
-	public final static void salsaCore(uint rounds)(in uint[] input, uint[] output) pure nothrow @nogc
-		if(rounds % 2 == 0 || rounds > 0)
-		in {
-			assert(input.length == stateSize, "invalid input length");
-			assert(output.length == stateSize, "invalid output buffer length");
-		} body {
-
-		uint[stateSize] x = input;
-		
-		foreach (i; 0..rounds/2)
-		{
-			x[ 4] ^= rotl((x[ 0]+x[12]), 7);
-			x[ 8] ^= rotl((x[ 4]+x[ 0]), 9);
-			x[12] ^= rotl((x[ 8]+x[ 4]),13);
-			x[ 0] ^= rotl((x[12]+x[ 8]),18);
-			x[ 9] ^= rotl((x[ 5]+x[ 1]), 7);
-			x[13] ^= rotl((x[ 9]+x[ 5]), 9);
-			x[ 1] ^= rotl((x[13]+x[ 9]),13);
-			x[ 5] ^= rotl((x[ 1]+x[13]),18);
-			x[14] ^= rotl((x[10]+x[ 6]), 7);
-			x[ 2] ^= rotl((x[14]+x[10]), 9);
-			x[ 6] ^= rotl((x[ 2]+x[14]),13);
-			x[10] ^= rotl((x[ 6]+x[ 2]),18);
-			x[ 3] ^= rotl((x[15]+x[11]), 7);
-			x[ 7] ^= rotl((x[ 3]+x[15]), 9);
-			x[11] ^= rotl((x[ 7]+x[ 3]),13);
-			x[15] ^= rotl((x[11]+x[ 7]),18);
-			x[ 1] ^= rotl((x[ 0]+x[ 3]), 7);
-			x[ 2] ^= rotl((x[ 1]+x[ 0]), 9);
-			x[ 3] ^= rotl((x[ 2]+x[ 1]),13);
-			x[ 0] ^= rotl((x[ 3]+x[ 2]),18);
-			x[ 6] ^= rotl((x[ 5]+x[ 4]), 7);
-			x[ 7] ^= rotl((x[ 6]+x[ 5]), 9);
-			x[ 4] ^= rotl((x[ 7]+x[ 6]),13);
-			x[ 5] ^= rotl((x[ 4]+x[ 7]),18);
-			x[11] ^= rotl((x[10]+x[ 9]), 7);
-			x[ 8] ^= rotl((x[11]+x[10]), 9);
-			x[ 9] ^= rotl((x[ 8]+x[11]),13);
-			x[10] ^= rotl((x[ 9]+x[ 8]),18);
-			x[12] ^= rotl((x[15]+x[14]), 7);
-			x[13] ^= rotl((x[12]+x[15]), 9);
-			x[14] ^= rotl((x[13]+x[12]),13);
-			x[15] ^= rotl((x[14]+x[13]),18);
-		}
-		
-		// element wise addition
-		output[] = x[] + input[];
-		
-	}
-
 	//
 	// Private implementation
 	//
@@ -264,8 +222,8 @@ public struct Salsa(uint rounds = 20)
 private:
 
 	/// Params:
-	/// keyBytes = key, 16 or 32 bytes
-	/// ivBytes = iv, exactly 8 bytes
+	/// keyBytes = key, 16 or 32 bytes.
+	/// ivBytes = iv, exactly 8 bytes.
 	void setKey(in ubyte[] keyBytes, in ubyte[] ivBytes) nothrow @nogc
 	in {
 		assert(keyBytes.length == 16 || keyBytes.length == 32, "invalid key length");
@@ -288,6 +246,7 @@ private:
 		}
 		else
 		{
+			// repeat the 128 bit key
 			constants = tau;
 			fromLittleEndian(keyBytes[0..16], engineState[11..15]);
 		}
@@ -354,12 +313,81 @@ private:
 	}
 }
 
-void HSalsa(uint rounds = 20)(ubyte[] output, in ubyte[] key, in ubyte[] nonce)
+private {
+	// constants
+	
+	enum uint[4] sigma	= [0x61707865, 0x3320646e, 0x79622d32, 0x6b206574]; //cast(ubyte[16])"expand 32-byte k";
+	enum uint[4] tau	= [0x61707865, 0x3120646e, 0x79622d36, 0x6b206574]; //cast(ubyte[16])"expand 16-byte k";
+
+}
+
+/// Salsa20/rounds function
+///
+/// Params:
+/// rounds = number of rounds (20 in default implementation)
+/// input = input data
+/// x = output buffer where keystream gets written to   
+public void salsaCore(uint rounds)(in uint[] input, uint[] output) pure nothrow @nogc
+	if(rounds % 2 == 0 || rounds > 0)
+	in {
+		assert(input.length == 16, "invalid input length");
+		assert(output.length == 16, "invalid output buffer length");
+} body {
+	
+	uint[16] x = input;
+	
+	foreach (i; 0..rounds/2)
+	{
+		x[ 4] ^= rotl((x[ 0]+x[12]), 7);
+		x[ 8] ^= rotl((x[ 4]+x[ 0]), 9);
+		x[12] ^= rotl((x[ 8]+x[ 4]),13);
+		x[ 0] ^= rotl((x[12]+x[ 8]),18);
+		x[ 9] ^= rotl((x[ 5]+x[ 1]), 7);
+		x[13] ^= rotl((x[ 9]+x[ 5]), 9);
+		x[ 1] ^= rotl((x[13]+x[ 9]),13);
+		x[ 5] ^= rotl((x[ 1]+x[13]),18);
+		x[14] ^= rotl((x[10]+x[ 6]), 7);
+		x[ 2] ^= rotl((x[14]+x[10]), 9);
+		x[ 6] ^= rotl((x[ 2]+x[14]),13);
+		x[10] ^= rotl((x[ 6]+x[ 2]),18);
+		x[ 3] ^= rotl((x[15]+x[11]), 7);
+		x[ 7] ^= rotl((x[ 3]+x[15]), 9);
+		x[11] ^= rotl((x[ 7]+x[ 3]),13);
+		x[15] ^= rotl((x[11]+x[ 7]),18);
+		x[ 1] ^= rotl((x[ 0]+x[ 3]), 7);
+		x[ 2] ^= rotl((x[ 1]+x[ 0]), 9);
+		x[ 3] ^= rotl((x[ 2]+x[ 1]),13);
+		x[ 0] ^= rotl((x[ 3]+x[ 2]),18);
+		x[ 6] ^= rotl((x[ 5]+x[ 4]), 7);
+		x[ 7] ^= rotl((x[ 6]+x[ 5]), 9);
+		x[ 4] ^= rotl((x[ 7]+x[ 6]),13);
+		x[ 5] ^= rotl((x[ 4]+x[ 7]),18);
+		x[11] ^= rotl((x[10]+x[ 9]), 7);
+		x[ 8] ^= rotl((x[11]+x[10]), 9);
+		x[ 9] ^= rotl((x[ 8]+x[11]),13);
+		x[10] ^= rotl((x[ 9]+x[ 8]),18);
+		x[12] ^= rotl((x[15]+x[14]), 7);
+		x[13] ^= rotl((x[12]+x[15]), 9);
+		x[14] ^= rotl((x[13]+x[12]),13);
+		x[15] ^= rotl((x[14]+x[13]),18);
+	}
+	
+	// element wise addition
+	output[] = x[] + input[];
+	
+}
+
+/// HSalsa as defined in http://cr.yp.to/snuffle/xsalsa-20110204.pdf
+/// Params:
+/// key = 32 byte key.
+/// nonce = 24 byte nonce.
+/// 
+/// Returns: 256 bit value.
+ubyte[32] HSalsa(uint rounds = 20)(in ubyte[] key, in ubyte[] nonce) pure nothrow @nogc
 	if(rounds == 12 || rounds == 20)
-in {
-		assert(output.length == 16, "HSalsa requires 128 bit output buffer.");
+	in {
 		assert(key.length == 32, "HSalsa requires 256 bit key.");
-		assert(nonce.length == 24, "HSalsa requires 192 bit nonce.");
+		assert(nonce.length == 16, "HSalsa requires 128 bit nonce.");
 } body {
 	uint[16] x;
 	uint[8] z;
@@ -369,17 +397,17 @@ in {
 		wipe(z);
 	}
 
-	x[0] = Salsa.sigma[0];
-	x[5] = Salsa.sigma[1];
-	x[10] = Salsa.sigma[2];
-	x[15] = Salsa.sigma[3];
+	x[0] = sigma[0];
+	x[5] = sigma[1];
+	x[10] = sigma[2];
+	x[15] = sigma[3];
 
 	fromLittleEndian!uint(key[0..4], x[1..5]);
 	fromLittleEndian!uint(key[4..8], x[11..15]);
 
 	fromLittleEndian!uint(nonce, x[6..10]);
 
-	Salsa.salsaCore!rounds(x, x);
+	salsaCore!rounds(x, x);
 
 	z[0] = x[0];
 	z[1] = x[5];
@@ -387,5 +415,7 @@ in {
 	z[3] = x[15];
 	z[4..8] = x[6..10];
 
+	ubyte[32] output;
 	toLittleEndian!uint(z, output);
+	return output;
 }
