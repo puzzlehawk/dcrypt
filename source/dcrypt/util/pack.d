@@ -259,9 +259,10 @@ body {
 	}
 }
 
-ubyte[] toBigEndian(T)(T n) if(isIntegral!T)
+ubyte[T.sizeof] toBigEndian(T)(T n) pure nothrow @nogc
+	if(isIntegral!T)
 {
-	ubyte[] bs = new ubyte[T.sizeof];
+	ubyte[T.sizeof] bs;
 	toBigEndian!T(n, bs);
 	return bs;
 }
@@ -274,9 +275,10 @@ ubyte[] toBigEndian(T)(in T[] ns) if(isIntegral!T)
 }
 
 
-ubyte[] toLittleEndian(T)(T n) if(isIntegral!T)
+ubyte[T.sizeof] toLittleEndian(T)(T n) pure nothrow @nogc
+	if(isIntegral!T)
 {
-	ubyte[] bs = new ubyte[T.sizeof];
+	ubyte[T.sizeof] bs;
 	toLittleEndian!T(n, bs);
 	return bs;
 }
