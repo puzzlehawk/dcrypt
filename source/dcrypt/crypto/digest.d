@@ -3,12 +3,12 @@ module dcrypt.crypto.digest;
 import std.range: isOutputRange;
 import std.range: OutputRange;
 
+public import std.digest.digest: isStdDigest = isDigest;
+
 // TODO compatibility with std.digest?
 
 template isDigest(T)
 {
-	import std.digest.digest: isStdDigest = isDigest;
-
 	enum bool isDigest =
 		isStdDigest!T &&
 		is(T == struct) &&
@@ -42,6 +42,24 @@ mixin template finish() {
 		ubyte[digestLength] buf;
 		doFinal(buf);
 		return buf;
+	}
+}
+
+/// Variadic 'put' helper function for digests.
+/// 
+/// Params:
+/// digest = The digest to put the data into.
+/// data = The data to update the digest with.
+/// 
+/// Example:
+/// 	ubyte[4] buf;
+/// 	SHA256 hash;
+/// 	hash.putAll(cast(ubyte) 0x01, buf, buf[0..2]);
+@safe
+public void putAll(D, T...)(ref D digest, in T data) nothrow @nogc
+	if(isStdDigest!D) {
+	foreach(d; data) {
+		digest.put(d);
 	}
 }
 
