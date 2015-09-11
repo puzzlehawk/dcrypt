@@ -4,8 +4,10 @@
 
 import dcrypt.crypto.random.prng;
 import dcrypt.crypto.digest;
-import dcrypt.crypto.digests.sha2: SHA256;
+import dcrypt.crypto.digests.sha1;
+import dcrypt.crypto.digests.sha2;
 import dcrypt.util.pack;
+import dcrypt.util.util: wipe;
 import std.algorithm: min;
 
 ///
@@ -33,20 +35,29 @@ unittest {
 	import dcrypt.crypto.digests.sha2;
 	import std.stdio;
 
-	HashDRNG!SHA256 drng;
+	HashDRNG!(SHA256, 440) drng;
 
-	ubyte[64] buf;
+	ubyte[70] buf;
 
-	drng.setSeed(0);
-	drng.addSeed(1, 2, 3);
 	drng.nextBytes(buf);
+
+	writefln("%(%.2x%)", buf);
 }
 
-static assert(isDRNG!(HashDRNG!SHA256), HashDRNG.name~" is no DRNG.");
+alias HashDRNG!(SHA1, 440) HashDRNG_SHA1;
+alias HashDRNG!(SHA256, 440) HashDRNG_SHA256;
+alias HashDRNG!(SHA384, 888) HashDRNG_SHA384;
+alias HashDRNG!(SHA512, 888) HashDRNG_SHA512;
+
+static assert(isDRNG!HashDRNG_SHA256, HashDRNG.name~" is no DRNG.");
 
 /// Standard: NIST SP 800-90A
+/// 
+/// Params:
+/// D = The underlying digest.
+/// seedlen = Length of internal state in bits.
 @safe
-struct HashDRNG(D) if(isDigest!D) {
+struct HashDRNG(D, uint seedlen) if(isDigest!D && seedlen % 8 == 0) {
 
 	public {
 		enum isDeterministic = true;
@@ -54,8 +65,7 @@ struct HashDRNG(D) if(isDigest!D) {
 	}
 
 	private {
-		enum seedlen = D.digestLength;
-		ubyte[seedlen] V, C;
+		ubyte[seedlen/8] V, C;
 		ulong reseedCounter;
 	}
 
@@ -63,28 +73,35 @@ struct HashDRNG(D) if(isDigest!D) {
 
 	/// Initialize the generator with given seed.
 	void setSeed(in ubyte[] seed...) {
-		D hash;
-		hash.put(seed);
-		V = hash.finish();
+		//		D hash;
+		//		hash.put(seed);
+		//		V = hash.finish();
+		hashDF!D(V, seed);
 
-		hash.put(cast(ubyte) 0x00);
-		hash.put(V);
-		C = hash.finish();
+		//		hash.put(cast(ubyte) 0x00);
+		//		hash.put(V);
+		//		C = hash.finish();
+
+		// TODO optimize
+		ubyte[1+V.length] buf;
+		buf[0] = 0;
+		buf[1..$] = V;
+		hashDF!D(V, buf);
+		wipe(buf);
 
 		reseedCounter = 1;
 	}
-
 	
 	/// Add entropy to the generators internal state.
 	void addSeed(in ubyte[] seed...) {
-		D hash;
-		hash.put(0x01);
-		hash.put(V);
-		hash.put(seed);
 
-		hash.put(cast(ubyte) 0x00);
-		hash.put(V);
-		C = hash.finish();
+		hashDF!D(V, cast(ubyte) 0x01, V, seed);
+
+		hashDF!D(C, cast(ubyte) 0x00, V);
+
+		//		hash.put(cast(ubyte) 0x00);
+		//		hash.put(V);
+		//		C = hash.finish();
 		
 		reseedCounter = 1;
 	}
@@ -100,7 +117,7 @@ struct HashDRNG(D) if(isDigest!D) {
 			hash.put(0x02);
 			hash.put(V);
 			hash.put(additionalInput);
-			ubyte[seedlen] w = hash.finish();
+			ubyte[D.digestLength] w = hash.finish();
 			add(V, w);
 		}
 
@@ -108,7 +125,7 @@ struct HashDRNG(D) if(isDigest!D) {
 
 		hash.put(0x03);
 		hash.put(V);
-		immutable ubyte[seedlen] H = hash.finish();
+		immutable ubyte[D.digestLength] H = hash.finish();
 
 		add(V, H);
 		add(V, reseedCounter);
@@ -117,10 +134,10 @@ struct HashDRNG(D) if(isDigest!D) {
 	}
 
 	private void hashGen(ubyte[] buf) {
-		ubyte[seedlen] data = V;
+		ubyte[V.length] data = V;
 		D hash;
 		while(buf.length > 0) {
-			size_t len = min(seedlen, buf.length);
+			size_t len = min(D.digestLength, buf.length);
 			hash.put(data);
 			buf[0..len] = hash.finish()[0..len];
 			buf = buf[len..$];
@@ -130,20 +147,25 @@ struct HashDRNG(D) if(isDigest!D) {
 
 }
 
-/// NIST SP800-90A, Section 10.4.1
-private void hashDF(D)(ubyte[] buf, in ubyte[] seed...) if(isDigest!D) {
+/// Hash derivation function.
+/// Standard: NIST SP800-90A, Section 10.4.1
+/// Note: Number of output bits is implicitly defined by buf.length*8.
+private void hashDF(D, T...)(ubyte[] buf, in T seed) if(isDigest!D) {
 	ubyte counter = 1;
 	ubyte[4] outputLen; /// output length in bits
 
-	toBigEndian!uint(cast(uint) buf.length*8, outputLen);	// BC compatible
-	//toLittleEndian!uint(cast(uint) buf.length*8, outputLen);
+	outputLen = toBigEndian!uint(cast(uint) buf.length*8);	// BC compatible
+	//outputLen = toLittleEndian!uint(cast(uint) buf.length*8, outputLen);
 
 	D digest;
 
 	while(buf.length > 0) {
 		digest.put(counter);
 		digest.put(outputLen);
-		digest.put(seed);
+
+		foreach(s; seed) {
+			digest.put(s);
+		}
 
 		size_t len = min(buf.length, D.digestLength);
 		buf[0..len] = digest.finish()[0..len];
@@ -166,27 +188,14 @@ private unittest {
 
 /// Little endian increment.
 private void increment(ubyte[] v) nothrow @safe @nogc {
-	
-	for(uint i = 0; i < v.length; ++i) {
-		
-		if(++v[i] != 0) {
-			break;
-		}
-		
-	}
+	add(v, 1);
 }
 
 
 /// Add number to little endian byte string.
 /// a += b;
 private void add(ubyte[] a, ulong b) nothrow @safe @nogc {
-	ubyte carry = 0;
-	for(uint i = 0; i < a.length; ++i) {
-		uint t = cast(uint) a[i] + (b & 0xFF) + carry;
-		a[i] = cast(ubyte) t;
-		carry = cast(ubyte) (t >> 8);
-		b >>= 8;
-	}
+	add(a, toLittleEndian(b));
 }
 
 
