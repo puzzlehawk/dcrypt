@@ -2,13 +2,14 @@
 
 /// The DRNG module contains a collection of deterministic random number generators.
 
-import dcrypt.crypto.random.prng;
+public import dcrypt.crypto.random.prng;
 import dcrypt.crypto.digest;
 import dcrypt.crypto.digests.sha1;
 import dcrypt.crypto.digests.sha2;
 import dcrypt.util.pack;
 import dcrypt.util.util: wipe;
 import std.algorithm: min;
+import std.traits: isIntegral;
 
 ///
 /// Test if T is a deterministic random number generator.
@@ -17,17 +18,22 @@ import std.algorithm: min;
 @safe @nogc nothrow
 template isDRNG(T)
 {
-	enum bool isDRNG = 
-		is(T == struct) && isRNG!T && // isInputRange!T &&
+	enum bool isDRNG = isRNG!T && // isInputRange!T &&
+			T.isDeterministic &&
 			is(typeof(
 					{
 						ubyte[] buf;
 						T rng = T.init;
-						bool d = T.isDeterministic;
 						rng.setSeed(cast(const ubyte[]) buf); // Can set the generator to well known state.
 						rng.setSeed(cast(ubyte) 0);					// variadic template
 						rng.setSeed(cast(ubyte) 0, cast(ubyte) 0);
 					}));
+}
+
+@safe @nogc nothrow
+template isDRNGWithInput(T)
+{
+	enum bool isDRNGWithInput = isDRNG!T && isRNGWithInput!T;
 }
 
 /// Generate a pseudo random but deterministic sequence of bytes.
@@ -35,7 +41,7 @@ unittest {
 	import dcrypt.crypto.digests.sha2;
 	import std.stdio;
 
-	HashDRNG!(SHA256, 440) drng;
+	HashDRNG_SHA256 drng;
 
 	ubyte[70] buf;
 
@@ -49,7 +55,7 @@ alias HashDRNG!(SHA256, 440) HashDRNG_SHA256;
 alias HashDRNG!(SHA384, 888) HashDRNG_SHA384;
 alias HashDRNG!(SHA512, 888) HashDRNG_SHA512;
 
-static assert(isDRNG!HashDRNG_SHA256, HashDRNG.name~" is no DRNG.");
+static assert(isDRNG!HashDRNG_SHA256 && isRNGWithInput!HashDRNG_SHA256 , HashDRNG.name~" is no DRNG.");
 
 /// Standard: NIST SP 800-90A
 /// 
@@ -57,7 +63,7 @@ static assert(isDRNG!HashDRNG_SHA256, HashDRNG.name~" is no DRNG.");
 /// D = The underlying digest.
 /// seedlen = Length of internal state in bits.
 @safe
-struct HashDRNG(D, uint seedlen) if(isDigest!D && seedlen % 8 == 0) {
+struct HashDRNG(D, uint seedlen) if(isStdDigest!D && seedlen % 8 == 0) {
 
 	public {
 		enum isDeterministic = true;
@@ -68,26 +74,19 @@ struct HashDRNG(D, uint seedlen) if(isDigest!D && seedlen % 8 == 0) {
 		ubyte[seedlen/8] V, C;
 		ulong reseedCounter;
 	}
-
 	nothrow @nogc:
+
+	~this() {
+		wipe(V);
+		wipe(C);
+	}
 
 	/// Initialize the generator with given seed.
 	void setSeed(in ubyte[] seed...) {
-		//		D hash;
-		//		hash.put(seed);
-		//		V = hash.finish();
+
 		hashDF!D(V, seed);
 
-		//		hash.put(cast(ubyte) 0x00);
-		//		hash.put(V);
-		//		C = hash.finish();
-
-		// TODO optimize
-		ubyte[1+V.length] buf;
-		buf[0] = 0;
-		buf[1..$] = V;
-		hashDF!D(V, buf);
-		wipe(buf);
+		hashDF!D(V, cast(ubyte) 0x00, V);
 
 		reseedCounter = 1;
 	}
@@ -98,10 +97,6 @@ struct HashDRNG(D, uint seedlen) if(isDigest!D && seedlen % 8 == 0) {
 		hashDF!D(V, cast(ubyte) 0x01, V, seed);
 
 		hashDF!D(C, cast(ubyte) 0x00, V);
-
-		//		hash.put(cast(ubyte) 0x00);
-		//		hash.put(V);
-		//		C = hash.finish();
 		
 		reseedCounter = 1;
 	}
@@ -114,17 +109,14 @@ struct HashDRNG(D, uint seedlen) if(isDigest!D && seedlen % 8 == 0) {
 		D hash;
 
 		if(additionalInput.length > 0) {
-			hash.put(0x02);
-			hash.put(V);
-			hash.put(additionalInput);
+			hash.putAll(cast(ubyte) 0x02, V, additionalInput);
 			ubyte[D.digestLength] w = hash.finish();
 			add(V, w);
 		}
 
 		hashGen(buf);
 
-		hash.put(0x03);
-		hash.put(V);
+		hash.putAll(cast(ubyte) 0x03, V);
 		immutable ubyte[D.digestLength] H = hash.finish();
 
 		add(V, H);
@@ -143,6 +135,7 @@ struct HashDRNG(D, uint seedlen) if(isDigest!D && seedlen % 8 == 0) {
 			buf = buf[len..$];
 			increment(data);
 		}
+		wipe(data);
 	}
 
 }
@@ -154,18 +147,14 @@ private void hashDF(D, T...)(ubyte[] buf, in T seed) if(isDigest!D) {
 	ubyte counter = 1;
 	ubyte[4] outputLen; /// output length in bits
 
-	outputLen = toBigEndian!uint(cast(uint) buf.length*8);	// BC compatible
+	outputLen = toEndian!uint(cast(uint) buf.length*8);	// BC compatible
 	//outputLen = toLittleEndian!uint(cast(uint) buf.length*8, outputLen);
 
 	D digest;
 
 	while(buf.length > 0) {
-		digest.put(counter);
-		digest.put(outputLen);
 
-		foreach(s; seed) {
-			digest.put(s);
-		}
+		digest.putAll(counter, outputLen, seed);
 
 		size_t len = min(buf.length, D.digestLength);
 		buf[0..len] = digest.finish()[0..len];
@@ -179,8 +168,6 @@ private void hashDF(D, T...)(ubyte[] buf, in T seed) if(isDigest!D) {
 private unittest {
 	ubyte[70] buf;
 	hashDF!SHA256(buf, cast(const ubyte[]) "seed");
-	import std.stdio;
-	writefln("%(%.2x%)", buf);
 
 	assert(buf == x"ae678a8fcbcfaf3bcf57395b6fa3c614516d21182992780fb155bc75ded4369ac44ebfc392d9990553d59f6beffa1fb56d3962be000d1a7d009674240f02855b7a8fd125dd19");
 }
@@ -188,14 +175,18 @@ private unittest {
 
 /// Little endian increment.
 private void increment(ubyte[] v) nothrow @safe @nogc {
-	add(v, 1);
+	ubyte[1] one = 1;
+	add(v, one);
 }
 
 
+private alias toBigEndian toEndian; /// easily switch between LE and BE
+
 /// Add number to little endian byte string.
 /// a += b;
-private void add(ubyte[] a, ulong b) nothrow @safe @nogc {
-	add(a, toLittleEndian(b));
+private void add(T)(ubyte[] a, T b) nothrow @safe @nogc 
+if(isIntegral!T) {
+	add(a, toEndian!T(b));
 }
 
 
@@ -207,11 +198,11 @@ in {
 	ubyte carry = 0;
 
 	for(uint i = 0; i < a.length; ++i) {
-		uint t = cast(uint) a[i] + carry;
+		uint t = cast(uint) a[$-1-i] + carry;
 		if(i < b.length) {
-			t += b[i];
+			t += b[$-1-i];
 		}
-		a[i] = cast(ubyte) t;
+		a[$-1-i] = cast(ubyte) t;
 		carry = cast(ubyte) (t >> 8);
 	}
 
@@ -219,13 +210,14 @@ in {
 
 // testing add()
 private unittest {
-	ubyte[32] a, b;
+	ubyte[4] a, b;
+
 	add(a, 0xFF);
-	assert(a[0..4] == x"FF000000");
+	assert(a[0..4] == toEndian(0xFF));
 	add(b, 0xFF00);
-	assert(b[0..4] == x"00FF0000");
+	assert(b[0..4] == toEndian(0xFF00));
 	add(a, b);
-	assert(a[0..4] == x"FFFF0000");
+	assert(a[0..4] == toEndian(0xFFFF));
 	add(a, 1);
-	assert(a[0..4] == x"00000100");
+	assert(a[0..4] == toEndian(0x10000));
 }
