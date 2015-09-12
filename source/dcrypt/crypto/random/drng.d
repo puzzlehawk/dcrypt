@@ -39,7 +39,7 @@ template isDRNGWithInput(T)
 /// Generate a pseudo random but deterministic sequence of bytes.
 unittest {
 	import dcrypt.crypto.digests.sha2;
-	import std.stdio;
+	//import std.stdio;
 
 	HashDRNG_SHA256 drng;
 
@@ -47,7 +47,7 @@ unittest {
 
 	drng.nextBytes(buf);
 
-	writefln("%(%.2x%)", buf);
+	//writefln("%(%.2x%)", buf);
 }
 
 alias HashDRNG!(SHA1, 440) HashDRNG_SHA1;
