@@ -2,7 +2,7 @@ module dcrypt.crypto.engines.serpent;
 
 import dcrypt.crypto.blockcipher;
 import dcrypt.util.bitmanip;
-
+import dcrypt.util.pack;
 /// Test serpent engine. Test vectors generated with BouncyCastle implementation.
 unittest {
 	
@@ -117,12 +117,12 @@ private:
 
 		for (off = key.length - 4; off > 0; off -= 4)
 		{
-			kPad[length++] = bytesToWord(key[off..$]);
+			kPad[length++] = fromBigEndian!uint(key[off..off+4]);
 		}
 
 		if (off == 0)
 		{
-			kPad[length++] = bytesToWord(key);
+			kPad[length++] = fromBigEndian!uint(key[0..4]);
 			if (length < 8)
 			{
 				kPad[length] = 1;
@@ -327,32 +327,16 @@ private:
 		w[131] = X3;
 	}
 
-	@nogc
-	pure nothrow uint bytesToWord(in ubyte[]  src)
-	{
-		return (((src[0]) << 24) | ((src[1]) <<  16) |
-			((src[2]) << 8) | ((src[3])));
-	}
-
-	@nogc
-	pure nothrow void wordToBytes(uint word, ubyte[]  dst)
-	{
-		dst[3] = cast(ubyte)(word);
-		dst[2] = cast(ubyte)(word >>> 8);
-		dst[1] = cast(ubyte)(word >>> 16);
-		dst[0]     = cast(ubyte)(word >>> 24);
-	}
-
 	/**
 	 * Encrypt one block of plaintext.
 	 *
 	 */
 	private void encryptBlock(in ubyte[]  input, ubyte[]  output) nothrow @nogc
 	{
-		X3 = bytesToWord(input[0..4]);
-		X2 = bytesToWord(input[4..8]);
-		X1 = bytesToWord(input[8..12]);
-		X0 = bytesToWord(input[12..16]);
+		X3 = fromBigEndian!uint(input[0..4]);
+		X2 = fromBigEndian!uint(input[4..8]);
+		X1 = fromBigEndian!uint(input[8..12]);
+		X0 = fromBigEndian!uint(input[12..16]);
 
 		sb0(wKey[0] ^ X0, wKey[1] ^ X1, wKey[2] ^ X2, wKey[3] ^ X3);
 		LT();
@@ -418,10 +402,10 @@ private:
 		LT();
 		sb7(wKey[124] ^ X0, wKey[125] ^ X1, wKey[126] ^ X2, wKey[127] ^ X3);
 
-		wordToBytes(wKey[131] ^ X3, output[0..4]);
-		wordToBytes(wKey[130] ^ X2, output[4..8]);
-		wordToBytes(wKey[129] ^ X1, output[8..12]);
-		wordToBytes(wKey[128] ^ X0, output[12..16]);
+		toBigEndian!uint(wKey[131] ^ X3, output[0..4]);
+		toBigEndian!uint(wKey[130] ^ X2, output[4..8]);
+		toBigEndian!uint(wKey[129] ^ X1, output[8..12]);
+		toBigEndian!uint(wKey[128] ^ X0, output[12..16]);
 	}
 
 	/**
@@ -430,10 +414,10 @@ private:
 	 */
 	private void decryptBlock(in ubyte[]  input, ubyte[]  output) nothrow @nogc
 	{
-		X3 = wKey[131] ^ bytesToWord(input[0..4]);
-		X2 = wKey[130] ^ bytesToWord(input[4..8]);
-		X1 = wKey[129] ^ bytesToWord(input[8..12]);
-		X0 = wKey[128] ^ bytesToWord(input[12..16]);
+		X3 = wKey[131] ^ fromBigEndian!uint(input[0..4]);
+		X2 = wKey[130] ^ fromBigEndian!uint(input[4..8]);
+		X1 = wKey[129] ^ fromBigEndian!uint(input[8..12]);
+		X0 = wKey[128] ^ fromBigEndian!uint(input[12..16]);
 
 		ib7(X0, X1, X2, X3);
 		X0 ^= wKey[124];
@@ -623,10 +607,10 @@ private:
 		inverseLT();
 		ib0(X0, X1, X2, X3);
 
-		wordToBytes(X3 ^ wKey[3], output[0..4]);
-		wordToBytes(X2 ^ wKey[2], output[4..8]);
-		wordToBytes(X1 ^ wKey[1], output[8..12]);
-		wordToBytes(X0 ^ wKey[0], output[12..16]);
+		toBigEndian!uint(X3 ^ wKey[3], output[0..4]);
+		toBigEndian!uint(X2 ^ wKey[2], output[4..8]);
+		toBigEndian!uint(X1 ^ wKey[1], output[8..12]);
+		toBigEndian!uint(X0 ^ wKey[0], output[12..16]);
 	}
 
 	/**
