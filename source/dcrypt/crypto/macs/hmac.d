@@ -42,7 +42,7 @@ public:
 			if(macKey.length > blockSize) {
 				ubyte[blockSize] key;
 				digest.start();
-				digest.update(macKey);
+				digest.put(macKey);
 				digest.finish(key);
 				iKey[] ^= key[];
 				oKey[] ^= key[];
@@ -56,7 +56,7 @@ public:
 			digest.start();
 		}
 
-		digest.update(iKey);
+		digest.put(iKey);
 		
 		initialized = true;
 	}

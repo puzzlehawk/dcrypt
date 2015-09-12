@@ -6,6 +6,49 @@ import dcrypt.exceptions;
 import std.datetime;
 import std.algorithm: min;
 import std.exception: enforce;
+
+
+
+unittest {
+	
+	// test vectors from http://tools.ietf.org/html/rfc6070
+	
+	import dcrypt.crypto.digests.sha1;
+	import dcrypt.util.encoders.hex;
+	import std.datetime: StopWatch;
+
+	PBKDF2!SHA1 gen;
+	
+	const ubyte[] pass = cast(const ubyte[]) "password";
+	const ubyte[] salt = cast(const ubyte[]) "salt";
+
+	ubyte[20] key;
+
+	gen.start(pass, salt, 1);
+	gen.nextBytes(key);
+	assert(key == x"0c60c80f961f0e71f3a9b524af6012062fe037a6", "PKCS5S2 PBKDF2 failed!");
+
+	gen.start(pass, salt, 2);
+	gen.nextBytes(key);
+	assert(key == x"ea6c014dc72d6f8ccd1ed92ace1d41f0d8de8957", "PKCS5S2 PBKDF2 failed!");
+
+	gen.start(pass, salt, 4096);
+	gen.nextBytes(key);
+	assert(key == x"4b007901b765489abead49d926f721d065a429c1", "PKCS5S2 PBKDF2 failed!");
+	
+	uint iterTime = 10; // milli seconds
+	gen.start(pass, salt, 0, iterTime);
+	
+	StopWatch sw;
+	sw.start();
+	gen.nextBytes(key);
+	sw.stop();
+	
+	assert(sw.peek().msecs() >= iterTime, "PBKDF2 terminated too fast");
+	//assert(gen.getIterationCount() > 0, "failed to do any iterations in given time");
+}
+
+
 /**
  * Generator for PBE derived keys and ivs as defined by PKCS 5 V2.0 Scheme 2.
  * This generator uses a SHA-1 HMac as the calculation function.
@@ -17,36 +60,6 @@ import std.exception: enforce;
 @safe
 public struct PBKDF2(D) if(isDigest!D)
 {
-
-	//	unittest {
-	//		
-	//		// test vectors from http://tools.ietf.org/html/rfc6070
-	//		
-	//		import dcrypt.crypto.digests.sha1;
-	//		import dcrypt.crypto.params.keyparameter;
-	//		import dcrypt.util.encoders.hex;
-	//		import std.datetime: StopWatch;
-	//		
-	//		PKCS5S2ParametersGenerator gen = new PKCS5S2ParametersGenerator(new SHA1Digest());
-	//		
-	//		ubyte[] pass = PKCS5PasswordToBytes("password");
-	//		ubyte[] salt = PKCS5PasswordToBytes("salt");
-	//		
-	//		gen.init(pass, salt, 2);
-	//		KeyParameter key = gen.generateDerivedParameters(20*8);
-	//		assert(key.getKey() == hexDecode("ea6c014dc72d6f8ccd1ed92ace1d41f0d8de8957"), "PKCS5S2 PBKDF2 failed!");
-	//		
-	//		uint iterTime = 10; // milli seconds
-	//		gen.init(pass, salt, 0, iterTime);
-	//		
-	//		StopWatch sw;
-	//		sw.start();
-	//		key = gen.generateDerivedParameters(20*8);
-	//		sw.stop();
-	//		
-	//		assert(sw.peek().msecs() >= iterTime, "PBKDF2 terminated too fast");
-	//		assert(gen.getIterationCount() > 0, "failed to do any iterations in given time");
-	//	}
 
 	enum name = "PBKDF2-"~(HMac!D).name;
 
@@ -72,6 +85,11 @@ public struct PBKDF2(D) if(isDigest!D)
 		this.iterTime = iterTime;
 
 		hMac.start(password);
+
+		counter[] = 0;
+		stateOff = state.length;
+		state[] = 0;
+
 		initialized = true;
 	}
 
@@ -112,7 +130,7 @@ private:
 	
 	/// 
 	/// msTime = Time in milliseconds.
-	ubyte[hMac.macSize] genBlock(in ubyte[] salt, in ubyte[] counter, ulong iterCount, ulong iterTime = 0) 
+	ubyte[hMac.macSize] genBlock(in ubyte[] salt, in ubyte[] counter, ulong iterCount, ulong iterTime = 0)
 	in {
 		assert(initialized, name~" not initialized.");
 		if(iterCount == 0) {
