@@ -1,6 +1,6 @@
 module dcrypt.crypto.random.fortuna.fortuna;
 
-public import dcrypt.crypto.random.prng;
+public import dcrypt.crypto.random.drng;
 public import dcrypt.crypto.blockcipher;
 public import dcrypt.crypto.digest;
 
@@ -14,12 +14,12 @@ import std.datetime;
 
 
 /// OOP wrapper
-public alias WrapperPRNG!(FortunaCore!(AES, SHA256)) FortunaRNG;
-public alias FortunaCore!(AES, SHA256) Fortuna;
+public alias WrapperPRNG!Fortuna FortunaRNG;
+public alias FortunaCore!(FortunaGenerator!(AES, SHA256)) Fortuna;
 
 /// Get some random bytes from Fortuna.
 unittest {
-	FortunaCore!(AES, SHA256) fortuna;
+	FortunaCore!(FortunaGenerator!(AES, SHA256)) fortuna;
 
 	ubyte[61] buf1;
 	ubyte[buf1.length] buf2;
@@ -90,7 +90,7 @@ private shared static this() {
 }
 
 
-static assert(isRNG!(FortunaCore!(AES, SHA256)), "Fortuna does not meet requirements for PRNGs.");
+static assert(isRNGWithInput!(FortunaCore!(FortunaGenerator!(AES, SHA256))), "Fortuna does not meet requirements for PRNGs.");
 
 /// FortunaCore is meant to be the mothership of the PRNGs. It should run as a singleton -
 /// one instance per application that handles the accumulator and entropy sources.
@@ -99,16 +99,17 @@ static assert(isRNG!(FortunaCore!(AES, SHA256)), "Fortuna does not meet requirem
 /// Cipher = A block cipher.
 /// Digest = A hash algorithm.
 @safe
-private struct FortunaCore(Cipher, Digest) if(isBlockCipher!Cipher && isDigest!Digest)  {
+private struct FortunaCore(RNGWithInput) if(isRNGWithInput!RNGWithInput)  {
 nothrow:
 	
 	public {
 
 		enum name = "FortunaCore";
+		enum isDeterministic = true;
 
 		/// Add entropy to generators state but not to the accumulator.
 		@safe
-		void addSeed(in ubyte[] seed) nothrow @nogc {
+		void addSeed(in ubyte[] seed...) nothrow @nogc {
 			// pass this call directly to the generator
 			prng.addSeed(seed);
 		}
@@ -123,7 +124,7 @@ nothrow:
 	private {
 		enum minReseedInterval = 100; /// minimal time in ms between reseeds
 
-		FortunaGenerator!(Cipher, Digest) prng;
+		RNGWithInput prng;
 
 		size_t reseedCount = 0; /// increment each time reseed() is called
 		ulong lastReseed = 0; /// time of the last reseed in ms

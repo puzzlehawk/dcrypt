@@ -41,10 +41,6 @@ public struct RDRand {
 	public static bool isSupported() nothrow @nogc {
 		return hasRdrand();
 	}
-
-	/// Dummy function. Has no effect at all.
-	public void addSeed(in ubyte[]) nothrow @nogc pure {}
-
 	
 	/// Generate random data with rdrand instruction.
 	/// Params:
