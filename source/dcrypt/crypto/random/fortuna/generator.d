@@ -48,7 +48,7 @@ static assert(isDRNGWithInput!(FortunaGenerator!(AES, SHA256)), "FortunaGenerato
 public struct FortunaGenerator(Cipher, Digest) if(isBlockCipher!Cipher && isDigest!Digest && Digest.digestLength == 32)
 {
 	// PRNG interface implementation
-	public nothrow {
+	public nothrow @nogc {
 
 		this(ubyte[] seed...) @nogc {
 			addSeed(seed);

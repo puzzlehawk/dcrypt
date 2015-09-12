@@ -18,7 +18,7 @@ import std.traits: isIntegral;
 @safe @nogc nothrow
 template isDRNG(T)
 {
-	enum bool isDRNG = isRNG!T && // isInputRange!T &&
+	enum bool isDRNG = isRNG!T &&
 			T.isDeterministic &&
 			is(typeof(
 					{
@@ -57,11 +57,11 @@ alias HashDRNG!(SHA512, 888) HashDRNG_SHA512;
 
 static assert(isDRNG!HashDRNG_SHA256 && isRNGWithInput!HashDRNG_SHA256 , HashDRNG.name~" is no DRNG.");
 
-/// Standard: NIST SP 800-90A
+/// Standard: NIST SP800-90A, HashDRBG
 /// 
 /// Params:
 /// D = The underlying digest.
-/// seedlen = Length of internal state in bits.
+/// seedlen = Length of internal state in bits. See NIST SP800-90A, Section 10.1.
 @safe
 struct HashDRNG(D, uint seedlen) if(isStdDigest!D && seedlen % 8 == 0) {
 
