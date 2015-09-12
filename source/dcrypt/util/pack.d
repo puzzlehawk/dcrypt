@@ -25,7 +25,7 @@ body {
 		// data is already in memory as we want
 		return (cast(const T[])bs)[0];
 	}else {
-		T n = 0;
+		Unqual!T n = 0;
 		static if (T.sizeof >= short.sizeof) {
 			n |= bs[0];
 			n <<= 8;
@@ -67,7 +67,7 @@ body {
 		// data is already in memory as we want
 		return (cast(const T[])bs)[0];
 	}else {
-		T n = 0;
+		Unqual!T n = 0;
 		static if (T.sizeof >= short.sizeof) {
 			n |= bs[0];
 			n |= cast(T)bs[1] << 8;
@@ -151,7 +151,7 @@ in {
 	assert(output.length >= T.sizeof, "output buffer too small");
 }
 body {
-	T n = val;
+	Unqual!T n = val;
 	uint off = 0;
 	
 	static if(T.sizeof == long.sizeof) {
@@ -189,7 +189,7 @@ in {
 	assert(output.length >= T.sizeof, "output buffer too small");
 }
 body {
-	T n = val;
+	Unqual!T n = val;
 	output[0] = cast (ubyte) (n);
 	n >>>= 8;
 	static if(T.sizeof >= short.sizeof) {
@@ -230,7 +230,7 @@ body {
 		const ubyte[] casted = cast(const ubyte []) ns;
 		output[] = casted[];
 	}else{
-		foreach(i, T n; ns) {
+		foreach(i, const T n; ns) {
 			toBigEndian!T(n, output[T.sizeof * i .. $]);
 		}
 	}
@@ -253,13 +253,13 @@ body {
 		const ubyte[] casted = cast(const ubyte []) ns;
 		output[] = casted[];
 	}else{
-		foreach(i, T n; ns) {
+		foreach(i, const T n; ns) {
 			toLittleEndian!T(n, output[T.sizeof * i .. $]);
 		}
 	}
 }
 
-ubyte[T.sizeof] toBigEndian(T)(T n) pure nothrow @nogc
+ubyte[T.sizeof] toBigEndian(T)(in T n) pure nothrow @nogc
 	if(isIntegral!T)
 {
 	ubyte[T.sizeof] bs;
@@ -275,7 +275,7 @@ ubyte[] toBigEndian(T)(in T[] ns) if(isIntegral!T)
 }
 
 
-ubyte[T.sizeof] toLittleEndian(T)(T n) pure nothrow @nogc
+ubyte[T.sizeof] toLittleEndian(T)(in T n) pure nothrow @nogc
 	if(isIntegral!T)
 {
 	ubyte[T.sizeof] bs;
