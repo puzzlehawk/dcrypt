@@ -9,7 +9,7 @@ import dcrypt.crypto.digests.sha1;
 import dcrypt.crypto.digests.sha2;
 import dcrypt.crypto.digests.sha3;
 
-import dcrypt.crypto.generators.pkcs5s2;
+import dcrypt.crypto.pbe.pbkdf2;
 
 import dcrypt.crypto.blockcipher;
 import dcrypt.crypto.engines.aes;

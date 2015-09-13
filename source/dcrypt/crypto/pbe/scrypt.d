@@ -1,11 +1,11 @@
-﻿module dcrypt.crypto.generators.scrypt;
+﻿module dcrypt.crypto.pbe.scrypt;
 
 import std.range;
 import std.parallelism;
 
 import dcrypt.crypto.engines.salsa;
 import dcrypt.crypto.digests.sha2;
-import dcrypt.crypto.generators.pkcs5s2;
+import dcrypt.crypto.pbe.pbkdf2;
 import dcrypt.util.pack;
 
 

@@ -1,4 +1,4 @@
-module dcrypt.crypto.generators.pkcs5s2;
+module dcrypt.crypto.pbe.pbkdf2;
 
 import dcrypt.crypto.macs.hmac;
 import dcrypt.crypto.digest;
@@ -6,7 +6,6 @@ import dcrypt.exceptions;
 import dcrypt.util.pack;
 import std.datetime;
 import std.algorithm: min;
-import std.exception: enforce;
 
 
 
