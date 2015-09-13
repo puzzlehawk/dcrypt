@@ -12,7 +12,6 @@ static {
 	static assert(isMAC!(HMac!SHA256), "HMac is not a valid MAC");
 }
 
-
 @safe
 public struct HMac(D) if(isDigest!D) {
 
@@ -193,7 +192,7 @@ version(unittest) {
 	/// AssertionError	if generated hash != expected hash
 	@safe
 	public void testHMac(Digest)(string[] hexKeys, string[] hexData, string[] hexHashes) 
-	if(isDigest!Digest) {
+	if(isStdDigest!Digest) {
 		foreach (i; 0 .. hexData.length)
 		{
 			HMac!Digest mac;
