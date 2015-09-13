@@ -58,164 +58,161 @@ e6 1e 85 dc 0d 65 1e 40 df cf 01 7b 45 57 58 87");
 
 }
 
-@safe
-{
+@safe:
 
-	// TODO Validate arguments
-	///
-	/// implementation of https://www.tarsnap.com/scrypt/scrypt.pdf
-	/// 		
-	/// Params:
-	/// output = Output buffer for derived key. Buffer length defines the key length. Lenght < 2^32.
-	/// pass = password
-	/// salt = cryptographic salt
-	/// N = CPU/memory cost parameter
-	/// r = block size parameter
-	/// p = parallelization parameter. p <= (2^32-1)*hashLen/MFLen
-	/// 
-	@safe
-	public void scrypt(ubyte[] output, in ubyte[] pass, in ubyte[] salt, in uint N, in uint r, in uint p)
-	in {
-		assert(p <= ((1L<<32)-1)*32/(r * 128), "parallelization parameter p too large");
-		assert(output.length < 1L<<32, "dkLen must be smaller than 2^32");
-	}
-	body {
+// TODO Validate arguments
+///
+/// implementation of https://www.tarsnap.com/scrypt/scrypt.pdf
+/// 		
+/// Params:
+/// output = Output buffer for derived key. Buffer length defines the key length. Lenght < 2^32.
+/// pass = password
+/// salt = cryptographic salt
+/// N = CPU/memory cost parameter
+/// r = block size parameter
+/// p = parallelization parameter. p <= (2^32-1)*hashLen/MFLen
+/// 
+public void scrypt(ubyte[] output, in ubyte[] pass, in ubyte[] salt, in uint N, in uint r, in uint p)
+in {
+	assert(p <= ((1L<<32)-1)*32/(r * 128), "parallelization parameter p too large");
+	assert(output.length < 1L<<32, "dkLen must be smaller than 2^32");
+}
+body {
 
-		MFCrypt(output, pass, salt, N, r, p);
-		
-	}
+	MFCrypt(output, pass, salt, N, r, p);
+	
+}
 
 private:
 
-	// TODO Validate arguments
-	///
-	/// implementation of https://www.tarsnap.com/scrypt/scrypt.pdf
-	/// 		
-	/// Params:
-	/// output = output buffer.
-	/// pass = password
-	/// salt = cryptographic salt
-	/// N = CPU/memory cost parameter
-	/// r = block size parameter
-	/// p = parallelization parameter. p <= (2^32-1)*hashLen/MFLen
-	/// dkLen = length in octets of derived key. dkLen < 2^32
-	/// 
-	/// Returns: Derived key.
-	/// 
-	@safe
-	void MFCrypt(ubyte[] output, in ubyte[] pass, in ubyte[] salt, uint N, uint r, uint p)
-	in {
-		assert(p <= ((1L<<32)-1)*32/(r * 128), "parallelization parameter p too large");
-		assert(output.length < 1L<<32, "dkLen must be smaller than 2^32");
+// TODO Validate arguments
+///
+/// implementation of https://www.tarsnap.com/scrypt/scrypt.pdf
+/// 		
+/// Params:
+/// output = output buffer.
+/// pass = password
+/// salt = cryptographic salt
+/// N = CPU/memory cost parameter
+/// r = block size parameter
+/// p = parallelization parameter. p <= (2^32-1)*hashLen/MFLen
+/// dkLen = length in octets of derived key. dkLen < 2^32
+/// 
+/// Returns: Derived key.
+/// 
+@safe
+void MFCrypt(ubyte[] output, in ubyte[] pass, in ubyte[] salt, uint N, uint r, uint p)
+in {
+	assert(p <= ((1L<<32)-1)*32/(r * 128), "parallelization parameter p too large");
+	assert(output.length < 1L<<32, "dkLen must be smaller than 2^32");
+}
+body {
+	uint MFLenBytes = r * 128;
+	ubyte[] bytes = new ubyte[p * MFLenBytes];
+	SingleIterationPBKDF2(pass, salt, bytes);
+	
+	size_t BLen = bytes.length >>> 2;
+	uint[] B = new uint[BLen];
+	
+	// wipe data on exit
+	scope (exit) {
+		bytes[] = 0;
+		B[] = 0;
 	}
-	body {
-		uint MFLenBytes = r * 128;
-		ubyte[] bytes = new ubyte[p * MFLenBytes];
-		SingleIterationPBKDF2(pass, salt, bytes);
-		
-		size_t BLen = bytes.length >>> 2;
-		uint[] B = new uint[BLen];
-		
-		// wipe data on exit
-		scope (exit) {
-			bytes[] = 0;
-			B[] = 0;
-		}
-		
-		fromLittleEndian(bytes, B);
-		
-		uint MFLenWords = MFLenBytes >>> 2;
-		
-		
-		if(p > 1) {
-			// do parallel computations
-			parallSMix(B, MFLenWords, N, r);
-		} else {
-			// don't use parallelism
-			foreach(chunk; chunks(B, MFLenWords)) {
-				SMix(chunk, N, r);
-			}
-		}
-
-		toLittleEndian(B, bytes);
-		
-		SingleIterationPBKDF2(pass, bytes, output);
-	}
-
-	@trusted
-	void parallSMix(uint[] B, uint MFLenWords, uint N, uint r) {
+	
+	fromLittleEndian(bytes, B);
+	
+	uint MFLenWords = MFLenBytes >>> 2;
+	
+	
+	if(p > 1) {
 		// do parallel computations
-		foreach(chunk; parallel(chunks(B, MFLenWords))) {
+		parallSMix(B, MFLenWords, N, r);
+	} else {
+		// don't use parallelism
+		foreach(chunk; chunks(B, MFLenWords)) {
 			SMix(chunk, N, r);
 		}
 	}
 
-	void SingleIterationPBKDF2(in ubyte[] P, in ubyte[] S, ubyte[] output)
+	toLittleEndian(B, bytes);
+	
+	SingleIterationPBKDF2(pass, bytes, output);
+}
+
+@trusted
+void parallSMix(uint[] B, uint MFLenWords, uint N, uint r) {
+	// do parallel computations
+	foreach(chunk; parallel(chunks(B, MFLenWords))) {
+		SMix(chunk, N, r);
+	}
+}
+
+void SingleIterationPBKDF2(in ubyte[] P, in ubyte[] S, ubyte[] output)
+{
+	pbkdf2!SHA256(output, P, S, 1);
+}
+
+void SMix(uint[] B, in uint N, in uint r) pure nothrow
+{
+	uint BCount = r * 32;
+
+	uint[16] blockX1;
+	uint[16] blockX2;
+	uint[] blockY = new uint[BCount];
+	
+	uint[] X = new uint[BCount];
+	uint[][] V = new uint[][N];
+
+	// wipe data on exit
+	scope (exit) {
+		foreach(ref v;V) {
+			v[] = 0;
+		}
+		X[] = 0;
+		blockX1[] = 0;
+		blockX2[] = 0;
+		blockY[] = 0;
+	}
+
+	X[] = B[0..BCount];
+
+	for (uint i = 0; i < N; ++i)
 	{
-		pbkdf2!SHA256(output, P, S, 1);
+		V[i] = X.dup;
+		BlockMix(X, blockX1, blockX2, blockY, r);
 	}
 	
-	void SMix(uint[] B, in uint N, in uint r) pure nothrow
+	uint mask = N - 1;
+	for (uint i = 0; i < N; ++i)
 	{
-		uint BCount = r * 32;
-
-		uint[16] blockX1;
-		uint[16] blockX2;
-		uint[] blockY = new uint[BCount];
-		
-		uint[] X = new uint[BCount];
-		uint[][] V = new uint[][N];
-
-		// wipe data on exit
-		scope (exit) {
-			foreach(ref v;V) {
-				v[] = 0;
-			}
-			X[] = 0;
-			blockX1[] = 0;
-			blockX2[] = 0;
-			blockY[] = 0;
-		}
-
-		X[] = B[0..BCount];
-
-		for (uint i = 0; i < N; ++i)
-		{
-			V[i] = X.dup;
-			BlockMix(X, blockX1, blockX2, blockY, r);
-		}
-		
-		uint mask = N - 1;
-		for (uint i = 0; i < N; ++i)
-		{
-			uint j = X[BCount - 16] & mask;
-			X[] ^= V[j][];
-			BlockMix(X, blockX1, blockX2, blockY, r);
-		}
-
-		B[0..BCount] = X[];
-		
+		uint j = X[BCount - 16] & mask;
+		X[] ^= V[j][];
+		BlockMix(X, blockX1, blockX2, blockY, r);
 	}
+
+	B[0..BCount] = X[];
 	
-	void BlockMix(uint[] B, uint[] X1, uint[] X2, uint[] Y, int r) pure nothrow @nogc
-	body {
+}
 
-		X1[0..16] = B[$-16..$];
+void BlockMix(uint[] B, uint[] X1, uint[] X2, uint[] Y, int r) pure nothrow @nogc
+body {
+
+	X1[0..16] = B[$-16..$];
+	
+	size_t BOff = 0, YOff = 0, halfLen = B.length >>> 1;
+	
+	for (int i = 2 * r; i > 0; --i)
+	{
+		X2[] = B[BOff..$] ^ X1[];
+
+		salsaCore!8(X2, X1);
+
+		Y[YOff..YOff+16] = X1[0..16];
 		
-		size_t BOff = 0, YOff = 0, halfLen = B.length >>> 1;
-		
-		for (int i = 2 * r; i > 0; --i)
-		{
-			X2[] = B[BOff..$] ^ X1[];
-
-			salsaCore!8(X2, X1);
-
-			Y[YOff..YOff+16] = X1[0..16];
-			
-			YOff = halfLen + BOff - YOff;
-			BOff += 16;
-		}
-
-		B[0..Y.length] = Y[];
+		YOff = halfLen + BOff - YOff;
+		BOff += 16;
 	}
+
+	B[0..Y.length] = Y[];
 }
