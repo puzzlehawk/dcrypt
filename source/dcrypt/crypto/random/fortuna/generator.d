@@ -100,7 +100,7 @@ public struct FortunaGenerator(Cipher, Digest) if(isBlockCipher!Cipher && isDige
 			Digest digest;
 			digest.put(key);
 			digest.put(seed);
-			digest.finish(key);
+			key = digest.finish();
 
 			updateKey();
 

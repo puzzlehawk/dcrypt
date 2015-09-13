@@ -78,12 +78,9 @@ if(bitLength == 256 || bitLength == 384 || bitLength == 512) {
 	}
 
 	/// Calculate the final hash value.
-	/// Params:
-	/// output = buffer for hash value.
-	/// Returns: Slice of `output` containing the hash.
-	ubyte[] finish(ubyte[] output) nothrow @nogc
-	{
-		
+	/// Returns: the hash value
+	ubyte[digestLength] finish() nothrow @nogc {
+		ubyte[digestLength] output;
 		_finish();
 		
 		// pack the integers into a byte array
@@ -105,15 +102,7 @@ if(bitLength == 256 || bitLength == 384 || bitLength == 512) {
 		
 		start();
 		
-		return output[0..digestLength];
-	}
-
-	/// Calculate the final hash value.
-	/// Returns: the hash value
-	ubyte[digestLength] finish() nothrow @nogc {
-		ubyte[digestLength] buf;
-		finish(buf);
-		return buf;
+		return output;
 	}
 
 	

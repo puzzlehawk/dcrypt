@@ -24,11 +24,9 @@ public struct HMac(D, uint blockSize = D.blockSize) if(isStdDigest!D) {
 	
 public:
 
-	public enum name = D.name ~ "/HMAC";
-	public enum macSize = D.digestLength;
-	enum blockSize = D.blockSize;
+	public enum name = "HMAC-"~D.name;
+	public enum macSize = digestLength!D;
 
-	
 	/**
 	 * Params: keyParam = the HMac key
 	 */
@@ -48,7 +46,7 @@ public:
 				ubyte[blockSize] key;
 				digest.start();
 				digest.put(macKey);
-				digest.finish(key);
+				key[0..digestLength!D] = digest.finish();
 				iKey[] ^= key[];
 				oKey[] ^= key[];
 			} else {
@@ -87,12 +85,12 @@ public:
 	 * call leaves the MAC reset(). */
 	@safe
 	ubyte[] finish(ubyte[] output) nothrow @nogc {
-		digest.finish(iHash);
+		iHash = digest.finish();
 		digest.put(oKey);
 
 		digest.put(iHash);
 
-		digest.finish(output);
+		output[0..macSize] = digest.finish();
 		
 		digest.put(iKey);
 		

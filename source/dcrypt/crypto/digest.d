@@ -4,6 +4,7 @@ import std.range: isOutputRange;
 import std.range: OutputRange;
 
 public import std.digest.digest: isStdDigest = isDigest;
+import std.traits: ReturnType;
 
 // TODO compatibility with std.digest?
 
@@ -11,7 +12,7 @@ template isDigest(T)
 {
 	enum bool isDigest =
 		isStdDigest!T &&
-		is(T == struct) &&
+			is(T == struct) &&
 			isOutputRange!(T, ubyte) && isOutputRange!(T, const(ubyte)[]) &&
 			is(typeof(
 					{
@@ -23,7 +24,6 @@ template isDigest(T)
 						dig.put(cast(ubyte)0, cast(ubyte)0);		// variadic function
 						dig.put(cast(const (ubyte)[]) data);		// can add bytes
 
-						ubyte[] result = dig.finish(data);				// can extract the hash value
 						ubyte[T.digestLength] hash = dig.finish();					// has finish
 
 						uint digestSize = T.digestLength;			// knows the length of the hash value in bytes. TODO use size in bits
@@ -35,13 +35,25 @@ template isDigest(T)
 
 /// Calculate the final hash value.
 /// Returns: the hash value
-mixin template finish() {
-	@safe @nogc nothrow
-	ubyte[digestLength] finish() {
-		ubyte[digestLength] buf;
-		doFinal(buf);
-		return buf;
-	}
+//mixin template finish() {
+//	@safe @nogc nothrow
+//	ubyte[digestLength] finish() {
+//		ubyte[digestLength] buf;
+//		doFinal(buf);
+//		return buf;
+//	}
+//}
+
+//unittest {
+//	import dcrypt.crypto.digests.sha2: SHA256;
+//	ubyte[32] buf;
+//	SHA256 digest;
+//	digest.finish(buf);
+//}
+//
+public ubyte[] finishTo(D)(ref D digest, ubyte[] output) if(isDigest!D) {
+	output[0..D.digestLength] = digest.finish();
+	return output[0..D.digestLength];
 }
 
 template digestLength(T) if(isStdDigest!T)
@@ -49,10 +61,15 @@ template digestLength(T) if(isStdDigest!T)
 	enum size_t digestLength = (ReturnType!(T.finish)).length;
 }
 
+
 template name(T) if(isStdDigest!T)
 {
 	import std.conv: text;
-	enum string name = text(typeid(T));
+	static if(is(typeof({string name = T.name;}))) {
+		enum string name = T.name;
+	} else {
+		enum string name = text("NoNameDigest");
+	}
 }
 
 /// Variadic 'put' helper function for digests.
@@ -67,7 +84,7 @@ template name(T) if(isStdDigest!T)
 /// 	hash.putAll(cast(ubyte) 0x01, buf, buf[0..2]);
 @safe
 public void putAll(D, T...)(ref D digest, in T data) nothrow @nogc
-	if(isStdDigest!D) {
+if(isStdDigest!D) {
 	foreach(d; data) {
 		digest.put(d);
 	}
@@ -86,7 +103,7 @@ public abstract class Digest {
 	 */
 	@safe @property
 	public uint digestLength() pure nothrow @nogc;
-		
+	
 	/**
 	 Used for padding (i.e. in HMacs)
 	 Returns: the block size or 0 if the Digest is not block based
@@ -174,12 +191,13 @@ if(isDigest!T) {
 		return T.blockSize;
 	}
 
-
+	
 	/// Close the digest, producing the final digest value and resetting the digest.
 	/// Returns: Slice to the hash in output buffer.
 	@safe
 	public override ubyte[] finish(ubyte[] output) nothrow @nogc {
-		return digest.finish(output);
+		output[0..T.digestLength] = digest.finish();
+		return output[0..T.digestLength];
 	}
 
 	/// reset the digest back to it's initial state.

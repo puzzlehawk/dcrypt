@@ -80,9 +80,10 @@ public:
 		}
 	}
 
-	/// Returns: Slice of `output` containing the hash.
-	ubyte[] finish(ubyte[] output) nothrow @nogc
+	/// Returns: The final hash value.
+	ubyte[digestLength] finish() nothrow @nogc
 	{
+		ubyte[digestLength] output;
 		immutable size_t bitLen = byteCount * 8;
 		// add the pad bytes.
 		put(128);
@@ -104,13 +105,7 @@ public:
 
 		start();
 
-		return output[0..digestLength];
-	}
-
-	ubyte[digestLength] finish() nothrow @nogc {
-		ubyte[digestLength] hash;
-		finish(hash);
-		return hash;
+		return output;
 	}
 
 	/// Reset SHA1.
