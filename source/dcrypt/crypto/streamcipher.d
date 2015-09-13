@@ -153,7 +153,7 @@ in {
 }
 body {
 	import std.conv: text;
-	import dcrypt.util.encoders.hex;
+	import dcrypt.encoders.hex;
 	alias const(ubyte)[] octets;
 
 	ubyte[] buf;

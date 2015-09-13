@@ -6,8 +6,8 @@ public import dcrypt.crypto.random.prng;
 import dcrypt.crypto.digest;
 import dcrypt.crypto.digests.sha1;
 import dcrypt.crypto.digests.sha2;
-import dcrypt.util.pack;
-import dcrypt.util.util: wipe;
+import dcrypt.bitmanip;
+import dcrypt.util: wipe;
 import std.algorithm: min;
 import std.traits: isIntegral;
 

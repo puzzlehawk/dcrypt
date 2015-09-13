@@ -3,7 +3,7 @@ module dcrypt.crypto.pbe.pbkdf2;
 import dcrypt.crypto.macs.hmac;
 import dcrypt.crypto.digest;
 import dcrypt.exceptions;
-import dcrypt.util.pack;
+import dcrypt.bitmanip;
 import std.datetime;
 import std.algorithm: min;
 
@@ -14,7 +14,7 @@ unittest {
 	// test vectors from http://tools.ietf.org/html/rfc6070
 	
 	import dcrypt.crypto.digests.sha1;
-	import dcrypt.util.encoders.hex;
+	import dcrypt.encoders.hex;
 	import std.datetime: StopWatch;
 
 	const ubyte[] pass = cast(const ubyte[]) "password";

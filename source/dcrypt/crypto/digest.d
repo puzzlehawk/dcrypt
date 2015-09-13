@@ -232,7 +232,7 @@ version(unittest) {
 	/// AssertionError	if generated hash != expected hash
 	@safe
 	public void testDigest(Digest d, in string[] plaintext, in  string[] hashes) {
-		import dcrypt.util.encoders.hex;
+		import dcrypt.encoders.hex;
 		import std.conv: text;
 		
 		foreach (i; 0 .. plaintext.length)

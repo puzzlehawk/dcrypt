@@ -3,7 +3,7 @@
 
 import dcrypt.crypto.digests.sha2;
 import dcrypt.crypto.digest;
-import dcrypt.util.pack;
+import dcrypt.bitmanip;
 
 private enum minPoolSize = 64;	/// return empty entropy if pool0's size is < MINPOOLSIZE
 private enum bufferSize = 32;	/// size of the output buffer and internal state

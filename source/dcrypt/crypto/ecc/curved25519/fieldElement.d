@@ -1,6 +1,6 @@
 ﻿module dcrypt.crypto.ecc.curved25519.fieldElement;
 
-import dcrypt.util.pack;
+import dcrypt.bitmanip;
 
 @safe nothrow @nogc:
 

@@ -1,8 +1,7 @@
 module dcrypt.crypto.engines.rc6;
 
 import dcrypt.crypto.blockcipher;
-import dcrypt.util.bitmanip;
-import dcrypt.util.pack;
+import dcrypt.bitmanip;
 
 /// test the RC6 block cipher engine
 unittest {

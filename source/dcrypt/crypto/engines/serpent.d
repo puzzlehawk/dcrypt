@@ -1,8 +1,8 @@
 module dcrypt.crypto.engines.serpent;
 
 import dcrypt.crypto.blockcipher;
-import dcrypt.util.bitmanip;
-import dcrypt.util.pack;
+import dcrypt.bitmanip;
+
 /// Test serpent engine. Test vectors generated with BouncyCastle implementation.
 unittest {
 	

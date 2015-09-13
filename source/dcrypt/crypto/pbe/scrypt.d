@@ -6,7 +6,7 @@ import std.parallelism;
 import dcrypt.crypto.engines.salsa;
 import dcrypt.crypto.digests.sha2;
 import dcrypt.crypto.pbe.pbkdf2;
-import dcrypt.util.pack;
+import dcrypt.bitmanip;
 
 
 /// generate a 256 bit key

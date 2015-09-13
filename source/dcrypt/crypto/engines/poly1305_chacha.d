@@ -7,7 +7,7 @@
 import dcrypt.crypto.modes.aead;
 import dcrypt.crypto.engines.chacha;
 import dcrypt.crypto.macs.poly1305;
-import dcrypt.util.pack;
+import dcrypt.bitmanip;
 
 // TODO: adapt to AEAD API
 static assert(isAEADCipher!Poly1305ChaCha, Poly1305ChaCha.name~" is not a valid AEAD cipher.");

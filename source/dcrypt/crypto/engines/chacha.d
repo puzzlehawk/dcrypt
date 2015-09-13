@@ -2,9 +2,8 @@
 
 import std.algorithm: min;
 
-import dcrypt.util.util;
-import dcrypt.util.bitmanip;
-import dcrypt.util.pack;
+import dcrypt.util;
+import dcrypt.bitmanip;
 
 /// Implementation of the ChaCha stream cipher as first described by D. J. Bernstein (http://cr.yp.to/chacha.html),
 /// following RFC 7539.

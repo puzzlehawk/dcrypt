@@ -2,8 +2,7 @@ module dcrypt.crypto.engines.aes;
 
 import dcrypt.crypto.blockcipher;
 import dcrypt.errors, dcrypt.exceptions;
-import dcrypt.util.pack;
-import dcrypt.util.bitmanip;
+import dcrypt.bitmanip;
 
 /// Test AES encryption and decryption of a single block with 128, 192 and 256 bits key length.
 /// test vectors from http://www.inconteam.com/software-development/41-encryption/55-aes-test-vectors
@@ -104,7 +103,7 @@ private:
 
 //	@safe @nogc nothrow
 //	~this() {
-//		import dcrypt.util.util: wipe;
+//		import dcrypt.util: wipe;
 //
 //		wipe(workingKey);
 //		wipe(C0, C1, C2, C3);

@@ -2,10 +2,10 @@
 
 public import dcrypt.crypto.streamcipher;
 
-import dcrypt.util.bitmanip: rotl=rotateLeft;
-import dcrypt.util.util: wipe;
+import dcrypt.bitmanip: rotl=rotateLeft;
+import dcrypt.util: wipe;
 
-import dcrypt.util.pack;
+import dcrypt.bitmanip;
 import dcrypt.exceptions;
 
 import std.algorithm: min;

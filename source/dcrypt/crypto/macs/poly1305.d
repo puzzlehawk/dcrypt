@@ -2,7 +2,7 @@
 
 import dcrypt.crypto.macs.mac;
 import dcrypt.crypto.blockcipher;
-import dcrypt.util.pack;
+import dcrypt.bitmanip;
 
 static assert(isMAC!(Poly1305!void), "Poly1305!void is not a valid mac.");
 

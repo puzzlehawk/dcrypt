@@ -1,7 +1,7 @@
 module dcrypt.crypto.digests.sha1;
 
 import dcrypt.crypto.digest;
-import dcrypt.util.pack;
+import dcrypt.bitmanip;
 
 unittest {
 	// test vectors from http://www.di-mgt.com.au/sha_testvectors.html

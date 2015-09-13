@@ -7,7 +7,7 @@
 /// TODO: This module is not yet tested.
 
 import dcrypt.crypto.random.prng;
-import dcrypt.util.pack;
+import dcrypt.bitmanip;
 import core.cpuid;
 import std.range: chunks;
 

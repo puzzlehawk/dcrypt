@@ -4,8 +4,7 @@
 
 public import dcrypt.crypto.digest;
 
-import dcrypt.util.bitmanip;
-import dcrypt.util.pack;
+import dcrypt.bitmanip;
 import std.conv: text;
 
 alias SHA!256 SHA256;

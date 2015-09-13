@@ -1,4 +1,4 @@
-﻿module dcrypt.util.util;
+﻿module dcrypt.util;
 
 import core.vararg;
 import std.traits;

@@ -174,7 +174,7 @@ public struct FortunaGenerator(Cipher, Digest) if(isBlockCipher!Cipher && isDige
 	}
 
 	~this() {
-		import dcrypt.util.util: wipe;
+		import dcrypt.util: wipe;
 
 		wipe(key);
 		wipe(counter);

@@ -19,7 +19,7 @@ static {
 //}
 
 @safe
-public struct HMac(D, uint blockSize = D.blockSize) if(isStdDigest!D) {
+public struct HMac(D, uint blockSize = D.blockSize) if(isDigest!D) {
 
 	
 public:
@@ -136,7 +136,7 @@ private:
 unittest {
 	import dcrypt.crypto.digests.sha2;
 	import dcrypt.crypto.digests.sha2;
-	import dcrypt.util.encoders.hex;
+	import dcrypt.encoders.hex;
 	import std.stdio;
 	
 	// test vectors from http://tools.ietf.org/html/rfc4231
@@ -183,7 +183,7 @@ version(unittest) {
 
 	// unittest helper functions
 
-	import dcrypt.util.encoders.hex;
+	import dcrypt.encoders.hex;
 	import std.conv: text;
 	
 	/// Tests Digest d with given input data and reference hashes.

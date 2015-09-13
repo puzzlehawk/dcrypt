@@ -156,7 +156,7 @@ version(unittest) {
 	///
 	@safe
 	public void blockCipherTest(BlockCipher bc, string[] keys, string[] plaintexts, string[] cipherTexts, string[] ivs = null) {
-		import dcrypt.util.encoders.hex;
+		import dcrypt.encoders.hex;
 		import std.conv: text;
 		
 		foreach (uint i, string test_key; keys)

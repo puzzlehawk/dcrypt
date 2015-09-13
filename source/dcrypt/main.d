@@ -3,7 +3,7 @@
 import std.stdio;
 import std.conv;
 import dcrypt.crypto.streamcipher;
-import dcrypt.util.encoders.hex;
+import dcrypt.encoders.hex;
 import dcrypt.crypto.digest;
 import dcrypt.crypto.digests.sha1;
 import dcrypt.crypto.digests.sha2;

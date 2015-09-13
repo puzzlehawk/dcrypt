@@ -2,7 +2,7 @@ module dcrypt.crypto.engines.aesopenssl;
 
 import dcrypt.crypto.blockcipher;
 import dcrypt.errors, dcrypt.exceptions;
-import dcrypt.util.pack;
+import dcrypt.bitmanip;
 
 unittest {
 	// test vectors from http://www.inconteam.com/software-development/41-encryption/55-aes-test-vectors
