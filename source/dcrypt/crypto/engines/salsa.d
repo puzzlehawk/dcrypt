@@ -6,7 +6,6 @@ import dcrypt.bitmanip: rotl=rotateLeft;
 import dcrypt.util: wipe;
 
 import dcrypt.bitmanip;
-import dcrypt.exceptions;
 
 import std.algorithm: min;
 import std.conv: text;
@@ -98,6 +97,8 @@ public struct Salsa(uint rounds = 20, bool xsalsa = false)
 	if(rounds == 12 || rounds == 20)
 {
 
+	@nogc nothrow:
+
 	public enum name = text(xsalsa ? "X" : "", "Salsa20/", rounds);
 
 	private {
@@ -120,7 +121,7 @@ public struct Salsa(uint rounds = 20, bool xsalsa = false)
 		
 	}
 
-	@safe @nogc nothrow
+	@safe
 	~this() {
 		wipe(engineState);
 		wipe(keyStream);
@@ -146,22 +147,25 @@ public struct Salsa(uint rounds = 20, bool xsalsa = false)
 		static if(xsalsa) {
 			// XSalsa
 			ubyte[32] xkey = HSalsa(key, iv[0..16]);
-			setKey(xkey, iv[16..24]);
+			initState(engineState, xkey, 0, iv[16..24]);
 			wipe(xkey);
 		} else {
 			// Salsa
-			setKey(key, iv);
+			initState(engineState, key, 0, iv);
 		}
+		index = 0;
+		resetCounter();
+		initialized = true;
 	}
 
 	/// 
-	/// Throws: MaxBytesExceededException = if limit of 2^70 bytes is exceeded
+	/// Throws: Error if limit of 2^70 bytes is exceeded.
 	///
 	public ubyte returnByte(ubyte input)
 	{
 		if (limitExceeded())
 		{
-			throw new MaxBytesExceededException("2^70 byte limit per IV. Change IV");
+			assert(false, "2^70 byte limit per IV. Change IV");
 		}
 		
 		if (index == 0)
@@ -189,7 +193,7 @@ public struct Salsa(uint rounds = 20, bool xsalsa = false)
 	/// 
 	/// Returns: Slice pointing to processed data which might be smaller than `output`.
 	/// 
-	/// Throws: MaxBytesExceededException = if limit of 2^70 bytes is exceeded
+	/// Throws: Error if limit of 2^70 bytes is exceeded.
 	///
 	public ubyte[] processBytes(in ubyte[] input, ubyte[] output)
 	in {
@@ -201,7 +205,7 @@ public struct Salsa(uint rounds = 20, bool xsalsa = false)
 		// can't encrypt more than 2^70 bytes per iv
 		if (limitExceeded(input.length))
 		{
-			throw new MaxBytesExceededException("2^70 byte limit per IV would be exceeded. Change IV!");
+			assert(false, "2^70 byte limit per IV would be exceeded. Change IV!");
 		}
 
 		ubyte[] initialOutputSlice = output;
@@ -244,55 +248,91 @@ public struct Salsa(uint rounds = 20, bool xsalsa = false)
 		engineState[8..10] = 0;
 	}
 
-	
-	//
-	// Private implementation
-	//
+	/// Salsa20/rounds function
+	///
+	/// Params:
+	/// rounds = number of rounds (20 in default implementation)
+	/// input = input data
+	/// x = output buffer where keystream gets written to   
+	public static void block(uint rounds = 20)(in uint[] input, uint[] output) pure nothrow @nogc
+		if(rounds % 2 == 0 || rounds > 0)
+		in {
+			assert(input.length == 16, "invalid input length");
+			assert(output.length == 16, "invalid output buffer length");
+		} body {
+		
+		uint[16] x = input;
+		
+		salsaDoubleRound!rounds(x);
+		
+		// element wise addition
+		x[] += input[];
+		output[] = x[];
+	}
 
-private:
+	public static void block(uint rounds = 20)(in ref uint[16] input, ref uint[16] output) pure nothrow @nogc
+		if(rounds % 2 == 0 || rounds > 0)
+		in {
+			assert(input.length == 16, "invalid input length");
+			assert(output.length == 16, "invalid output buffer length");
+		} body {
+		
+		uint[16] x = input;
+		
+		salsaDoubleRound!rounds(x);
+		
+		// element wise addition
+		x[] += input[];
+		output[] = x[];
+	}
 
 	/// Params:
 	/// keyBytes = key, 16 or 32 bytes.
 	/// ivBytes = iv, exactly 8 bytes.
-	void setKey(in ubyte[] keyBytes, in ubyte[] ivBytes) nothrow @nogc
+	public static void initState(ref uint[16] state, in ubyte[] keyBytes, in uint counter, in ubyte[] ivBytes) nothrow @nogc
 	in {
 		assert(keyBytes.length == 16 || keyBytes.length == 32, "invalid key length");
 		assert(ivBytes.length == 8, "invalid iv length");
 	}
 	body {
 
-		index = 0;
-		resetCounter();
 		uint[4] constants;
 		
 		// Key
-		fromLittleEndian(keyBytes[0..16], engineState[1..5]);
+		fromLittleEndian(keyBytes[0..16], state[1..5]);
 		
 		if (keyBytes.length == 32)
 		{
 			constants = sigma;
 
-			fromLittleEndian(keyBytes[16..32], engineState[11..15]);
+			fromLittleEndian(keyBytes[16..32], state[11..15]);
 		}
 		else
 		{
 			// repeat the 128 bit key
 			constants = tau;
-			fromLittleEndian(keyBytes[0..16], engineState[11..15]);
+			fromLittleEndian(keyBytes[0..16], state[11..15]);
 		}
 
-		engineState[0] = constants[0];
-		engineState[5] = constants[1];
-		engineState[10] = constants[2];
-		engineState[15] = constants[3];
+		state[0] = constants[0];
+		state[5] = constants[1];
+		state[10] = constants[2];
+		state[15] = constants[3];
 
 		// IV
-		fromLittleEndian!uint(ivBytes[0..$], engineState[6..8]);
-		engineState[8] = 0;
-		engineState[9] = 0;
+		fromLittleEndian!uint(ivBytes[0..$], state[6..8]);
 
-		initialized = true;
+		// counter
+		state[8] = counter;
+		state[9] = 0;
 	}
+
+	
+	//
+	// Private implementation
+	//
+	
+private:
 
 	/// generate a block (64 bytes) of keystream
 	void generateKeyStream(ubyte[] output) nothrow @nogc
@@ -301,7 +341,7 @@ private:
 	}
 	body {
 		uint[stateSize] x;
-		salsaCore!rounds(engineState, x);
+		block!rounds(engineState, x);
 		toLittleEndian!uint(x, output);
 	}
 
@@ -349,29 +389,6 @@ private {
 	enum uint[4] sigma	= [0x61707865, 0x3320646e, 0x79622d32, 0x6b206574]; //cast(ubyte[16])"expand 32-byte k";
 	enum uint[4] tau	= [0x61707865, 0x3120646e, 0x79622d36, 0x6b206574]; //cast(ubyte[16])"expand 16-byte k";
 
-}
-
-/// Salsa20/rounds function
-///
-/// Params:
-/// rounds = number of rounds (20 in default implementation)
-/// input = input data
-/// x = output buffer where keystream gets written to   
-public void salsaCore(uint rounds)(in uint[] input, uint[] output) pure nothrow @nogc
-	if(rounds % 2 == 0 || rounds > 0)
-	in {
-		assert(input.length == 16, "invalid input length");
-		assert(output.length == 16, "invalid output buffer length");
-} body {
-	
-	uint[16] x = input;
-	
-	salsaDoubleRound!rounds(x);
-
-	// element wise addition
-	x[] += input[];
-	output[] = x[];
-	
 }
 
 /// Executes the double round function rounds/2 times.

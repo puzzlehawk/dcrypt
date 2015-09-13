@@ -6,25 +6,46 @@
 
 import dcrypt.crypto.modes.aead;
 import dcrypt.crypto.engines.chacha;
+import dcrypt.crypto.engines.salsa;
 import dcrypt.crypto.macs.poly1305;
 import dcrypt.bitmanip;
 
 // TODO: adapt to AEAD API
-static assert(isAEADCipher!Poly1305ChaCha, Poly1305ChaCha.name~" is not a valid AEAD cipher.");
+static assert(isAEADCipher!Poly1305ChaCha20, Poly1305ChaCha.name~" is not a valid AEAD cipher.");
 
-alias AEADCipherWrapper!Poly1305ChaCha Poly1305ChaChaEngine;
+alias AEADCipherWrapper!Poly1305ChaCha20 Poly1305ChaChaEngine;
+
+alias Poly1305Cipher!ChaCha20 Poly1305ChaCha20;
+alias Poly1305Cipher!Salsa20 Poly1305Salsa20;
+alias Poly1305Cipher!XSalsa20 Poly1305XSalsa20;
 
 @safe
-public struct Poly1305ChaCha {
+private template isSupportedCipher(T)
+{
+	enum bool isSupportedCipher = 
+		is(T == struct) &&
+			is(typeof(
+					{
+						uint[16] block;
+						ubyte[] key, nonce;
+						T.initState(block, key, cast(uint)0, nonce);
+						T.block(block, block);
+					}));
+}
+
+@safe
+public struct Poly1305Cipher(Cipher)
+if (isSupportedCipher!Cipher)
+{
 
 	@safe nothrow @nogc:
 
-	public enum name = "ChaCha20-Poly1305";
+	public enum name = Cipher.name~"-Poly1305";
 	public enum macSize = 16;
 
 	private {
 		Poly1305Raw poly;
-		ChaCha20 chaCha;
+		Cipher cipher;
 
 		ulong aadLength, cipherTextLength;
 
@@ -73,7 +94,7 @@ public struct Poly1305ChaCha {
 		version(unittest) { polyKey = poly1305KeyGen(_key, _nonce); }
 
 		poly.start(poly1305KeyGen(_key, _nonce));
-		chaCha.start(forEncryption, key, nonce);
+		cipher.start(forEncryption, key, nonce);
 
 		aadMode = true;
 		aadLength = cipherTextLength = 0;
@@ -103,7 +124,7 @@ public struct Poly1305ChaCha {
 			pad16(aadLength);
 		}
 
-		chaCha.processBytes(input, output);
+		cipher.processBytes(input, output);
 		poly.put(output);
 
 		cipherTextLength += input.length;
@@ -166,11 +187,11 @@ private:
 		}
 	}
 
-	static ubyte[32] poly1305KeyGen(in ref ubyte[32] key, in ref ubyte[12] nonce) pure {
+	static ubyte[32] poly1305KeyGen(in ubyte[] key, in ubyte[] nonce) pure {
 		uint[16] block;
-		
-		ChaCha20.initState(block, key, 0, nonce);
-		ChaCha20.chaCha20Block(block, block);
+
+		Cipher.initState(block, key, 0, nonce);
+		Cipher.block(block, block);
 		
 		ubyte[32] poly1305Key;
 		toLittleEndian(block[0..8], poly1305Key[]);
@@ -185,7 +206,7 @@ private:
 		
 		ubyte[32] expectedPoly1305Key = cast(const ubyte[]) x"8ad5a08b905f81cc815040274ab29471 a833b637e3fd0da508dbb8e2fdd1a646";
 		
-		ubyte[32] poly1305Key = poly1305KeyGen(key, nonce);
+		ubyte[32] poly1305Key = Poly1305ChaCha20.poly1305KeyGen(key, nonce);
 		
 		assert(poly1305Key == expectedPoly1305Key, "poly1305KeyGen() failed.");
 	}
@@ -194,7 +215,7 @@ private:
 // Test vectors from RFC7539, section 2.8.2
 unittest {
 
-	Poly1305ChaCha pcc;
+	Poly1305ChaCha20 pcc;
 
 	enum string plaintext = x"
 		4c 61 64 69 65 73 20 61 6e 64 20 47 65 6e 74 6c
@@ -232,7 +253,7 @@ unittest {
 	ubyte[16] tag;
 	pcc.finish(tag);
 
-	assert(ciphertext == expectedCipherText, Poly1305ChaCha.name~" produced wrong ciphertext.");
-	assert(tag == x"1ae10b594f09e26a7e902ecbd0600691", Poly1305ChaCha.name~" produced wrong tag.");
+	assert(ciphertext == expectedCipherText, Poly1305ChaCha20.name~" produced wrong ciphertext.");
+	assert(tag == x"1ae10b594f09e26a7e902ecbd0600691", Poly1305ChaCha20.name~" produced wrong tag.");
 
 }

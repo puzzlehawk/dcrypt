@@ -206,7 +206,7 @@ body {
 	{
 		X2[] = B[BOff..$] ^ X1[];
 
-		salsaCore!8(X2, X1);
+		Salsa20.block!8(X2, X1);
 
 		Y[YOff..YOff+16] = X1[0..16];
 		
