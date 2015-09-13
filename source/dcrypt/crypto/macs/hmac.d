@@ -12,8 +12,14 @@ static {
 	static assert(isMAC!(HMac!SHA256), "HMac is not a valid MAC");
 }
 
+//static {
+//	import std.digest.sha;
+//	
+//	static assert(isMAC!(HMac!(std.digest.sha.SHA256)), "HMac is not a valid MAC");
+//}
+
 @safe
-public struct HMac(D) if(isDigest!D) {
+public struct HMac(D, uint blockSize = D.blockSize) if(isStdDigest!D) {
 
 	
 public:

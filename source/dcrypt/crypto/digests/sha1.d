@@ -39,7 +39,6 @@ public:
 
 	enum name = "SHA1";
 	enum digestLength = 20;
-	enum byteLength = 64;
 	enum blockSize = 64;
 
 	void put(in ubyte[] input...) nothrow @nogc

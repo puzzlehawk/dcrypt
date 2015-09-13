@@ -29,7 +29,6 @@ if(bitLength == 256 || bitLength == 384 || bitLength == 512) {
 	public enum	name = text("SHA", bitLength);
 	public enum digestLength = bitLength / 8;
 
-	
 	/// Reset the digest to its initial state. It is not necessary to call start after finish or doFinal.
 	public void start() nothrow @nogc {
 
@@ -404,7 +403,6 @@ private:
 			0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
 		];
 
-		public enum byteLength = 64;
 		public enum blockSize = 64;
 
 		uint[64]	X;
@@ -437,7 +435,6 @@ private:
 			0x4cc5d4becb3e42b6L, 0x597f299cfc657e2aL, 0x5fcb6fab3ad6faecL, 0x6c44198c4a475817L
 		];
 
-		public enum byteLength = 128;
 		public enum blockSize = 128;
 
 		ulong    byteCount2;

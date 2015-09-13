@@ -27,7 +27,6 @@ template isDigest(T)
 						ubyte[T.digestLength] hash = dig.finish();					// has finish
 
 						uint digestSize = T.digestLength;			// knows the length of the hash value in bytes. TODO use size in bits
-						uint byteLength = T.byteLength;				// knows the length of its internal state. TODO rename
 						uint blockSize = T.blockSize;				// knows the size if its blocks
 						string name = T.name;						// knows its own name
 
@@ -43,6 +42,17 @@ mixin template finish() {
 		doFinal(buf);
 		return buf;
 	}
+}
+
+template digestLength(T) if(isStdDigest!T)
+{
+	enum size_t digestLength = (ReturnType!(T.finish)).length;
+}
+
+template name(T) if(isStdDigest!T)
+{
+	import std.conv: text;
+	enum string name = text(typeid(T));
 }
 
 /// Variadic 'put' helper function for digests.
@@ -74,24 +84,14 @@ public abstract class Digest {
 	 *
 	 * Returns the size, in bytes, of the digest produced by this message digest.
 	 */
-	@safe
-	public uint getDigestSize() pure nothrow @nogc;
-
-	
-	/**
-	 Return the size in bytes of the internal buffer the digest applies it's compression
-	 function to.
-	 Returns: the size of the internal state in bytes
-	 */
-	@safe
-	public uint getByteLength() pure nothrow @nogc;
-	
-	
+	@safe @property
+	public uint digestLength() pure nothrow @nogc;
+		
 	/**
 	 Used for padding (i.e. in HMacs)
 	 Returns: the block size or 0 if the Digest is not block based
 	 */
-	@safe
+	@safe @property
 	public uint blockSize() pure nothrow @nogc;
 
 	/**
@@ -113,7 +113,7 @@ public abstract class Digest {
 	 * call leaves the digest reset. */
 	@safe
 	public final ubyte[] finish() nothrow {
-		ubyte[] output = new ubyte[getDigestSize()];
+		ubyte[] output = new ubyte[digestLength];
 		finish(output);
 		return output;
 	}
@@ -160,7 +160,7 @@ if(isDigest!T) {
 	 * Returns the size, in bytes, of the digest produced by this message digest.
 	 */
 	@safe @property
-	public override uint getDigestSize() pure nothrow @nogc {
+	public override uint digestLength() pure nothrow @nogc {
 		return T.digestLength;
 	}
 	
@@ -173,15 +173,6 @@ if(isDigest!T) {
 	public override uint blockSize() pure nothrow @nogc {
 		return T.blockSize;
 	}
-
-	/// Return the size in bytes of the internal buffer the digest applies it's compression
-	/// function to.
-	/// Returns: the size of the internal state in bytes
-	@safe
-	public override uint getByteLength() pure nothrow @nogc {
-		return T.byteLength;
-	}
-	
 
 
 	/// Close the digest, producing the final digest value and resetting the digest.

@@ -167,7 +167,6 @@ public struct SHA3(uint bitLength)
 
 	enum name = text("SHA3-", bitLength);
 	enum digestLength = keccak.digestLength;
-	enum byteLength = keccak.byteLength; /// size of block that the compression function is applied to in bytes
 
 	enum blockSize = [224: 144, 256: 136, 384: 104, 512: 72][bitLength]; /// Block size for HMAC as defined in FIPS 202, section 7, table 3.
 
@@ -210,13 +209,11 @@ public struct Keccak(uint capacity)
 {
 
 	public {
-		enum rate = 1600 - capacity;
-		enum bitLength = capacity / 2;
 		//static assert(bitLength == 224 || bitLength == 256 || bitLength == 288 || bitLength == 384 || bitLength == 512);
 		enum name = text("Keccak[", capacity, ", ", rate, "]");
 		enum digestLength = bitLength / 8;
-		enum byteLength = rate / 8; /// size of block that the compression function is applied to in bytes
-		enum blockSize = 0;
+
+		public enum blockSize = 0;
 
 		@nogc
 		void put(in ubyte[] input...) nothrow
@@ -255,6 +252,8 @@ public struct Keccak(uint capacity)
 
 	private {
 
+		enum rate = 1600 - capacity;
+		enum bitLength = capacity / 2;
 		enum byteStateLength = 1600 / 8;
 		enum rounds = 24;
 
