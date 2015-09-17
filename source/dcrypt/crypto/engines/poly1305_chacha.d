@@ -10,14 +10,13 @@ import dcrypt.crypto.engines.salsa;
 import dcrypt.crypto.macs.poly1305;
 import dcrypt.bitmanip;
 
-// TODO: adapt to AEAD API
-static assert(isAEADCipher!Poly1305ChaCha20, Poly1305ChaCha.name~" is not a valid AEAD cipher.");
+static assert(isAEADCipher!Poly1305ChaCha20, Poly1305ChaCha20.name~" is not a valid AEAD cipher.");
 
 alias AEADCipherWrapper!Poly1305ChaCha20 Poly1305ChaChaEngine;
 
 alias Poly1305Cipher!ChaCha20 Poly1305ChaCha20;
 alias Poly1305Cipher!Salsa20 Poly1305Salsa20;
-alias Poly1305Cipher!XSalsa20 Poly1305XSalsa20;
+//alias Poly1305Cipher!XSalsa20 Poly1305XSalsa20;
 
 @safe
 private template isSupportedCipher(T)
@@ -34,7 +33,7 @@ private template isSupportedCipher(T)
 }
 
 @safe
-public struct Poly1305Cipher(Cipher)
+private struct Poly1305Cipher(Cipher)
 if (isSupportedCipher!Cipher)
 {
 
@@ -69,6 +68,9 @@ if (isSupportedCipher!Cipher)
 		assert(key.length == 32, name~" requires a 256 bit key.");
 		assert(nonce.length == 8, name~" requires a 64 bit nonce.");
 	} body {
+
+		// start(forEncryption, key, nonce); // Salsa20
+
 		ubyte[12] _nonce;
 		toLittleEndian(constant, _nonce[0..4]);
 		_nonce[4..12] = nonce;
