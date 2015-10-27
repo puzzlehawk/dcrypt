@@ -254,12 +254,13 @@ public struct Keccak(uint capacity)
 		enum rate = 1600 - capacity;
 		enum bitLength = capacity / 2;
 		enum byteStateLength = 1600 / 8;
+		enum longStateLength = byteStateLength / 8;
 		enum rounds = 24;
 
 		uint bitsInQueue;
 		bool squeezing;
 		uint bitsAvailableForSqueezing;
-		ubyte[byteStateLength] state;
+		ulong[longStateLength] state;
 		ubyte[rate / 8] dataQueue;
 	}
 
@@ -371,7 +372,7 @@ private:
 		{
 			dataQueue[bitsInQueue / 8] |= 1 << (bitsInQueue % 8);
 			absorbQueue();
-			clearDataQueueSection(0, rate / 8);
+			dataQueue[0..rate/8] = 0;
 		}
 		else
 		{
@@ -418,14 +419,14 @@ private:
 		}
 	}
 
-	static void keccakPermutation(uint rounds)(ref ubyte[byteStateLength] state) pure
-	{
-		ulong[25] longState;
-
-		fromLittleEndian(state[], longState[]);
-		keccakPermutation!rounds(longState);
-		toLittleEndian(longState[], state[]);
-	}
+//	static void keccakPermutation(uint rounds)(ref ubyte[byteStateLength] state) pure
+//	{
+//		ulong[25] longState;
+//
+//		fromLittleEndian(state[], longState[]);
+//		keccakPermutation!rounds(longState);
+//		toLittleEndian(longState[], state[]);
+//	}
 
 	static void keccakPermutation(uint rounds)(ref ulong[25] state) pure
 	{
@@ -504,17 +505,22 @@ private:
 		A[0] ^= KeccakRoundConstants[indexRound];
 	}
 
-	static void KeccakAbsorb(uint rounds)(ref ubyte[byteStateLength] byteState, in ubyte[] data) pure
+	static void KeccakAbsorb(uint rounds)(ref ulong[longStateLength] longState, in ubyte[] data) pure
 	in {
-		assert(data.length <= byteState.length);
+		assert(data.length <= longState.length*8);
+		assert(data.length % 8 == 0);
 	} body {
-		byteState[0..data.length] ^= data[];
-		keccakPermutation!rounds(byteState);
+		ubyte[byteStateLength] byteBuf;
+		byteBuf[0..data.length] = data;
+		ulong[longStateLength] buf;
+		fromLittleEndian!ulong(byteBuf, buf);
+		longState[] ^= buf[];
+		keccakPermutation!rounds(longState);
 	}
 
-	static void KeccakExtract(in ubyte[] byteState, ubyte[] data, in uint laneCount) pure
+	static void KeccakExtract(in ulong[] longState, ubyte[] data, size_t laneCount) pure
 	{
-		data[0..laneCount*8] = byteState[0..laneCount*8];
+		toLittleEndian(longState[0..laneCount], data[0..laneCount*8]);
 	}
 }
 
