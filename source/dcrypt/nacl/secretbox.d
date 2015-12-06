@@ -14,6 +14,15 @@ private {
 	alias Poly1305Raw Auth;
 }
 
+/// High-level symmetric authenticated encryption.
+/// 
+/// Params:
+/// msg = Plaintext message.
+/// key = Secret shared key. 32 bytes.
+/// nonce = 24 bytes used once per key.
+///
+/// Returns:
+/// Authentication tag and encrypted message. The output is 16 bytes longer than the input.
 public ubyte[] secretbox(in ubyte[] msg, in ubyte[] key, in ubyte[] nonce) @safe nothrow
 in {
 	assert(key.length == key_bytes, "Invalid key length.");
@@ -40,6 +49,16 @@ in {
 	return output;
 }
 
+/// High-level symmetric authenticated decryption.
+/// 
+/// Params:
+/// boxed = Ciphertext and authentication tag as created by `secretbox()`.
+/// key = Secret shared key. 32 bytes.
+/// nonce = 24 bytes used once per key.
+///
+/// Returns: Returns the plaintext if the authentication tag is correct.
+/// 
+/// Throws: Throws an exception if the authentication tag is invalid.
 public ubyte[] secretbox_open(in ubyte[] boxed, in ubyte[] key,  in ubyte[] nonce) @safe
 in {
 	assert(key.length == key_bytes, "Invalid key length.");
@@ -112,11 +131,62 @@ unittest {
 		7973f622a43d14a6599b1f654cb45a74
 		e355a5";
 
-	ubyte[] boxed = secretbox(msg, key, nonce);
+	
+	test_secret_box(msg, boxed_ref, key, nonce);
+}
 
-	assert(boxed == boxed_ref, "secretbox failed");
+// Test with pseudo random input.
+unittest {
+	import dcrypt.crypto.random.drng;
+	HashDRNG_SHA256 drng;
+	drng.setSeed(0);
 
-	ubyte[] unboxed = secretbox_open(boxed_ref, key, nonce);
+	ubyte[32] key;
+	ubyte[24] nonce;
 
-	assert(unboxed == msg, "secretbox_open failed");
+	drng.nextBytes(key);
+	drng.nextBytes(nonce);
+
+	ubyte[1001] message;
+	drng.nextBytes(message);
+
+	test_secret_box(message, null, key, nonce);
+}
+
+version(unittest) {
+	/// Helper function for testing.
+	/// Params:
+	/// msg = Plaintext.
+	/// boxed_ref = Expected ciphertext with authentication tag.
+	/// key = Symmetric encryption key.
+	void test_secret_box(in ubyte[] msg, in ubyte[] boxed_ref, in ubyte[] key, in ubyte[] nonce) {
+		// test encryption
+		ubyte[] boxed = secretbox(msg, key, nonce);
+		if(boxed_ref !is null) {
+			assert(boxed == boxed_ref, "secretbox failed");
+		}
+
+		// test decryption
+		if(boxed_ref !is null) {
+			ubyte[] unboxed = secretbox_open(boxed_ref, key, nonce);
+			assert(unboxed == msg, "secretbox_open failed");
+		} else {
+			ubyte[] unboxed = secretbox_open(boxed, key, nonce);
+			assert(unboxed == msg, "secretbox_open failed");
+		}
+		
+		// test invalid authentication
+		ubyte[] tampered_box = boxed.dup;
+		tampered_box[$-1] ^= 1;
+		
+		bool exception = false;
+		try {
+			ubyte[] unboxed = secretbox_open(tampered_box, key, nonce);
+			assert(false, "Invalid ciphertext passed as valid.");
+		} catch(InvalidCipherTextException e) {
+			exception = true;
+		} finally {
+			assert(exception, "Expected exception has not been thrown.");
+		}
+	}
 }
