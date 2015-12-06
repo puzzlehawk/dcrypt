@@ -16,17 +16,17 @@ in {
 	XSalsa20 streamcipher;
 	streamcipher.start(true, key, nonce);
 
-	ubyte[32] auth_key;
+	ubyte[32] auth_key = 0;
 
-	// derive authentication key
-	streamcipher.processBytes(key, auth_key);
+	// Derive authentication key by encrypting 32 zeros.
+	streamcipher.processBytes(auth_key, auth_key);
 
 	Poly1305Raw auth;
 	auth.start(auth_key);
 
 	ubyte[] output = new ubyte[overhead_bytes + msg.length];
 
-	ubyte[] ciphertext = streamcipher.processBytes(msg, output[overhead_bytes .. $-1]);
+	ubyte[] ciphertext = streamcipher.processBytes(msg, output[overhead_bytes .. $]);
 	auth.put(ciphertext);
 	output[0..overhead_bytes] = auth.finish();
 
@@ -34,8 +34,6 @@ in {
 }
 
 unittest {
-	import std.stdio;
-
 	alias immutable ubyte[] octets;
 
 	octets key = cast(octets) x"
@@ -49,7 +47,7 @@ unittest {
 	octets msg = cast(octets) x"
 		be075fc53c81f2d5cf141316ebeb0c7b
 		5228c52a4c62cbd44b66849b64244ffc
-		e5ecbaaf33bd751a1ac728d45e6c6129	
+		e5ecbaaf33bd751a1ac728d45e6c6129
 		6cdc3c01233561f41db66cce314adb31
 		0e3be8250c46f06dceea3a7fa1348057
 		e2f6556ad6b1318a024a838f21af1fde
@@ -71,5 +69,5 @@ unittest {
 
 	ubyte[] boxed = secretbox(msg, key, nonce);
 
-	assert(boxed == boxed_ref);
+	assert(boxed == boxed_ref, "secretbox failed");
 }
