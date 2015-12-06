@@ -68,15 +68,23 @@ unittest {
 /// Compares a and b in constant time.
 /// 
 /// Returns: 0 if a == b, some other value if a != b.
-bool crypto_equals(T)(in T[] a, in T[] b) pure
+bool crypto_equals(T)(in T[] a, in T[] b) pure nothrow @safe @nogc
 in {
 	assert(a.length == b.length, "Unequal length.");
 } body  {
 	T result = 0;
-	foreach(i; 0..a.length) {
+	size_t i = 0;
+
+	while(i < a.length) {
 		result |= a[i] ^ b[i];
+		++i;
 	}
-	
+
+	if(i != a.length) {
+		// Just to be sure that the compiler optimization does not destroy const time.
+		assert(false);
+	}
+
 	return result == 0;
 }
 

@@ -1,7 +1,7 @@
 ﻿module dcrypt.crypto.ecc.curve25519;
 
 import dcrypt.crypto.ecc.curved25519.fieldElement;
-
+import dcrypt.util: wipe;
 
 /// Implementation of Curve25519.
 ///
@@ -93,12 +93,53 @@ public enum ubyte[32] publicBasePoint = cast(immutable (ubyte[32]) ) x"090000000
 /// 
 /// ubyte[32] sharedKey = curve25519_scalarmult(mySecretKey, herPublicKey);
 /// 
+ubyte[32] curve25519_scalarmult(in ubyte[] secret, in ubyte[] p = publicBasePoint) @safe nothrow @nogc
+in {
+	assert(secret.length == 32, "Secret key must be 32 bytes long.");
+	assert(p.length == 32, "Public key must be 32 bytes long.");
+} body {
+	ubyte[32] sec = secret;
+	scope(exit) {
+		wipe(sec);
+	}
+
+	ubyte[32] pub = p;
+
+	return curve25519_scalarmult(sec, pub);
+}
+
+/// 
+/// 
+/// Params:
+/// secret = Your secret key, the 'exponent'.
+/// p = Receivers public key. Default base point = 9.
+/// 
+/// Returns: p^secret.
+/// 
+/// Examples:
+/// 
+/// ubyte[32] publicKey = curve25519_scalarmult(secretKey);
+/// 
+/// ubyte[32] sharedKey = curve25519_scalarmult(mySecretKey, herPublicKey);
+/// 
 ubyte[32] curve25519_scalarmult(in ref ubyte[32] secret, in ref ubyte[32] p = publicBasePoint) @safe nothrow @nogc
 {
 	ubyte[32] e = secret;
+	scope(exit) {
+		wipe(e);
+	}
 	clamp(e);
 
 	fe x1, x2, x3, z2, z3, tmp0, tmp1;
+	scope(exit) {
+		wipe(x1);
+		wipe(x2);
+		wipe(x3);
+		wipe(z2);
+		wipe(z3);
+		wipe(tmp0);
+		wipe(tmp1);
+	}
 
 	x1 = fe.fromBytes(p);
 	x2 = fe.one;
