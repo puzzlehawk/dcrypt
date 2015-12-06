@@ -4,7 +4,7 @@ import dcrypt.crypto.ecc.curve25519;
 import dcrypt.crypto.ecc.ed25519;
 import dcrypt.crypto.engines.poly1305_chacha;
 import dcrypt.exceptions: InvalidCipherTextException;
-import dcrypt.util.util: wipe;
+import dcrypt.util: wipe;
 
 import std.exception: enforce;
 

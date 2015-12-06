@@ -1,4 +1,4 @@
-﻿module nacl.secretbox;
+﻿module dcrypt.nacl.secretbox;
 
 import dcrypt.crypto.macs.poly1305;
 import dcrypt.crypto.engines.salsa;
