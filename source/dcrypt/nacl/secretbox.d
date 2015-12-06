@@ -112,4 +112,8 @@ unittest {
 	ubyte[] boxed = secretbox(msg, key, nonce);
 
 	assert(boxed == boxed_ref, "secretbox failed");
+
+	ubyte[] unboxed = secretbox_open(boxed_ref, key, nonce);
+
+	assert(unboxed == msg, "secretbox_open failed");
 }
