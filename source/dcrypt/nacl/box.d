@@ -18,7 +18,7 @@ import dcrypt.exceptions: InvalidCipherTextException;
 /// public_key = Recipients public key.
 /// 
 /// Returns: Encrypted and authenticated packet.
-ubyte[] box(in ubyte[] msg, in ubyte[] nonce, in ubyte[] secret_key, in ubyte[] public_key) @safe nothrow {
+public ubyte[] box(in ubyte[] msg, in ubyte[] nonce, in ubyte[] secret_key, in ubyte[] public_key) @safe nothrow {
 
 	ubyte[32] shared_key = derive_shared_key(secret_key, public_key);
 	scope(exit) {
@@ -34,7 +34,7 @@ ubyte[] box(in ubyte[] msg, in ubyte[] nonce, in ubyte[] secret_key, in ubyte[] 
 /// secret_key = A 32 byte secret key, choosen randomly.
 /// 
 /// Returns: Returns the public key matching to the given secret key.
-ubyte[32] box_keypair(in ubyte[] secret_key) nothrow @safe @nogc 
+public ubyte[32] box_keypair(in ubyte[] secret_key) nothrow @safe @nogc 
 in {
 	assert(secret_key.length == 32, "Secret key must be 32 bytes.");
 } body {
