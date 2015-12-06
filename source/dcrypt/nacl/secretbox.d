@@ -2,10 +2,14 @@
 
 import dcrypt.crypto.macs.poly1305;
 import dcrypt.crypto.engines.salsa;
+import dcrypt.util;
 
 enum overhead_bytes = 16;
 enum key_bytes = 32;
 enum nonce_bytes = 24;
+
+alias XSalsa20 StreamCipher;
+alias Poly1305Raw Auth;
 
 public ubyte[] secretbox(in ubyte[] msg, in ubyte[] key, in ubyte[] nonce) @safe nothrow
 in {
@@ -13,7 +17,7 @@ in {
 	assert(nonce.length == nonce_bytes, "Invalid nonce length.");
 } body {
 
-	XSalsa20 streamcipher;
+	StreamCipher streamcipher;
 	streamcipher.start(true, key, nonce);
 
 	ubyte[32] auth_key = 0;
@@ -32,6 +36,44 @@ in {
 
 	return output;
 }
+
+public ubyte[] secretbox_open(in ubyte[] boxed, in ubyte[] key,  in ubyte[] nonce) @safe
+in {
+	assert(key.length == key_bytes, "Invalid key length.");
+	assert(nonce.length == nonce_bytes, "Invalid nonce length.");
+	assert(boxed.length >= overhead_bytes, "Message too short. Can't even contain a 16 byte tag.");
+} body {
+	
+	StreamCipher streamcipher;
+	streamcipher.start(false, key, nonce);
+	
+	ubyte[32] auth_key = 0;
+	
+	// Derive authentication key by encrypting 32 zeros.
+	streamcipher.processBytes(auth_key, auth_key);
+	
+	Poly1305Raw auth;
+	auth.start(auth_key);
+
+	const ubyte[] ciphertext = boxed[overhead_bytes..$];
+
+	auth.put(ciphertext);
+	ubyte[overhead_bytes] recv_tag = auth.finish();
+	const ubyte[] expected_tag = boxed[0..overhead_bytes];
+
+	if(crypto_equals(recv_tag, expected_tag)) {
+		// Tag is correct.
+
+		ubyte[] plaintext = new ubyte[ciphertext.length];
+		
+		streamcipher.processBytes(ciphertext, plaintext);
+		
+		return plaintext;
+	} else {
+		throw new Exception("Invalid tag!");
+	}
+}
+
 
 unittest {
 	alias immutable ubyte[] octets;
