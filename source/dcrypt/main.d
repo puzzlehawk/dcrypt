@@ -2,15 +2,14 @@
 
 import std.stdio;
 import std.conv;
-import dcrypt.crypto.engines.rc4;
 import dcrypt.crypto.streamcipher;
-import dcrypt.util.encoders.hex;
+import dcrypt.encoders.hex;
 import dcrypt.crypto.digest;
 import dcrypt.crypto.digests.sha1;
 import dcrypt.crypto.digests.sha2;
 import dcrypt.crypto.digests.sha3;
 
-import dcrypt.crypto.generators.pkcs5s2;
+import dcrypt.crypto.pbe.pbkdf2;
 
 import dcrypt.crypto.blockcipher;
 import dcrypt.crypto.engines.aes;
@@ -86,8 +85,8 @@ version (Benchmark) {
 		
 		Benchmark.doBenchmark(len, aeadCiphers);
 
-		Benchmark.doCurved25519Benchmark(512);
-		Benchmark.doEd25519Benchmark(512);
+		Benchmark.doCurved25519Benchmark(1024);
+		Benchmark.doEd25519Benchmark(1024);
 				
 	}
 } else {

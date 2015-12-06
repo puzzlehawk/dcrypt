@@ -1,14 +1,68 @@
-module dcrypt.util.pack;
-import std.traits;
-
+﻿module dcrypt.bitmanip;
+import std.traits: isIntegral, Unqual;
 /// 
 /// This module contains several methods to convert integer types into byte arrays
 /// and vice versa.
 /// 
+/// 
 
-// TODO Replace with std.bitmanip?
+alias rotateLeft rol;
+alias rotateRight ror;
 
-public pure nothrow @safe:
+/// rot shift to the left
+/// Params:
+/// x = integer to shift
+/// shiftAmount = number of bits to shift
+@safe
+@nogc
+T rotateLeft(T)(T x, uint shiftAmount) pure nothrow 
+{
+	enum nbits = T.sizeof*8;
+	//shiftAmount %= nbits;
+	return cast(T)(x << shiftAmount) | (x >>> (nbits-shiftAmount));
+}
+
+/// test rotateLeft
+unittest {
+	ubyte b0 = 0b10000001;
+	ubyte b1 = 0b00000011;
+	ubyte b2 = 0b00000110;
+	ubyte b7 = 0b11000000;
+	
+	assert(rotateLeft(b0,0) == b0);
+	assert(rotateLeft(b0,1) == b1);
+	assert(rotateLeft(b0,2) == b2);
+	assert(rotateLeft(b0,7) == b7);
+	assert(rotateLeft(b0,8) == b0);
+}
+
+/// rot shift to the right
+/// Params:
+/// x = integer to shift
+/// shiftAmount = number of bits to shift
+@safe
+@nogc
+T rotateRight(T)(T x, uint shiftAmount) pure nothrow
+{
+	enum nbits = T.sizeof*8;
+	//shiftAmount %= nbits;
+	return cast(T)((x >>> shiftAmount) | (x << (nbits-shiftAmount)));
+}
+
+/// test rotateRight
+unittest {
+	ubyte b0 = 0b00000101;
+	ubyte b1 = 0b10000010;
+	ubyte b2 = 0b01000001;
+	ubyte b7 = 0b00001010;
+	
+	assert(rotateRight(b0,0) == b0);
+	assert(rotateRight(b0,1) == b1);
+	assert(rotateRight(b0,2) == b2);
+	assert(rotateRight(b0,7) == b7);
+	assert(rotateRight(b0,8) == b0);
+}
+
 
 /**
  Converts big endian bytes to integral of type T
@@ -25,7 +79,7 @@ body {
 		// data is already in memory as we want
 		return (cast(const T[])bs)[0];
 	}else {
-		T n = 0;
+		Unqual!T n = 0;
 		static if (T.sizeof >= short.sizeof) {
 			n |= bs[0];
 			n <<= 8;
@@ -67,7 +121,7 @@ body {
 		// data is already in memory as we want
 		return (cast(const T[])bs)[0];
 	}else {
-		T n = 0;
+		Unqual!T n = 0;
 		static if (T.sizeof >= short.sizeof) {
 			n |= bs[0];
 			n |= cast(T)bs[1] << 8;
@@ -151,7 +205,7 @@ in {
 	assert(output.length >= T.sizeof, "output buffer too small");
 }
 body {
-	T n = val;
+	Unqual!T n = val;
 	uint off = 0;
 	
 	static if(T.sizeof == long.sizeof) {
@@ -189,7 +243,7 @@ in {
 	assert(output.length >= T.sizeof, "output buffer too small");
 }
 body {
-	T n = val;
+	Unqual!T n = val;
 	output[0] = cast (ubyte) (n);
 	n >>>= 8;
 	static if(T.sizeof >= short.sizeof) {
@@ -230,7 +284,7 @@ body {
 		const ubyte[] casted = cast(const ubyte []) ns;
 		output[] = casted[];
 	}else{
-		foreach(i, T n; ns) {
+		foreach(i, const T n; ns) {
 			toBigEndian!T(n, output[T.sizeof * i .. $]);
 		}
 	}
@@ -253,15 +307,16 @@ body {
 		const ubyte[] casted = cast(const ubyte []) ns;
 		output[] = casted[];
 	}else{
-		foreach(i, T n; ns) {
+		foreach(i, const T n; ns) {
 			toLittleEndian!T(n, output[T.sizeof * i .. $]);
 		}
 	}
 }
 
-ubyte[] toBigEndian(T)(T n) if(isIntegral!T)
+ubyte[T.sizeof] toBigEndian(T)(in T n) pure nothrow @nogc
+	if(isIntegral!T)
 {
-	ubyte[] bs = new ubyte[T.sizeof];
+	ubyte[T.sizeof] bs;
 	toBigEndian!T(n, bs);
 	return bs;
 }
@@ -274,9 +329,10 @@ ubyte[] toBigEndian(T)(in T[] ns) if(isIntegral!T)
 }
 
 
-ubyte[] toLittleEndian(T)(T n) if(isIntegral!T)
+ubyte[T.sizeof] toLittleEndian(T)(in T n) pure nothrow @nogc
+	if(isIntegral!T)
 {
-	ubyte[] bs = new ubyte[T.sizeof];
+	ubyte[T.sizeof] bs;
 	toLittleEndian!T(n, bs);
 	return bs;
 }

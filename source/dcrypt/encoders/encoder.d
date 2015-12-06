@@ -1,4 +1,4 @@
-module dcrypt.util.encoders.encoder;
+module dcrypt.encoders.encoder;
 
 /// This is usually thrown while decoding invalid data.
 @safe

@@ -584,7 +584,8 @@ in {
 	s21 = a10*b11 + a11*b10;
 	s22 = a11*b11;
 	s23 = 0;
-	
+
+
 	carry0 = (s0 + (1<<20)) >> 21; s1 += carry0; s0 -= SHL64(carry0,21);
 	carry2 = (s2 + (1<<20)) >> 21; s3 += carry2; s2 -= SHL64(carry2,21);
 	carry4 = (s4 + (1<<20)) >> 21; s5 += carry4; s4 -= SHL64(carry4,21);

@@ -28,6 +28,24 @@ template isMAC(T)
 					}));
 }
 
+/// Variadic 'put' helper function for MACs.
+/// 
+/// Params:
+/// mac = The mac to put the data into.
+/// data = The data to update the mac with.
+/// 
+/// Example:
+/// 	ubyte[4] buf;
+/// 	HMac!SHA256 mac;
+/// 	mac.putAll(cast(ubyte) 0x01, buf, buf[0..2]);
+@safe
+public void putAll(M, T...)(ref M mac, in T data) nothrow @nogc
+if(isMAC!M) {
+	foreach(d; data) {
+		mac.put(d);
+	}
+}
+
 
 @safe
 public abstract class Mac {

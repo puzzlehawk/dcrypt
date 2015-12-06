@@ -26,8 +26,39 @@ template isRNG(T)
 						T rng = T.init;
 						string name = rng.name;
 						rng.nextBytes(buf);
-						rng.addSeed(cast(const ubyte[]) buf);
 					}));
+}
+
+@safe
+template isRNGWithInput(T)
+{
+	enum bool isRNGWithInput = isRNG!T &&
+			is(typeof(
+					{
+						ubyte[] buf;
+						T rng = T.init;
+						rng.addSeed(cast(const ubyte[]) buf);
+						rng.addSeed(cast(ubyte) 0);
+						rng.addSeed(cast(ubyte) 0, cast(ubyte) 0);
+					}));
+}
+
+/// Helper function for prng.
+/// 
+/// Params:
+/// rng = The RNG to put the data into.
+/// seed = The seed to update the RNG with.
+/// 
+/// Example:
+/// 	ubyte[4] buf;
+/// 	RNG rng;
+/// 	rng.addSeed(cast(ubyte) 0x01, buf, buf[0..2]);
+@safe
+public void addSeed(R, T...)(ref R rng, in T seed) nothrow @nogc
+if(isRNGWithInput!D) {
+	foreach(s; seed) {
+		digest.addSeed(s);
+	}
 }
 
 @safe
@@ -67,7 +98,7 @@ public abstract class RNG {
 ///	Wrapper class for PRNGs.
 ///
 @safe
-public class WrapperPRNG(R) if(isRNG!R): RNG {
+public class WrapperPRNG(R) if(isRNGWithInput!R): RNG {
 
 	private R rng;
 

@@ -394,7 +394,7 @@ struct GCMPCLMULQDQMultiplier
 	unittest {
 		import core.cpuid;
 		import std.conv: text;
-		import dcrypt.util.encoders.hex;
+		import dcrypt.encoders.hex;
 		version(D_InlineAsm_X86_64) {
 			if(aes) {
 				
@@ -423,7 +423,7 @@ struct GCMPCLMULQDQMultiplier
 		import core.cpuid;
 		import std.conv: text;
 		//import std.algorithm: reverse;
-		import dcrypt.util.encoders.hex;
+		import dcrypt.encoders.hex;
 		version(D_InlineAsm_X86_64) {
 			if(aes) {
 
@@ -491,7 +491,7 @@ struct GCMPCLMULQDQMultiplier
 //	/// test hardware accelerated multiplication (pclmulqdq)
 //	unittest {
 //		import std.conv: text;
-//		import dcrypt.util.encoders.hex;
+//		import dcrypt.encoders.hex;
 //		
 //		immutable ubyte[16] H = cast(immutable ubyte[16]) x"00000000000000000000000000000080"; // neutral element
 //		ubyte[16] X1 = cast(immutable ubyte[16]) x"0388dace60b6a392f328c2b971b2fe78";
@@ -506,7 +506,7 @@ struct GCMPCLMULQDQMultiplier
 	/// test hardware accelerated multiplication (pclmulqdq)
 	unittest {
 		import std.conv: text;
-		import dcrypt.util.encoders.hex;
+		import dcrypt.encoders.hex;
 
 		import std.algorithm: reverse;
 		
@@ -530,7 +530,7 @@ struct GCMPCLMULQDQMultiplier
 //	/// test hardware accelerated multiplication (pclmulqdq)
 //	unittest {
 //		import std.conv: text;
-//		import dcrypt.util.encoders.hex;
+//		import dcrypt.encoders.hex;
 //		
 //		ulong[2] H = [0xb32b6656a05b40b6, 0x952b2a56a5604ac0];
 //		ulong[2] X1 = [0xffcaff95f830f061, 0xdfa6bf4ded81db03];

@@ -2,9 +2,8 @@
 
 import std.algorithm: min;
 
-import dcrypt.util.util;
-import dcrypt.util.bitmanip;
-import dcrypt.util.pack;
+import dcrypt.util;
+import dcrypt.bitmanip;
 
 /// Implementation of the ChaCha stream cipher as first described by D. J. Bernstein (http://cr.yp.to/chacha.html),
 /// following RFC 7539.
@@ -142,22 +141,32 @@ public struct ChaCha20 {
 
 	/// Set the state as follows:
 	/// state = constants ~ key ~ counter ~ nonce
-	package static void initState(ref uint[16] state, in ref ubyte[32] key, in uint counter, in ref ubyte[12] nonce) pure {
+	/// 
+	/// Params:
+	/// state = The state.
+	/// key = 32 bytes.
+	/// nonce = 12 bytes.
+	package static void initState(ref uint[16] state, in ubyte[] key, in uint counter, in ubyte[] nonce) pure 
+	in {
+		assert(key.length == 32, "ChaCha requires 256 bit key.");
+		assert(nonce.length == 12, "ChaCha requires 96 bit nonce.");
+	} body {
 		state[0..4] = constants;
-		fromLittleEndian(key[], state[4..12]);
+		fromLittleEndian(key[0..32], state[4..12]);
 		state[12] = counter;
-		fromLittleEndian(nonce[], state[13..16]);
+		fromLittleEndian(nonce[0..12], state[13..16]);
 	}
 
 	/// Performs the ChaCha block function on `inState`, result in `outState`
 	/// Params:
 	/// inState = the state created with `initState()`
 	/// outState = buffer for the new state
-	package static void chaCha20Block(in ref uint[16] inState, ref uint[16] outState) pure {
+	package static void block(uint rounds = 20)(in ref uint[16] inState, ref uint[16] outState) pure 
+		if(rounds % 2 == 0, "'rounds' must be even.") 
+	{
 		
 		uint[16] workingState = inState;
 
-		static assert(rounds % 2 == 0, "'rounds' must be even.");
 		foreach(i; 0..rounds / 2) {
 			innerRound(workingState);
 		}
@@ -170,10 +179,10 @@ public struct ChaCha20 {
 	/// Params:
 	/// inState = the state created with `initState()`
 	/// outState = buffer for the new state
-	package static void chaCha20Block(in ref uint[16] inState, ref ubyte[16*4] outState) pure 
+	package static void block(uint rounds = 20)(in ref uint[16] inState, ref ubyte[16*4] outState) pure 
 	{
 		uint[16] key;
-		chaCha20Block(inState, key);
+		block!rounds(inState, key);
 		toLittleEndian!uint(key, outState);
 	}
 
@@ -187,7 +196,7 @@ public struct ChaCha20 {
 		assert(initialized, name~" not initialized.");
 	} body {
 		// generate the key stream
-		chaCha20Block(state, keyStream);
+		block(state, keyStream);
 		incrementCounter();
 	}
 }
@@ -213,8 +222,8 @@ unittest {
 	];
 
 	assert(state == expectedInitialState, "initState() failed!");
-	
-	ChaCha20.chaCha20Block(state, state);
+
+	ChaCha20.block(state, state);
 	
 	enum uint[16] expectedState= [
 		0xe4e7f110, 0x15593bd1, 0x1fdd0f50, 0xc47120a3,

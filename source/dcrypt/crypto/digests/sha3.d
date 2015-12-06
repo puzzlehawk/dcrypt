@@ -5,8 +5,7 @@ module dcrypt.crypto.digests.sha3;
 /// Standard: FIPS 202, SHA 3
 
 import dcrypt.crypto.digest;
-import dcrypt.util.bitmanip: rol;
-import dcrypt.util.pack;
+import dcrypt.bitmanip;
 
 import std.conv: text;
 import std.algorithm: min;
@@ -39,7 +38,7 @@ static assert(isDigest!SHA3_512);
 
 /// Test Keccak
 unittest {
-	import dcrypt.util.encoders.hex;
+	import dcrypt.encoders.hex;
 
 	string msg1600 = x"8C3798E51BC68482D7337D3ABB75DC9FFE860714A9AD73551E120059860DDE24AB87327222B64CF774415A70F724CDF270DE3FE47DDA07B61C9EF2A3551F45A5584860248FABDE676E1CD75F6355AA3EAEABE3B51DC813D9FB2EAA4F0F1D9F834D7CAD9C7C695AE84B329385BC0BEF895B9F1EDF44A03D4B410CC23A79A6B62E4F346A5E8DD851C2857995DDBF5B2D717AEB847310E1F6A46AC3D26A7F9B44985AF656D2B7C9406E8A9E8F47DCB4EF6B83CAACF9AEFB6118BFCFF7E44BEF6937EBDDC89186839B77";
 
@@ -167,7 +166,6 @@ public struct SHA3(uint bitLength)
 
 	enum name = text("SHA3-", bitLength);
 	enum digestLength = keccak.digestLength;
-	enum byteLength = keccak.byteLength; /// size of block that the compression function is applied to in bytes
 
 	enum blockSize = [224: 144, 256: 136, 384: 104, 512: 72][bitLength]; /// Block size for HMAC as defined in FIPS 202, section 7, table 3.
 
@@ -210,13 +208,11 @@ public struct Keccak(uint capacity)
 {
 
 	public {
-		enum rate = 1600 - capacity;
-		enum bitLength = capacity / 2;
 		//static assert(bitLength == 224 || bitLength == 256 || bitLength == 288 || bitLength == 384 || bitLength == 512);
 		enum name = text("Keccak[", capacity, ", ", rate, "]");
 		enum digestLength = bitLength / 8;
-		enum byteLength = rate / 8; /// size of block that the compression function is applied to in bytes
-		enum blockSize = 0;
+
+		public enum blockSize = 0;
 
 		@nogc
 		void put(in ubyte[] input...) nothrow
@@ -255,6 +251,8 @@ public struct Keccak(uint capacity)
 
 	private {
 
+		enum rate = 1600 - capacity;
+		enum bitLength = capacity / 2;
 		enum byteStateLength = 1600 / 8;
 		enum rounds = 24;
 

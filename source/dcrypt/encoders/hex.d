@@ -1,8 +1,8 @@
-module dcrypt.util.encoders.hex;
+module dcrypt.encoders.hex;
 
 import std.conv: text;
 
-import dcrypt.util.encoders.encoder;
+import dcrypt.encoders.encoder;
 
 unittest {
 	ubyte[] raw = cast(ubyte[]) x"c371d9573a8f3b347fa0cb80629f079ead15e9fa69cf045d762990a8ac64cc9aaec30989d677b0cee9e5362a25f9528b515ad9cde4abd09acb4abc3daa07e396";

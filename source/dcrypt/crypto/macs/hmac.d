@@ -12,18 +12,21 @@ static {
 	static assert(isMAC!(HMac!SHA256), "HMac is not a valid MAC");
 }
 
+//static {
+//	import std.digest.sha;
+//	
+//	static assert(isMAC!(HMac!(std.digest.sha.SHA256)), "HMac is not a valid MAC");
+//}
 
 @safe
-public struct HMac(D) if(isDigest!D) {
+public struct HMac(D, uint blockSize = D.blockSize) if(isDigest!D) {
 
 	
 public:
 
-	public enum name = D.name ~ "/HMAC";
-	public enum macSize = D.digestLength;
-	enum blockSize = D.blockSize;
+	public enum name = "HMAC-"~D.name;
+	public enum macSize = digestLength!D;
 
-	
 	/**
 	 * Params: keyParam = the HMac key
 	 */
@@ -42,8 +45,8 @@ public:
 			if(macKey.length > blockSize) {
 				ubyte[blockSize] key;
 				digest.start();
-				digest.update(macKey);
-				digest.finish(key);
+				digest.put(macKey);
+				key[0..digestLength!D] = digest.finish();
 				iKey[] ^= key[];
 				oKey[] ^= key[];
 			} else {
@@ -56,7 +59,7 @@ public:
 			digest.start();
 		}
 
-		digest.update(iKey);
+		digest.put(iKey);
 		
 		initialized = true;
 	}
@@ -82,12 +85,12 @@ public:
 	 * call leaves the MAC reset(). */
 	@safe
 	ubyte[] finish(ubyte[] output) nothrow @nogc {
-		digest.finish(iHash);
+		iHash = digest.finish();
 		digest.put(oKey);
 
 		digest.put(iHash);
 
-		digest.finish(output);
+		output[0..macSize] = digest.finish();
 		
 		digest.put(iKey);
 		
@@ -133,7 +136,7 @@ private:
 unittest {
 	import dcrypt.crypto.digests.sha2;
 	import dcrypt.crypto.digests.sha2;
-	import dcrypt.util.encoders.hex;
+	import dcrypt.encoders.hex;
 	import std.stdio;
 	
 	// test vectors from http://tools.ietf.org/html/rfc4231
@@ -180,7 +183,7 @@ version(unittest) {
 
 	// unittest helper functions
 
-	import dcrypt.util.encoders.hex;
+	import dcrypt.encoders.hex;
 	import std.conv: text;
 	
 	/// Tests Digest d with given input data and reference hashes.
@@ -193,7 +196,7 @@ version(unittest) {
 	/// AssertionError	if generated hash != expected hash
 	@safe
 	public void testHMac(Digest)(string[] hexKeys, string[] hexData, string[] hexHashes) 
-	if(isDigest!Digest) {
+	if(isStdDigest!Digest) {
 		foreach (i; 0 .. hexData.length)
 		{
 			HMac!Digest mac;

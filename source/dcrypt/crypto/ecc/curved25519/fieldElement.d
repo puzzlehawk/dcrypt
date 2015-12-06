@@ -1,6 +1,6 @@
 ﻿module dcrypt.crypto.ecc.curved25519.fieldElement;
 
-import dcrypt.util.pack;
+import dcrypt.bitmanip;
 
 @safe nothrow @nogc:
 
@@ -663,16 +663,13 @@ private fe fe_mul(in ref fe f, in ref fe g) pure
 }
 
 
-/*
- h = f * 121666
- Can overlap h with f.
-
- Preconditions:
- |f| bounded by 1.1*2^26,1.1*2^25,1.1*2^26,1.1*2^25,etc.
-
- Postconditions:
- |h| bounded by 1.1*2^25,1.1*2^24,1.1*2^25,1.1*2^24,etc.
- */
+/// Returns f * 121666
+///
+/// Preconditions:
+/// |f| bounded by 1.1*2^26,1.1*2^25,1.1*2^26,1.1*2^25,etc.
+///
+/// Postconditions:
+/// |h| bounded by 1.1*2^25,1.1*2^24,1.1*2^25,1.1*2^24,etc.
 public fe fe_mul121666(in ref fe f) pure
 {
 	int f0 = f[0];
@@ -733,6 +730,7 @@ public fe fe_mul121666(in ref fe f) pure
 	return h;
 }
 
+/// Returns: z^(2^(225-23))
 package fe fe_pow22523(in ref fe z) pure
 {
 	fe t0;

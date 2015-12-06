@@ -92,7 +92,7 @@ public abstract class EntropySource
 //		debug {
 //			try {
 //				import std.stdio;
-//				writeln(sourceID, " ", pool, " ",  name, ":\t", dcrypt.util.encoders.hex.toHexStr(buf[0..$/4]));
+//				writeln(sourceID, " ", pool, " ",  name, ":\t", dcrypt.encoders.hex.toHexStr(buf[0..$/4]));
 //			} catch(Exception e) {}
 //		}
 	}

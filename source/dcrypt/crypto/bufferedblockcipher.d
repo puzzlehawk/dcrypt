@@ -6,7 +6,7 @@ import std.algorithm: min;
 
 unittest {
 	import dcrypt.crypto.engines.aes;
-	import dcrypt.util.encoders.hex;
+	import dcrypt.encoders.hex;
 	import std.stdio;
 	
 	IBufferedBlockCipher bbc = new BufferedBlockCipherWrapper!AES;

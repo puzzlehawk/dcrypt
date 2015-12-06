@@ -3,7 +3,7 @@
 
 import dcrypt.crypto.digests.sha2;
 import dcrypt.crypto.digest;
-import dcrypt.util.pack;
+import dcrypt.bitmanip;
 
 private enum minPoolSize = 64;	/// return empty entropy if pool0's size is < MINPOOLSIZE
 private enum bufferSize = 32;	/// size of the output buffer and internal state
@@ -181,7 +181,7 @@ if(isDigest!Digest && Digest.digestLength == bufferSize) {
 
 		accumulator.put(0x01, 0x02, 0x03, 0x04);
 
-		ubyte[] slice = accumulator.finish(oBuf); // write to output buffer
+		ubyte[] slice = accumulator.finishTo(oBuf); // write to output buffer
 
 		freshEntropyBytes = 0; // out of fresh entropy
 
@@ -218,12 +218,12 @@ private unittest {
 	d1.put(0x01);
 	d2.put(0x02);
 	d2 = d1;
-	d1.finish(buf1);
+	d1.finishTo(buf1);
 
 	d1 = d2;
 
-	d1.finish(buf1);
-	d2.finish(buf2);
+	d1.finishTo(buf1);
+	d2.finishTo(buf2);
 
 	assert(buf1 == buf2, "Cloning digests does not work properly.");
 

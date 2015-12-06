@@ -3,15 +3,16 @@ module dcrypt.crypto.digest;
 import std.range: isOutputRange;
 import std.range: OutputRange;
 
+public import std.digest.digest: isStdDigest = isDigest;
+import std.traits: ReturnType;
+
 // TODO compatibility with std.digest?
 
 template isDigest(T)
 {
-	import std.digest.digest: isStdDigest = isDigest;
-
 	enum bool isDigest =
 		isStdDigest!T &&
-		is(T == struct) &&
+			is(T == struct) &&
 			isOutputRange!(T, ubyte) && isOutputRange!(T, const(ubyte)[]) &&
 			is(typeof(
 					{
@@ -23,11 +24,9 @@ template isDigest(T)
 						dig.put(cast(ubyte)0, cast(ubyte)0);		// variadic function
 						dig.put(cast(const (ubyte)[]) data);		// can add bytes
 
-						ubyte[] result = dig.finish(data);				// can extract the hash value
 						ubyte[T.digestLength] hash = dig.finish();					// has finish
 
 						uint digestSize = T.digestLength;			// knows the length of the hash value in bytes. TODO use size in bits
-						uint byteLength = T.byteLength;				// knows the length of its internal state. TODO rename
 						uint blockSize = T.blockSize;				// knows the size if its blocks
 						string name = T.name;						// knows its own name
 
@@ -36,12 +35,58 @@ template isDigest(T)
 
 /// Calculate the final hash value.
 /// Returns: the hash value
-mixin template finish() {
-	@safe @nogc nothrow
-	ubyte[digestLength] finish() {
-		ubyte[digestLength] buf;
-		doFinal(buf);
-		return buf;
+//mixin template finish() {
+//	@safe @nogc nothrow
+//	ubyte[digestLength] finish() {
+//		ubyte[digestLength] buf;
+//		doFinal(buf);
+//		return buf;
+//	}
+//}
+
+//unittest {
+//	import dcrypt.crypto.digests.sha2: SHA256;
+//	ubyte[32] buf;
+//	SHA256 digest;
+//	digest.finish(buf);
+//}
+//
+public ubyte[] finishTo(D)(ref D digest, ubyte[] output) if(isDigest!D) {
+	output[0..D.digestLength] = digest.finish();
+	return output[0..D.digestLength];
+}
+
+template digestLength(T) if(isStdDigest!T)
+{
+	enum size_t digestLength = (ReturnType!(T.finish)).length;
+}
+
+
+template name(T) if(isStdDigest!T)
+{
+	import std.conv: text;
+	static if(is(typeof({string name = T.name;}))) {
+		enum string name = T.name;
+	} else {
+		enum string name = text("NoNameDigest");
+	}
+}
+
+/// Variadic 'put' helper function for digests.
+/// 
+/// Params:
+/// digest = The digest to put the data into.
+/// data = The data to update the digest with.
+/// 
+/// Example:
+/// 	ubyte[4] buf;
+/// 	SHA256 hash;
+/// 	hash.putAll(cast(ubyte) 0x01, buf, buf[0..2]);
+@safe
+public void putAll(D, T...)(ref D digest, in T data) nothrow @nogc
+if(isStdDigest!D) {
+	foreach(d; data) {
+		digest.put(d);
 	}
 }
 
@@ -56,24 +101,14 @@ public abstract class Digest {
 	 *
 	 * Returns the size, in bytes, of the digest produced by this message digest.
 	 */
-	@safe
-	public uint getDigestSize() pure nothrow @nogc;
-
-	
-	/**
-	 Return the size in bytes of the internal buffer the digest applies it's compression
-	 function to.
-	 Returns: the size of the internal state in bytes
-	 */
-	@safe
-	public uint getByteLength() pure nothrow @nogc;
-	
+	@safe @property
+	public uint digestLength() pure nothrow @nogc;
 	
 	/**
 	 Used for padding (i.e. in HMacs)
 	 Returns: the block size or 0 if the Digest is not block based
 	 */
-	@safe
+	@safe @property
 	public uint blockSize() pure nothrow @nogc;
 
 	/**
@@ -95,7 +130,7 @@ public abstract class Digest {
 	 * call leaves the digest reset. */
 	@safe
 	public final ubyte[] finish() nothrow {
-		ubyte[] output = new ubyte[getDigestSize()];
+		ubyte[] output = new ubyte[digestLength];
 		finish(output);
 		return output;
 	}
@@ -142,7 +177,7 @@ if(isDigest!T) {
 	 * Returns the size, in bytes, of the digest produced by this message digest.
 	 */
 	@safe @property
-	public override uint getDigestSize() pure nothrow @nogc {
+	public override uint digestLength() pure nothrow @nogc {
 		return T.digestLength;
 	}
 	
@@ -156,21 +191,13 @@ if(isDigest!T) {
 		return T.blockSize;
 	}
 
-	/// Return the size in bytes of the internal buffer the digest applies it's compression
-	/// function to.
-	/// Returns: the size of the internal state in bytes
-	@safe
-	public override uint getByteLength() pure nothrow @nogc {
-		return T.byteLength;
-	}
 	
-
-
 	/// Close the digest, producing the final digest value and resetting the digest.
 	/// Returns: Slice to the hash in output buffer.
 	@safe
 	public override ubyte[] finish(ubyte[] output) nothrow @nogc {
-		return digest.finish(output);
+		output[0..T.digestLength] = digest.finish();
+		return output[0..T.digestLength];
 	}
 
 	/// reset the digest back to it's initial state.
@@ -205,7 +232,7 @@ version(unittest) {
 	/// AssertionError	if generated hash != expected hash
 	@safe
 	public void testDigest(Digest d, in string[] plaintext, in  string[] hashes) {
-		import dcrypt.util.encoders.hex;
+		import dcrypt.encoders.hex;
 		import std.conv: text;
 		
 		foreach (i; 0 .. plaintext.length)

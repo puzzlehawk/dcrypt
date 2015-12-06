@@ -7,7 +7,7 @@
 /// TODO: This module is not yet tested.
 
 import dcrypt.crypto.random.prng;
-import dcrypt.util.pack;
+import dcrypt.bitmanip;
 import core.cpuid;
 import std.range: chunks;
 
@@ -41,10 +41,6 @@ public struct RDRand {
 	public static bool isSupported() nothrow @nogc {
 		return hasRdrand();
 	}
-
-	/// Dummy function. Has no effect at all.
-	public void addSeed(in ubyte[]) nothrow @nogc pure {}
-
 	
 	/// Generate random data with rdrand instruction.
 	/// Params:

@@ -2,7 +2,7 @@
 
 import std.range: chunks;
 
-import dcrypt.crypto.random.prng;
+import dcrypt.crypto.random.drng;
 import dcrypt.crypto.blockcipher;
 import dcrypt.crypto.digest;
 
@@ -30,7 +30,7 @@ import dcrypt.crypto.digest;
 // Test if FortunaGenerator fullfills requirements to be a PRNG.
 import dcrypt.crypto.engines.aes;
 import dcrypt.crypto.digests.sha2;
-static assert(isRNG!(FortunaGenerator!(AES, SHA256)), "FortunaGenerator violates requirements of isPRNG!");
+static assert(isDRNGWithInput!(FortunaGenerator!(AES, SHA256)), "FortunaGenerator violates requirements of isDRNGWithInput!");
 
 
 
@@ -48,7 +48,7 @@ static assert(isRNG!(FortunaGenerator!(AES, SHA256)), "FortunaGenerator violates
 public struct FortunaGenerator(Cipher, Digest) if(isBlockCipher!Cipher && isDigest!Digest && Digest.digestLength == 32)
 {
 	// PRNG interface implementation
-	public nothrow {
+	public nothrow @nogc {
 
 		this(ubyte[] seed...) @nogc {
 			addSeed(seed);
@@ -70,6 +70,14 @@ public struct FortunaGenerator(Cipher, Digest) if(isBlockCipher!Cipher && isDige
 			reseed(seed);
 		}
 
+		void setSeed(in ubyte[] seed...) @nogc {
+			counter[] = 0;
+			internalBuffer[] = 0;
+			key[] = 0;
+
+			reseed(seed);
+		}
+
 	}
 
 	private {
@@ -81,7 +89,6 @@ public struct FortunaGenerator(Cipher, Digest) if(isBlockCipher!Cipher && isDige
 		ubyte[32] key;						/// Secret encryption key.
 		
 		Cipher cipher;
-		Digest digest;
 
 		bool initialized = false;
 	}
@@ -90,9 +97,10 @@ public struct FortunaGenerator(Cipher, Digest) if(isBlockCipher!Cipher && isDige
 
 		/// compute a new key: newKey = Hash(oldKey | seed)
 		void reseed(in ubyte[] seed...) @nogc {
+			Digest digest;
 			digest.put(key);
 			digest.put(seed);
-			digest.finish(key);
+			key = digest.finish();
 
 			updateKey();
 
@@ -166,7 +174,7 @@ public struct FortunaGenerator(Cipher, Digest) if(isBlockCipher!Cipher && isDige
 	}
 
 	~this() {
-		import dcrypt.util.util: wipe;
+		import dcrypt.util: wipe;
 
 		wipe(key);
 		wipe(counter);

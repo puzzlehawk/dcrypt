@@ -1,7 +1,7 @@
 module dcrypt.crypto.digests.sha1;
 
 import dcrypt.crypto.digest;
-import dcrypt.util.pack;
+import dcrypt.bitmanip;
 
 unittest {
 	// test vectors from http://www.di-mgt.com.au/sha_testvectors.html
@@ -39,7 +39,6 @@ public:
 
 	enum name = "SHA1";
 	enum digestLength = 20;
-	enum byteLength = 64;
 	enum blockSize = 64;
 
 	void put(in ubyte[] input...) nothrow @nogc
@@ -81,9 +80,10 @@ public:
 		}
 	}
 
-	/// Returns: Slice of `output` containing the hash.
-	ubyte[] finish(ubyte[] output) nothrow @nogc
+	/// Returns: The final hash value.
+	ubyte[digestLength] finish() nothrow @nogc
 	{
+		ubyte[digestLength] output;
 		immutable size_t bitLen = byteCount * 8;
 		// add the pad bytes.
 		put(128);
@@ -105,13 +105,7 @@ public:
 
 		start();
 
-		return output[0..digestLength];
-	}
-
-	ubyte[digestLength] finish() nothrow @nogc {
-		ubyte[digestLength] hash;
-		finish(hash);
-		return hash;
+		return output;
 	}
 
 	/// Reset SHA1.
