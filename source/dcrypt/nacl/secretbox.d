@@ -33,6 +33,9 @@ in {
 	streamcipher.start(true, key, nonce);
 
 	ubyte[32] auth_key = 0;
+	scope(exit) {
+		wipe(auth_key);
+	}
 
 	// Derive authentication key by encrypting 32 zeros.
 	streamcipher.processBytes(auth_key, auth_key);
