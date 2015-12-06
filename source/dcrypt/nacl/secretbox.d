@@ -18,12 +18,12 @@ private {
 /// 
 /// Params:
 /// msg = Plaintext message.
-/// key = Secret shared key. 32 bytes.
 /// nonce = 24 bytes used once per key.
+/// key = Secret shared key. 32 bytes.
 ///
 /// Returns:
 /// Authentication tag and encrypted message. The output is 16 bytes longer than the input.
-public ubyte[] secretbox(in ubyte[] msg, in ubyte[] key, in ubyte[] nonce) @safe nothrow
+public ubyte[] secretbox(in ubyte[] msg, in ubyte[] nonce, in ubyte[] key) @safe nothrow
 in {
 	assert(key.length == key_bytes, "Invalid key length.");
 	assert(nonce.length == nonce_bytes, "Invalid nonce length.");
@@ -56,13 +56,13 @@ in {
 /// 
 /// Params:
 /// boxed = Ciphertext and authentication tag as created by `secretbox()`.
-/// key = Secret shared key. 32 bytes.
 /// nonce = 24 bytes used once per key.
+/// key = Secret shared key. 32 bytes.
 ///
 /// Returns: Returns the plaintext if the authentication tag is correct.
 /// 
 /// Throws: Throws an exception if the authentication tag is invalid.
-public ubyte[] secretbox_open(in ubyte[] boxed, in ubyte[] key,  in ubyte[] nonce) @safe
+public ubyte[] secretbox_open(in ubyte[] boxed, in ubyte[] nonce,  in ubyte[] key) @safe
 in {
 	assert(key.length == key_bytes, "Invalid key length.");
 	assert(nonce.length == nonce_bytes, "Invalid nonce length.");
@@ -164,17 +164,17 @@ version(unittest) {
 	/// key = Symmetric encryption key.
 	void test_secret_box(in ubyte[] msg, in ubyte[] boxed_ref, in ubyte[] key, in ubyte[] nonce) {
 		// test encryption
-		ubyte[] boxed = secretbox(msg, key, nonce);
+		ubyte[] boxed = secretbox(msg, nonce, key);
 		if(boxed_ref !is null) {
 			assert(boxed == boxed_ref, "secretbox failed");
 		}
 
 		// test decryption
 		if(boxed_ref !is null) {
-			ubyte[] unboxed = secretbox_open(boxed_ref, key, nonce);
+			ubyte[] unboxed = secretbox_open(boxed_ref, nonce, key);
 			assert(unboxed == msg, "secretbox_open failed");
 		} else {
-			ubyte[] unboxed = secretbox_open(boxed, key, nonce);
+			ubyte[] unboxed = secretbox_open(boxed, nonce, key);
 			assert(unboxed == msg, "secretbox_open failed");
 		}
 		
@@ -184,7 +184,7 @@ version(unittest) {
 		
 		bool exception = false;
 		try {
-			ubyte[] unboxed = secretbox_open(tampered_box, key, nonce);
+			ubyte[] unboxed = secretbox_open(tampered_box, nonce, key);
 			assert(false, "Invalid ciphertext passed as valid.");
 		} catch(InvalidCipherTextException e) {
 			exception = true;

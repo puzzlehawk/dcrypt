@@ -13,7 +13,7 @@ ubyte[] box(in ubyte[] msg, in ubyte[] nonce, in ubyte[] secret_key, in ubyte[] 
 		wipe(shared_key);
 	}
 
-	return secretbox(msg, shared_key, nonce);
+	return secretbox(msg, nonce, shared_key);
 }
 
 ubyte[] box_open(in ubyte[] box, in ubyte[] nonce, in ubyte[] secret_key, in ubyte[] public_key) @safe {
@@ -23,7 +23,7 @@ ubyte[] box_open(in ubyte[] box, in ubyte[] nonce, in ubyte[] secret_key, in uby
 		wipe(shared_key);
 	}
 
-	return secretbox_open(box, shared_key, nonce);
+	return secretbox_open(box, nonce, shared_key);
 }
 
 private ubyte[32] derive_shared_key(in ubyte[] secret_key, in ubyte[] public_key) @safe nothrow @nogc {
@@ -79,40 +79,42 @@ unittest {
 	test_box(msg, boxed_ref, nonce, alice_sk, bob_pk);
 }
 
-/// Helper function for testing.
-/// Params:
-/// msg = Plaintext.
-/// boxed_ref = Expected ciphertext with authentication tag.
-/// nonce = A number unique per (sk, pk) pair.
-/// sk = Own secret key.
-/// pk = Public key.
-void test_box(in ubyte[] msg, in ubyte[] boxed_ref, in ubyte[] nonce, in ubyte[] sk, in ubyte[] pk) {
-	// test encryption
-	ubyte[] boxed = box(msg, nonce, sk, pk);
-	if(boxed_ref !is null) {
-		assert(boxed == boxed_ref, "box() failed");
-	}
-	
-	// test decryption
-	if(boxed_ref !is null) {
-		ubyte[] unboxed = box_open(boxed_ref, nonce, sk, pk);
-		assert(unboxed == msg, "box_open failed");
-	} else {
-		ubyte[] unboxed = box_open(boxed, nonce, sk, pk);
-		assert(unboxed == msg, "box_open failed");
-	}
-	
-	// test invalid authentication
-	ubyte[] tampered_box = boxed.dup;
-	tampered_box[$-1] ^= 1;
-	
-	bool exception = false;
-	try {
-		ubyte[] unboxed = box_open(tampered_box, nonce, sk, pk);
-		assert(false, "Invalid ciphertext passed as valid.");
-	} catch(InvalidCipherTextException e) {
-		exception = true;
-	} finally {
-		assert(exception, "Expected exception has not been thrown.");
+version(unittest) {
+	/// Helper function for testing.
+	/// Params:
+	/// msg = Plaintext.
+	/// boxed_ref = Expected ciphertext with authentication tag.
+	/// nonce = A number unique per (sk, pk) pair.
+	/// sk = Own secret key.
+	/// pk = Public key.
+	void test_box(in ubyte[] msg, in ubyte[] boxed_ref, in ubyte[] nonce, in ubyte[] sk, in ubyte[] pk) {
+		// test encryption
+		ubyte[] boxed = box(msg, nonce, sk, pk);
+		if(boxed_ref !is null) {
+			assert(boxed == boxed_ref, "box() failed");
+		}
+		
+		// test decryption
+		if(boxed_ref !is null) {
+			ubyte[] unboxed = box_open(boxed_ref, nonce, sk, pk);
+			assert(unboxed == msg, "box_open failed");
+		} else {
+			ubyte[] unboxed = box_open(boxed, nonce, sk, pk);
+			assert(unboxed == msg, "box_open failed");
+		}
+		
+		// test invalid authentication
+		ubyte[] tampered_box = boxed.dup;
+		tampered_box[$-1] ^= 1;
+		
+		bool exception = false;
+		try {
+			ubyte[] unboxed = box_open(tampered_box, nonce, sk, pk);
+			assert(false, "Invalid ciphertext passed as valid.");
+		} catch(InvalidCipherTextException e) {
+			exception = true;
+		} finally {
+			assert(exception, "Expected exception has not been thrown.");
+		}
 	}
 }
