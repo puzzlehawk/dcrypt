@@ -1,5 +1,8 @@
 ﻿module dcrypt.nacl.secretbox;
 
+/// High level API for symmetric authenticated encryption.
+/// Compatible to http://nacl.cr.yp.to/secretbox.html.
+
 import dcrypt.crypto.macs.poly1305;
 import dcrypt.crypto.engines.salsa;
 import dcrypt.util;
