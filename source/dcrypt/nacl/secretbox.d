@@ -3,13 +3,16 @@
 import dcrypt.crypto.macs.poly1305;
 import dcrypt.crypto.engines.salsa;
 import dcrypt.util;
+import dcrypt.exceptions;
 
-enum overhead_bytes = 16;
-enum key_bytes = 32;
-enum nonce_bytes = 24;
+private {
+	enum tag_bytes = 16;
+	enum key_bytes = 32;
+	enum nonce_bytes = 24;
 
-alias XSalsa20 StreamCipher;
-alias Poly1305Raw Auth;
+	alias XSalsa20 StreamCipher;
+	alias Poly1305Raw Auth;
+}
 
 public ubyte[] secretbox(in ubyte[] msg, in ubyte[] key, in ubyte[] nonce) @safe nothrow
 in {
@@ -28,11 +31,11 @@ in {
 	Poly1305Raw auth;
 	auth.start(auth_key);
 
-	ubyte[] output = new ubyte[overhead_bytes + msg.length];
+	ubyte[] output = new ubyte[tag_bytes + msg.length];
 
-	ubyte[] ciphertext = streamcipher.processBytes(msg, output[overhead_bytes .. $]);
+	ubyte[] ciphertext = streamcipher.processBytes(msg, output[tag_bytes .. $]);
 	auth.put(ciphertext);
-	output[0..overhead_bytes] = auth.finish();
+	output[0..tag_bytes] = auth.finish();
 
 	return output;
 }
@@ -41,7 +44,7 @@ public ubyte[] secretbox_open(in ubyte[] boxed, in ubyte[] key,  in ubyte[] nonc
 in {
 	assert(key.length == key_bytes, "Invalid key length.");
 	assert(nonce.length == nonce_bytes, "Invalid nonce length.");
-	assert(boxed.length >= overhead_bytes, "Message too short. Can't even contain a 16 byte tag.");
+	assert(boxed.length >= tag_bytes, "Message too short. Can't even contain a 16 byte tag.");
 } body {
 	
 	StreamCipher streamcipher;
@@ -55,11 +58,11 @@ in {
 	Poly1305Raw auth;
 	auth.start(auth_key);
 
-	const ubyte[] ciphertext = boxed[overhead_bytes..$];
+	const ubyte[] ciphertext = boxed[tag_bytes..$];
 
 	auth.put(ciphertext);
-	ubyte[overhead_bytes] recv_tag = auth.finish();
-	const ubyte[] expected_tag = boxed[0..overhead_bytes];
+	ubyte[tag_bytes] recv_tag = auth.finish();
+	const ubyte[] expected_tag = boxed[0..tag_bytes];
 
 	if(crypto_equals(recv_tag, expected_tag)) {
 		// Tag is correct.
@@ -70,7 +73,7 @@ in {
 		
 		return plaintext;
 	} else {
-		throw new Exception("Invalid tag!");
+		throw new InvalidCipherTextException("Invalid tag!");
 	}
 }
 
