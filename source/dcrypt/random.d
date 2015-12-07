@@ -17,7 +17,7 @@ private FortunaRNG globalRNG;
 private enum urandom = "/dev/urandom";
 
 
-static this(){
+shared static this(){
 	/// Initialize entropy sources.
 
 	debug import std.stdio;
