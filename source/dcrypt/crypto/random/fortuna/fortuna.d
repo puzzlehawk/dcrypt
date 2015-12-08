@@ -34,6 +34,14 @@ unittest {
 	}
 }
 
+/// Extract seed from global accumulator.
+private unittest {
+	ubyte[32] buf1, buf2;
+	getSeed(buf1);
+	getSeed(buf2);
+	assert(buf1 != buf2, "Accumulator failed!");
+}
+
 
 /// Add real entropy to the global accumulator.
 /// 
@@ -85,7 +93,6 @@ private shared static this() {
 
 		getTimingEntropy(buf);
 		addEntropy(0, i%Accumulator.pools, buf);
-
 	}
 }
 
