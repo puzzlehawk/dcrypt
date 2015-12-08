@@ -4,20 +4,28 @@ public import dcrypt.nacl.secretbox;
 public import dcrypt.nacl.box;
 public import dcrypt.exceptions: InvalidCipherTextException;
 
+import dcrypt.random;
+
 public alias secretbox crypto_secretbox;
 public alias secretbox_open crypto_secretbox_open;
 public alias box crypto_box;
 public alias box_open crypto_box_open;
+public alias box_pubkey crypto_box_pubkey;
 public alias box_keypair crypto_box_keypair;
 
 
 /// Encrypt and decrypt a message using asymmetric cryptography.
 unittest {
-	immutable ubyte[32] alice_sk = 1;	/// Alice's secret key
-	immutable ubyte[32] bob_sk = 2;	/// Bob's secret key
 
-	immutable ubyte[32] alice_pk = crypto_box_keypair(alice_sk);	/// Alice's public key
-	immutable ubyte[32] bob_pk = crypto_box_keypair(bob_sk);		/// Bob's public key
+	ubyte[32] alice_sk, bob_sk, alice_pk, bob_pk;
+
+	/// Generate two random keypairs.
+	crypto_box_keypair(alice_sk, alice_pk);
+	crypto_box_keypair(bob_sk, bob_pk);
+
+	/// If you already have your secret key, that's the way to get the public key:
+	///		alice_pk = crypto_box_pubkey(alice_sk);	/// Alice's public key
+	///		bob_pk = crypto_box_pubkey(bob_sk);		/// Bob's public key
 
 	immutable ubyte[24] shared_nonce = 42;	/// A shared nonce. Can be transmitted in plaintext.
 
@@ -50,4 +58,21 @@ unittest {
 		exceptionThrown = true;
 	}
 	assert(exceptionThrown, "Tampered message has not been rejected!");
+}
+/// Generate a keypair.
+public void box_keypair(out ubyte[32] sk, out ubyte[32] pk) nothrow @safe @nogc {
+	nextBytes(sk);
+	pk = box_pubkey(sk[]);
+}
+
+unittest {
+	ubyte[32] sk, pk;
+
+	/// Generate a random keypair.
+	box_keypair(sk, pk);
+
+	//	import std.stdio;
+	//
+	//	writefln("%(%.2x%)", sk);
+	//	writefln("%(%.2x%)", pk);
 }

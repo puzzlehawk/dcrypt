@@ -34,7 +34,7 @@ public ubyte[] box(in ubyte[] msg, in ubyte[] nonce, in ubyte[] secret_key, in u
 /// secret_key = A 32 byte secret key, choosen randomly.
 /// 
 /// Returns: Returns the public key matching to the given secret key.
-public ubyte[32] box_keypair(in ubyte[] secret_key) nothrow @safe @nogc 
+public ubyte[32] box_pubkey(in ubyte[] secret_key) nothrow @safe @nogc 
 in {
 	assert(secret_key.length == 32, "Secret key must be 32 bytes.");
 } body {
