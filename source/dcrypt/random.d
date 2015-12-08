@@ -16,7 +16,7 @@ private Fortuna globalRNG;
 
 private enum urandom = "/dev/urandom";
 
-public void nextBytes(ubyte[] buf) {
+public void nextBytes(ubyte[] buf) @safe nothrow @nogc {
 	globalRNG.nextBytes(buf);
 }
 
