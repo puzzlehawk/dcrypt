@@ -4,7 +4,8 @@ public import dcrypt.nacl.secretbox;
 public import dcrypt.nacl.box;
 public import dcrypt.exceptions: InvalidCipherTextException;
 
-import dcrypt.random;
+public import dcrypt.random: randomBytes = nextBytes;
+public import dcrypt.util: wipe;
 
 public alias secretbox crypto_secretbox;
 public alias secretbox_open crypto_secretbox_open;
@@ -19,6 +20,12 @@ unittest {
 
 	ubyte[32] alice_sk, bob_sk, alice_pk, bob_pk;
 
+	/// Make sure sensitive data gets erased on scope exit.
+	scope(exit) {
+		wipe(alice_sk);
+		wipe(bob_sk);
+	}
+
 	/// Generate two random keypairs.
 	crypto_box_keypair(alice_sk, alice_pk);
 	crypto_box_keypair(bob_sk, bob_pk);
@@ -27,7 +34,8 @@ unittest {
 	///		alice_pk = crypto_box_pubkey(alice_sk);	/// Alice's public key
 	///		bob_pk = crypto_box_pubkey(bob_sk);		/// Bob's public key
 
-	immutable ubyte[24] shared_nonce = 42;	/// A shared nonce. Can be transmitted in plaintext.
+	ubyte[24] shared_nonce;	/// A shared nonce. Can be transmitted in plaintext.
+	randomBytes(shared_nonce);
 
 	/// Alice sends a message to Bob.
 	const ubyte[] msg = cast (const ubyte[]) "Hi Bob!";
@@ -61,7 +69,7 @@ unittest {
 }
 /// Generate a keypair.
 public void box_keypair(out ubyte[32] sk, out ubyte[32] pk) nothrow @safe @nogc {
-	nextBytes(sk);
+	randomBytes(sk);
 	pk = box_pubkey(sk[]);
 }
 
