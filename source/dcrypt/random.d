@@ -29,6 +29,7 @@ unittest {
 	assert(buf1 != buf2);
 }
 
+/// Initialize Fortuna
 private shared static this(){
 	/// Initialize entropy sources.
 
