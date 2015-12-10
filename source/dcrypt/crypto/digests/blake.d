@@ -1,8 +1,8 @@
 ﻿module dcrypt.crypto.digests.blake;
 
-import dcrypt.bitmanip: rol;
+import dcrypt.bitmanip: ror, fromBigEndian;
 
-struct Blake(uint bitlength) {
+struct Blake(uint bitLength) {
 
 	static if(bitLength <= 256) {
 		alias uint Word;
@@ -23,11 +23,12 @@ struct Blake(uint bitlength) {
 			0x510E527F, 0x9B05688C, 0x1F83D9AB, 0x5BE0CD19
 		];
 
-		static immutable Word c = [
+		static immutable Word[16] cst = [
 			0x243F6A88, 0x85A308D3, 0x13198A2E, 0x03707344,
 			0xA4093822, 0x299F31D0, 0x082EFA98, 0xEC4E6C89,
 			0x452821E6, 0x38D01377, 0xBE5466CF, 0x34E90C6C,
-			0xC0AC29B7, 0xC97C50DD, 0x3F84D5B5, 0xB5470917];
+			0xC0AC29B7, 0xC97C50DD, 0x3F84D5B5, 0xB5470917
+		];
 
 	} else static if(bitLength == 384) {
 		enum Word
@@ -53,7 +54,7 @@ struct Blake(uint bitlength) {
 		static assert(false, "invalid bitlength");
 	}
 
-	static immutable uint[][] perm = [
+	static immutable uint[16][14] perm = [
 		[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
 		[14, 10, 4, 8, 9, 15, 13, 6, 1, 12, 0, 2, 11, 7, 5, 3],
 		[11, 8, 12, 0, 5, 2, 15, 13, 10, 14, 3, 6, 7, 1, 9, 4],
@@ -64,6 +65,7 @@ struct Blake(uint bitlength) {
 		[13, 11, 7, 14, 12, 1, 3, 9, 5, 0, 15, 4, 8, 6, 2, 10],
 		[6, 15, 14, 9, 11, 3, 0, 8, 12, 2, 13, 7, 1, 4, 10, 5],
 		[10, 2, 8, 4, 7, 6, 1, 5, 15, 11, 9, 14, 3, 12, 13, 0],
+
 		[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
 		[14, 10, 4, 8, 9, 15, 13, 6, 1, 12, 0, 2, 11, 7, 5, 3],
 		[11, 8, 12, 0, 5, 2, 15, 13, 10, 14, 3, 6, 7, 1, 9, 4],
@@ -75,40 +77,73 @@ struct Blake(uint bitlength) {
 
 		// initialize
 		state[0..8] = h;
-		state[8..16] = c;
-		state[8..12] ^= s;
+		state[8..16] = cst[0..8];
+		state[8..12] ^= salt[];
 		state[12..14] ^= ctr[0];
 		state[14..16] ^= ctr[1];
 
 		foreach(r; 0..14) {
-			G(0)(r, m, state[0], state[4], state[8], state[12]);
-			G(1)(r, m, state[1], state[5], state[9], state[13]);
-			G(2)(r, m, state[2], state[6], state[10], state[14]);
-			G(3)(r, m, state[3], state[7], state[11], state[15]);
-
-			G(4)(r, m, state[0], state[5], state[10], state[15]);
-			G(5)(r, m, state[1], state[6], state[11], state[12]);
-			G(6)(r, m, state[2], state[7], state[8], state[13]);
-			G(7)(r, m, state[3], state[4], state[9], state[14]);
+			round(r, m, state);
 		}
 
 		// finalize
-		h ^= state[0..8];
-		h ^= state[8..16];
-		h[0..4] ^= salt;
-		h[4..8] ^= salt;
+		h[] ^= state[0..8];
+		h[] ^= state[8..16];
+		h[0..4] ^= salt[];
+		h[4..8] ^= salt[];
+	}
+
+	private static void round(in size_t r, in ref Word[16] m, ref Word[16] state) pure nothrow @nogc @safe {
+		G!0(r, m, state[0], state[4], state[8], state[12]);
+		G!1(r, m, state[1], state[5], state[9], state[13]);
+		G!2(r, m, state[2], state[6], state[10], state[14]);
+		G!3(r, m, state[3], state[7], state[11], state[15]);
+		
+		G!4(r, m, state[0], state[5], state[10], state[15]);
+		G!5(r, m, state[1], state[6], state[11], state[12]);
+		G!6(r, m, state[2], state[7], state[8], state[13]);
+		G!7(r, m, state[3], state[4], state[9], state[14]);
 	}
 
 	private static void G(uint i, Word)(in size_t r, in ref Word[16] msg, ref Word a, ref Word b, ref Word c, ref Word d) pure nothrow @nogc @safe {
-		a += b + m[perm[r][2*i]] ^ c[perm[r][2*i+1]]; 
+		a += b + (msg[perm[r][2*i]] ^ cst[perm[r][2*i+1]]); 
 		d = ror(d^a, 16);
-		c += d;  b = ror(b^c, 12);
-		a += b + m[perm[r][2*i+1]] ^ c[perm[r][2*i]];
+		c += d; 
+		b = ror(b^c, 12);
+		a += b + (msg[perm[r][2*i+1]] ^ cst[perm[r][2*i]]);
 		d = ror(d^a, 8);
-		c += d;  b = ror(b^c, 7);
+		c += d; 
+		b = ror(b^c, 7);
 	}
 
-	unittest {
-		Word v;
-	}
+
+}
+
+unittest {
+	alias uint Word;
+
+	Word[16] msg;
+	fromBigEndian!Word(cast(const ubyte[]) x"
+			00800000  00000000  00000000  00000000  00000000  00000000  00000000  00000000
+			00000000  00000000  00000000  00000000  00000000  00000001  00000000  00000008", 
+			msg
+		);
+
+	Word[16] v;
+	fromBigEndian!Word(cast(const ubyte[]) x"
+			6A09E667  BB67AE85  3C6EF372  A54FF53A  510E527F  9B05688C  1F83D9AB  5BE0CD19
+			243F6A88  85A308D3  13198A2E  03707344  A409382A  299F31D8  082EFA98  EC4E6C89", 
+			v
+		);
+
+	Word[16] expected;
+	fromBigEndian!Word(cast(const ubyte[]) x"
+			E78B8DFE  150054E7  CABC8992  D15E8984  0669DF2A  084E66E3  A516C4B3  339DED5B
+			26051FB7  09D18B27  3A2E8FA8  488C6059  13E513E6  B37ED53E  16CAC7B9  75AF6DF6", 
+			expected
+		);
+
+	Blake!256.round(0, msg, v);
+
+	assert(v== expected, "BLAKE round failed!");
 }
