@@ -72,7 +72,7 @@ struct Blake(uint bitLength) {
 		[7, 9, 3, 1, 13, 12, 11, 14, 2, 6, 5, 10, 4, 0, 15, 8]
 	];
 
-	private void compress(ref Word[8] h, in ref Word[16] m, in ref Word[4] salt, in ref Word[2] ctr) pure {
+	private static void compress(ref Word[8] h, in ref Word[16] m, in ref Word[4] salt, in ref Word[2] ctr) {
 		Word[16] state;
 
 		// initialize
@@ -119,7 +119,8 @@ struct Blake(uint bitLength) {
 
 }
 
-unittest {
+/// Test BLAKE round function.
+private unittest {
 	alias uint Word;
 
 	Word[16] msg;
@@ -129,21 +130,46 @@ unittest {
 			msg
 		);
 
-	Word[16] v;
+	Word[16] v0;
 	fromBigEndian!Word(cast(const ubyte[]) x"
 			6A09E667  BB67AE85  3C6EF372  A54FF53A  510E527F  9B05688C  1F83D9AB  5BE0CD19
 			243F6A88  85A308D3  13198A2E  03707344  A409382A  299F31D8  082EFA98  EC4E6C89", 
-			v
+			v0
 		);
 
-	Word[16] expected;
+	Word[16] expected1;
 	fromBigEndian!Word(cast(const ubyte[]) x"
 			E78B8DFE  150054E7  CABC8992  D15E8984  0669DF2A  084E66E3  A516C4B3  339DED5B
 			26051FB7  09D18B27  3A2E8FA8  488C6059  13E513E6  B37ED53E  16CAC7B9  75AF6DF6", 
-			expected
+			expected1
 		);
 
-	Blake!256.round(0, msg, v);
+	Word[16] expected2;
+	fromBigEndian!Word(cast(const ubyte[]) x"
+			9DE875FD  8286272E  ADD20174  F1B0F1B7  37A1A6D3  CF90583A  B67E00D2  943A1F4F
+			E5294126  43BD06BF  B81ECBA2  6AF5CEAF  4FEB3A1F  0D6CA73C  5EE50B3E  DC88DF91", 
+			expected2
+		);
 
-	assert(v== expected, "BLAKE round failed!");
+	Word[16] v = v0;
+
+	Blake!256.round(0, msg, v);
+	assert(v== expected1, "BLAKE round failed!");
+
+	Blake!256.round(1, msg, v);
+	assert(v== expected2, "BLAKE round failed!");
+
+	Word[4] salt;
+	Word[2] counter = [0x00000008, 0x00000000];
+	Word[8] h = Blake!256.iv;
+
+	Blake!256.compress(h, msg, salt, counter);
+
+	Word[8] expectedH;
+	fromBigEndian!Word(cast(const ubyte[]) x"
+			0CE8D4EF 4DD7CD8D 62DFDED9 D4EDB0A7 74AE6A41 929A74DA 23109E8F 11139C87", 
+			expectedH
+		);
+
+	assert(h == expectedH, "BLAKE round failed!");
 }
