@@ -160,9 +160,10 @@ body {
 		output[] = casted[];
 	} else {
 		// for little endian systems
+		enum s = T.sizeof;
 		foreach (i; 0 .. output.length)
 		{
-			output[i] = fromBigEndian!T(bs[4*i .. 4*i+4]);
+			output[i] = fromBigEndian!T(bs[s*i .. s*i+s]);
 		}
 	}
 }
@@ -186,9 +187,10 @@ body {
 		output[] = casted[];
 	} else {
 		// for big endian systems
+		enum s = T.sizeof;
 		foreach (i; 0 .. output.length)
 		{
-			output[i] = fromLittleEndian!T(bs[4*i .. 4*i+4]);
+			output[i] = fromLittleEndian!T(bs[s*i .. s*i+s]);
 		}
 	}
 }
