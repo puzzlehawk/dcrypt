@@ -11,33 +11,54 @@ struct Blake(uint bitLength) {
 		alias ulong Word;
 	}
 
-	// initial values
-	static if(bitLength == 256) {
+	// Set IV.
+	static if(bitLength == 224) {
 
-		enum rounds = 14;
+		static immutable Word[8] iv = [
+			0xC1059ED8, 0x367CD507, 0x3070DD17, 0xF70E5939,
+			0xFFC00B31, 0x68581511, 0x64F98FA7, 0xBEFA4FA4
+		];
+
+	} else static if(bitLength == 256) {
 
 		static immutable Word[8] iv = [
 			0x6A09E667, 0xBB67AE85, 0x3C6EF372, 0xA54FF53A,
 			0x510E527F, 0x9B05688C, 0x1F83D9AB, 0x5BE0CD19
 		];
 		
+	} else static if(bitLength == 384) {
+
+		static immutable Word[8] iv = [
+			0xcbbb9d5dc1059ed8, 0x629a292a367cd507, 0x9159015a3070dd17, 0x152fecd8f70e5939,
+			0x67332667ffc00b31, 0x8eb44a8768581511, 0xdb0c2e0d64f98fa7, 0x47b5481dbefa4fa4
+		];
+
+	} else static if(bitLength == 512) {
+
+		static immutable Word[8] iv = [
+			0x6a09e667f3bcc908, 0xbb67ae8584caa73b, 0x3c6ef372fe94f82b, 0xa54ff53a5f1d36f1,
+			0x510e527fade682d1, 0x9b05688c2b3e6c1f, 0x1f83d9abfb41bd6b, 0x5be0cd19137e2179
+		];
+
+	} else {
+		static assert(false, "Invalid bit length.");
+	}
+
+	// Set constants and number of rounds.
+	static if(bitLength == 224 || bitLength == 256) {
+		
+		enum rounds = 14;
+
 		static immutable Word[16] cst = [
 			0x243F6A88, 0x85A308D3, 0x13198A2E, 0x03707344,
 			0xA4093822, 0x299F31D0, 0x082EFA98, 0xEC4E6C89,
 			0x452821E6, 0x38D01377, 0xBE5466CF, 0x34E90C6C,
 			0xC0AC29B7, 0xC97C50DD, 0x3F84D5B5, 0xB5470917
 		];
+
+	} else static if(bitLength == 384 || bitLength == 512) {
 		
-	} else static if(bitLength == 384) {
-
-	} else static if(bitLength == 512) {
-
 		enum rounds = 16;
-
-		static immutable Word[8] iv = [
-			0x6a09e667f3bcc908, 0xbb67ae8584caa73b, 0x3c6ef372fe94f82b, 0xa54ff53a5f1d36f1,
-			0x510e527fade682d1, 0x9b05688c2b3e6c1f, 0x1f83d9abfb41bd6b, 0x5be0cd19137e2179
-		];
 
 		static immutable Word[16] cst = [
 			0x243F6A8885A308D3, 0x13198A2E03707344, 0xA4093822299F31D0, 0x082EFA98EC4E6C89,
@@ -45,8 +66,9 @@ struct Blake(uint bitLength) {
 			0x9216D5D98979FB1B, 0xD1310BA698DFB5AC, 0x2FFD72DBD01ADFB7, 0xB8E1AFED6A267E96,
 			0xBA7C9045F12C7F99, 0x24A19947B3916CF7, 0x0801F2E2858EFC16, 0x636920D871574E69
 		];
+
 	} else {
-		static assert(false, "invalid bitlength");
+		static assert(false, "Invalid bit length.");
 	}
 	
 	static immutable uint[16][16] perm = [
@@ -101,7 +123,7 @@ struct Blake(uint bitLength) {
 		}
 	}
 
-	public ubyte[h.length*Word.sizeof] finish() {
+	public ubyte[bitLength / 8] finish() {
 
 		// pad to 447 bits (message || 1 || 0...0 || 1) 
 		// at least 1 byte padding + 2*Word.sizeof bytes for length
@@ -123,7 +145,12 @@ struct Blake(uint bitLength) {
 		assert((buf[bufPtr] & 0b01111111) == 0, "Byte must be either 0 or 0x80");
 
 		buf[bufPtr+1..$] = 0;
-		buf[$-requiredSpace] |= 0b1;
+
+		static if(bitLength == 256 || bitLength == 512) {
+			buf[$-requiredSpace] |= 0b1;
+		} else {
+			// This padding bit is 0 for 224 and 384 bits.
+		}
 
 		incCounter(cast(uint) bufPtr*8);
 
@@ -131,8 +158,8 @@ struct Blake(uint bitLength) {
 		toBigEndian(counter[0], buf[$-Word.sizeof..$]);
 		absorb();
 
-		ubyte[h.length*Word.sizeof] hn;
-		toBigEndian(h, hn[]);
+		ubyte[bitLength / 8] hn;
+		toBigEndian(h[0..hn.length/Word.sizeof], hn[]);
 		return hn;
 	}
 
@@ -293,6 +320,23 @@ private unittest {
 }
 
 unittest {
+	Blake!224 blake;
+	blake.put(0x00);
+	auto hash = blake.finish();
+	assert(hash == x"4504CB03 14FB2A4F 7A692E69 6E487912 FE3F2468 FE312C73 A5278EC5");
+}
+
+unittest {
+	Blake!224 blake;
+	
+	ubyte[576/8] msg;
+	
+	blake.put(msg);
+	auto hash = blake.finish();
+	assert(hash == x"F5AA00DD 1CB847E3 140372AF 7B5C46B4 888D82C8 C0A91791 3CFB5D04");
+}
+
+unittest {
 	Blake!256 blake;
 	blake.put(0x00);
 	auto hash = blake.finish();
@@ -307,6 +351,30 @@ unittest {
 	blake.put(msg);
 	auto hash = blake.finish();
 	assert(hash == x"D419BAD3 2D504FB7 D44D460C 42C5593F E544FA4C 135DEC31 E21BD9AB DCC22D41");
+}
+
+unittest {
+	Blake!384 blake;
+	blake.put(0x00);
+	auto hash = blake.finish();
+	
+	assert(hash == x"
+		10281F67E135E90A  E8E882251A355510 A719367AD70227B1  37343E1BC122015C
+		29391E8545B5272D  13A7C2879DA3D807"
+		);
+}
+
+unittest {
+	Blake!384 blake;
+	
+	ubyte[1152/8] msg;
+	
+	blake.put(msg);
+	auto hash = blake.finish();
+	assert(hash == x"
+		0B9845DD429566CD  AB772BA195D271EF  FE2D0211F16991D7  66BA749447C5CDE5
+		69780B2DAA66C4B2  24A2EC2E5D09174C"
+		);
 }
 
 unittest {
