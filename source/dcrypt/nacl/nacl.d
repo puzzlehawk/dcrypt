@@ -15,7 +15,7 @@ public alias box_pubkey crypto_box_pubkey;
 public alias box_keypair crypto_box_keypair;
 
 
-/// Encrypt and decrypt a message using asymmetric cryptography.
+/// Encrypt and decrypt a message using asymmetric authenticated encryption.
 unittest {
 
 	ubyte[32] alice_sk, bob_sk, alice_pk, bob_pk;
@@ -57,7 +57,7 @@ unittest {
 		assert(false);
 	}
 
-	// The modified message
+	// Try to decrypt the forged message.
 	bool exceptionThrown = false;
 	try {
 		recv_msg = crypto_box_open(tampered, shared_nonce, bob_sk, alice_pk);
@@ -73,14 +73,3 @@ public void box_keypair(out ubyte[32] sk, out ubyte[32] pk) nothrow @safe @nogc 
 	pk = box_pubkey(sk[]);
 }
 
-unittest {
-	ubyte[32] sk, pk;
-
-	/// Generate a random keypair.
-	box_keypair(sk, pk);
-
-	//	import std.stdio;
-	//
-	//	writefln("%(%.2x%)", sk);
-	//	writefln("%(%.2x%)", pk);
-}
