@@ -1,6 +1,7 @@
 ﻿module dcrypt.crypto.digests.blake;
 
-import dcrypt.bitmanip: ror, fromBigEndian;
+import dcrypt.bitmanip: ror, fromBigEndian, toBigEndian;
+import dcrypt.util: wipe;
 
 struct Blake(uint bitLength) {
 
@@ -72,8 +73,12 @@ struct Blake(uint bitLength) {
 		Word[4]		salt = 0;
 		Word[2]		counter;
 
-		ubyte[Word.sizeof * 16] buf;
-		size_t bufPtr;
+		ubyte[Word.sizeof * 16] buf = 0;
+		size_t bufPtr = 0;
+	}
+
+	~this() {
+		wipe(buf);
 	}
 
 	invariant {
@@ -85,28 +90,94 @@ struct Blake(uint bitLength) {
 		while(input.length >= buf.length-bufPtr) {
 			buf[bufPtr..$] = input[0..buf.length-bufPtr];
 			input = input[buf.length-bufPtr..$];
-			absorb();
+			absorb(buf.length*8);
 		}
 		if(input.length > 0) {
 			assert(input.length < buf.length-bufPtr);
 			buf[bufPtr..bufPtr+input.length] = input[];
+			bufPtr += input.length;
 		}
 	}
 
-	private void absorb() {
+	public ubyte[h.length*Word.sizeof] finish() {
 
+		// pad to 447 bits (message || 1 || 0...0 || 1) 
+		// at least 1 byte padding + 2*Word.sizeof bytes for length
+
+		enum counterSize = counter.length*Word.sizeof;
+		enum requiredSpace = 1 + counterSize;
+
+		assert(bufPtr < buf.length, "There's not a single free byte in the buffer.");
+
+		buf[bufPtr] = 0b10000000;
+
+		if(buf.length-bufPtr < requiredSpace) {
+			// must add a block
+			buf[bufPtr+1..$] = 0;
+			absorb(cast(uint) bufPtr*8);
+			assert(bufPtr == 0);
+		}
+		assert(buf.length-bufPtr >= requiredSpace, "Whoops...");
+		assert((buf[bufPtr] & 0b01111111) == 0, "Byte must be either 0 or 0x80");
+
+		buf[bufPtr+1..$] = 0;
+		buf[$-requiredSpace] |= 0b1;
+
+		incCounter(cast(uint) bufPtr*8);
+
+		toBigEndian(counter[1], buf[$-counterSize..$-Word.sizeof]);
+		toBigEndian(counter[0], buf[$-Word.sizeof..$]);
+		absorb();
+
+		ubyte[h.length*Word.sizeof] hn;
+		toBigEndian(h, hn[]);
+		return hn;
+	}
+
+	private void absorb(in uint bits = 0) {
 		Word[16] msg;
 		fromBigEndian(buf, msg);
 
-		compress(h, msg, salt, ctr);
+		incCounter(bits);
 
-		// increment counter
+		compress(h, msg, salt, counter);
 
 		bufPtr = 0;
-		buf[] = 0;
+		buf[] = 0;	// TODO: clear in finish() if necessary
 	}
 
-	private static void compress(ref Word[8] h, in ref Word[16] m, in ref Word[4] salt, in ref Word[2] ctr) pure nothrow @nogc @safe {
+	private void incCounter(uint i) nothrow @nogc @safe {
+		counter[0] += i;
+		counter[1] += counter[0] < i; // detect carry
+	}
+
+	// Test incCounter function.
+	private unittest {
+		immutable Word max = -1;
+
+		Blake!256 blake;
+		assert(blake.counter == [0, 0]);
+		blake.incCounter(0);
+		assert(blake.counter == [0, 0]);
+		blake.incCounter(1);
+		assert(blake.counter == [1, 0]);
+		blake.incCounter(2);
+		assert(blake.counter == [3, 0]);
+		blake.incCounter(4);
+		assert(blake.counter == [7, 0]);
+		blake.incCounter(max - 7 + 1);
+		assert(blake.counter == [0, 1]);
+		blake.incCounter(max);
+		assert(blake.counter == [max, 1]);
+		blake.incCounter(1);
+		assert(blake.counter == [0, 2]);
+		blake.incCounter(max);
+		assert(blake.counter == [max, 2]);
+		blake.incCounter(43);
+		assert(blake.counter == [42, 3]);
+	}
+
+	private static void compress(ref Word[8] h, in ref Word[16] m, in ref Word[4] salt, in ref Word[2] ctr) {
 		Word[16] state;
 
 		// initialize
@@ -206,4 +277,21 @@ private unittest {
 		);
 
 	assert(h == expectedH, "BLAKE round failed!");
+}
+
+unittest {
+	Blake!256 blake;
+	blake.put(0x00);
+	auto hash = blake.finish();
+	assert(hash == x"0CE8D4EF 4DD7CD8D 62DFDED9 D4EDB0A7 74AE6A41 929A74DA 23109E8F 11139C87");
+}
+
+unittest {
+	Blake!256 blake;
+
+	ubyte[576/8] msg;
+
+	blake.put(msg);
+	auto hash = blake.finish();
+	assert(hash == x"D419BAD3 2D504FB7 D44D460C 42C5593F E544FA4C 135DEC31 E21BD9AB DCC22D41");
 }
