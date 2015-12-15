@@ -13,6 +13,9 @@ struct Blake(uint bitLength) {
 
 	// initial values
 	static if(bitLength == 256) {
+
+		enum rounds = 14;
+
 		static immutable Word[8] iv = [
 			0x6A09E667, 0xBB67AE85, 0x3C6EF372, 0xA54FF53A,
 			0x510E527F, 0x9B05688C, 0x1F83D9AB, 0x5BE0CD19
@@ -26,30 +29,27 @@ struct Blake(uint bitLength) {
 		];
 		
 	} else static if(bitLength == 384) {
-		enum Word
-			iv1 = 0xcbbb9d5dc1059ed8,
-			iv2 = 0x629a292a367cd507,
-			iv3 = 0x9159015a3070dd17,
-			iv4 = 0x152fecd8f70e5939,
-			iv5 = 0x67332667ffc00b31,
-			iv6 = 0x8eb44a8768581511,
-			iv7 = 0xdb0c2e0d64f98fa7,
-			iv8 = 0x47b5481dbefa4fa4;
+
 	} else static if(bitLength == 512) {
-		enum Word
-			iv1 = 0x6a09e667f3bcc908,
-			iv2 = 0xbb67ae8584caa73b,
-			iv3 = 0x3c6ef372fe94f82b,
-			iv4 = 0xa54ff53a5f1d36f1,
-			iv5 = 0x510e527fade682d1,
-			iv6 = 0x9b05688c2b3e6c1f,
-			iv7 = 0x1f83d9abfb41bd6b,
-			iv8 = 0x5be0cd19137e2179;
+
+		enum rounds = 16;
+
+		static immutable Word[8] iv = [
+			0x6a09e667f3bcc908, 0xbb67ae8584caa73b, 0x3c6ef372fe94f82b, 0xa54ff53a5f1d36f1,
+			0x510e527fade682d1, 0x9b05688c2b3e6c1f, 0x1f83d9abfb41bd6b, 0x5be0cd19137e2179
+		];
+
+		static immutable Word[16] cst = [
+			0x243F6A8885A308D3, 0x13198A2E03707344, 0xA4093822299F31D0, 0x082EFA98EC4E6C89,
+			0x452821E638D01377, 0xBE5466CF34E90C6C, 0xC0AC29B7C97C50DD, 0x3F84D5B5B5470917,
+			0x9216D5D98979FB1B, 0xD1310BA698DFB5AC, 0x2FFD72DBD01ADFB7, 0xB8E1AFED6A267E96,
+			0xBA7C9045F12C7F99, 0x24A19947B3916CF7, 0x0801F2E2858EFC16, 0x636920D871574E69
+		];
 	} else {
 		static assert(false, "invalid bitlength");
 	}
 	
-	static immutable uint[16][14] perm = [
+	static immutable uint[16][16] perm = [
 		[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
 		[14, 10, 4, 8, 9, 15, 13, 6, 1, 12, 0, 2, 11, 7, 5, 3],
 		[11, 8, 12, 0, 5, 2, 15, 13, 10, 14, 3, 6, 7, 1, 9, 4],
@@ -64,7 +64,9 @@ struct Blake(uint bitLength) {
 		[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
 		[14, 10, 4, 8, 9, 15, 13, 6, 1, 12, 0, 2, 11, 7, 5, 3],
 		[11, 8, 12, 0, 5, 2, 15, 13, 10, 14, 3, 6, 7, 1, 9, 4],
-		[7, 9, 3, 1, 13, 12, 11, 14, 2, 6, 5, 10, 4, 0, 15, 8]
+		[7, 9, 3, 1, 13, 12, 11, 14, 2, 6, 5, 10, 4, 0, 15, 8],
+		[9, 0, 5, 7, 2, 4, 10, 15, 14, 1, 11, 12, 6, 8, 3, 13],
+		[2, 12, 6, 10, 0, 11, 8, 3, 4, 13, 7, 5, 15, 14, 1, 9]
 	];
 
 	private {
@@ -146,7 +148,7 @@ struct Blake(uint bitLength) {
 		buf[] = 0;	// TODO: clear in finish() if necessary
 	}
 
-	private void incCounter(uint i) nothrow @nogc @safe {
+	private void incCounter(in Word i) nothrow @nogc @safe {
 		counter[0] += i;
 		counter[1] += counter[0] < i; // detect carry
 	}
@@ -155,7 +157,7 @@ struct Blake(uint bitLength) {
 	private unittest {
 		immutable Word max = -1;
 
-		Blake!256 blake;
+		Blake!bitLength blake;
 		assert(blake.counter == [0, 0]);
 		blake.incCounter(0);
 		assert(blake.counter == [0, 0]);
@@ -187,7 +189,7 @@ struct Blake(uint bitLength) {
 		state[12..14] ^= ctr[0];
 		state[14..16] ^= ctr[1];
 
-		foreach(r; 0..14) {
+		foreach(r; 0..rounds) {
 			round(r, m, state);
 		}
 
@@ -211,14 +213,25 @@ struct Blake(uint bitLength) {
 	}
 
 	private static void G(uint i, Word)(in size_t r, in ref Word[16] msg, ref Word a, ref Word b, ref Word c, ref Word d) pure nothrow @nogc @safe {
+
+		static if(Word.sizeof == 4) {
+			// rotation distances for Blake224 and Blake256
+			enum r0 = 16, r1 = 12, r2 = 8, r3 = 7;
+		} else static if (Word.sizeof == 8) {
+			// rotation distances for Blake384 and Blake512
+			enum r0 = 32, r1 = 25, r2 = 16, r3 = 11;
+		} else {
+			static assert(false, "Word consist of 4 or 8 bytes.");
+		}
+
 		a += b + (msg[perm[r][2*i]] ^ cst[perm[r][2*i+1]]); 
-		d = ror(d^a, 16);
+		d = ror(d^a, r0);
 		c += d; 
-		b = ror(b^c, 12);
+		b = ror(b^c, r1);
 		a += b + (msg[perm[r][2*i+1]] ^ cst[perm[r][2*i]]);
-		d = ror(d^a, 8);
+		d = ror(d^a, r2);
 		c += d; 
-		b = ror(b^c, 7);
+		b = ror(b^c, r3);
 	}
 
 	
@@ -294,4 +307,28 @@ unittest {
 	blake.put(msg);
 	auto hash = blake.finish();
 	assert(hash == x"D419BAD3 2D504FB7 D44D460C 42C5593F E544FA4C 135DEC31 E21BD9AB DCC22D41");
+}
+
+unittest {
+	Blake!512 blake;
+	blake.put(0x00);
+	auto hash = blake.finish();
+
+	assert(hash == x"
+		97961587F6D970FA  BA6D2478045DE6D1  FABD09B61AE50932  054D52BC29D31BE4
+		FF9102B9F69E2BBD  B83BE13D4B9C0609  1E5FA0B48BD081B6  34058BE0EC49BEB3"
+		);
+}
+
+unittest {
+	Blake!512 blake;
+	
+	ubyte[1152/8] msg;
+	
+	blake.put(msg);
+	auto hash = blake.finish();
+	assert(hash == x"
+		313717D608E9CF75  8DCB1EB0F0C3CF9F  C150B2D500FB33F5  1C52AFC99D358A2F
+		1374B8A38BBA7974  E7F6EF79CAB16F22  CE1E649D6E01AD95  89C213045D545DDE"
+		);
 }
