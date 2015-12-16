@@ -1,7 +1,7 @@
 ﻿module dcrypt.crypto.digests.blake;
 
 /// Implementation of the BLAKE SHA-3 proposal.
-///
+/// https://131002.net/blake/blake.pdf
 
 public import dcrypt.crypto.digest;
 import dcrypt.bitmanip: ror, fromBigEndian, toBigEndian;
@@ -128,6 +128,7 @@ if(bitLength == 224 || bitLength == 256 || bitLength == 384 || bitLength == 512)
 		salt[] = 0;
 		buf[] = 0;
 		bufPtr = 0;
+		counter[] = 0;
 	}
 
 	~this() {
@@ -189,6 +190,7 @@ if(bitLength == 224 || bitLength == 256 || bitLength == 384 || bitLength == 512)
 
 		ubyte[digestLength] hn;
 		toBigEndian(h[0..digestLength/Word.sizeof], hn[]);
+		start();
 		return hn;
 	}
 
@@ -348,12 +350,7 @@ private unittest {
 	assert(h == expectedH, "BLAKE round failed!");
 }
 
-unittest {
-	Blake!224 blake;
-	blake.put(0x00);
-	auto hash = blake.finish();
-	assert(hash == x"4504CB03 14FB2A4F 7A692E69 6E487912 FE3F2468 FE312C73 A5278EC5");
-}
+
 
 unittest {
 	Blake!224 blake;
@@ -365,12 +362,6 @@ unittest {
 	assert(hash == x"F5AA00DD 1CB847E3 140372AF 7B5C46B4 888D82C8 C0A91791 3CFB5D04");
 }
 
-unittest {
-	Blake!256 blake;
-	blake.put(0x00);
-	auto hash = blake.finish();
-	assert(hash == x"0CE8D4EF 4DD7CD8D 62DFDED9 D4EDB0A7 74AE6A41 929A74DA 23109E8F 11139C87");
-}
 
 unittest {
 	Blake!256 blake;
@@ -380,17 +371,6 @@ unittest {
 	blake.put(msg);
 	auto hash = blake.finish();
 	assert(hash == x"D419BAD3 2D504FB7 D44D460C 42C5593F E544FA4C 135DEC31 E21BD9AB DCC22D41");
-}
-
-unittest {
-	Blake!384 blake;
-	blake.put(0x00);
-	auto hash = blake.finish();
-	
-	assert(hash == x"
-		10281F67E135E90A  E8E882251A355510 A719367AD70227B1  37343E1BC122015C
-		29391E8545B5272D  13A7C2879DA3D807"
-		);
 }
 
 unittest {
@@ -406,16 +386,6 @@ unittest {
 		);
 }
 
-unittest {
-	Blake!512 blake;
-	blake.put(0x00);
-	auto hash = blake.finish();
-
-	assert(hash == x"
-		97961587F6D970FA  BA6D2478045DE6D1  FABD09B61AE50932  054D52BC29D31BE4
-		FF9102B9F69E2BBD  B83BE13D4B9C0609  1E5FA0B48BD081B6  34058BE0EC49BEB3"
-		);
-}
 
 unittest {
 	Blake!512 blake;
@@ -428,4 +398,68 @@ unittest {
 		313717D608E9CF75  8DCB1EB0F0C3CF9F  C150B2D500FB33F5  1C52AFC99D358A2F
 		1374B8A38BBA7974  E7F6EF79CAB16F22  CE1E649D6E01AD95  89C213045D545DDE"
 		);
+}
+
+unittest {
+	
+	immutable string[] plaintexts = [
+		x"",
+		x"00"
+	];
+	
+	immutable string[] hashes = [
+		x"7dc5313b1c04512a174bd6503b89607aecbee0903d40a8a569c94eed",
+		x"4504cb0314fb2a4f7a692e696e487912fe3f2468fe312c73a5278ec5"
+	];
+	
+	testDigest(new WrapperDigest!Blake224, plaintexts, hashes);
+}
+
+unittest {
+	
+	immutable string[] plaintexts = [
+		x"00",
+		"The quick brown fox jumps over the lazy dog"
+	];
+	
+	immutable string[] hashes = [
+		x"0CE8D4EF 4DD7CD8D 62DFDED9 D4EDB0A7 74AE6A41 929A74DA 23109E8F 11139C87",
+		x"7576698EE9CAD30173080678E5965916ADBB11CB5245D386BF1FFDA1CB26C9D7"
+	];
+	
+	testDigest(new WrapperDigest!Blake256, plaintexts, hashes);
+}
+
+unittest {
+	
+	immutable string[] plaintexts = [
+		x"00"
+	];
+	
+	immutable string[] hashes = [
+		x"10281F67E135E90A  E8E882251A355510 A719367AD70227B1  37343E1BC122015C
+		29391E8545B5272D  13A7C2879DA3D807"
+	];
+	
+	testDigest(new WrapperDigest!Blake384, plaintexts, hashes);
+}
+
+unittest {
+	
+	immutable string[] plaintexts = [
+		x"",
+		x"00",
+		"The quick brown fox jumps over the lazy dog"
+	];
+
+	import std.stdio;
+	writefln("%(%.2x %)", plaintexts[2]);
+	
+	immutable string[] hashes = [
+		x"A8CFBBD73726062DF0C6864DDA65DEFE58EF0CC52A5625090FA17601E1EECD1B628E94F396AE402A00ACC9EAB77B4D4C2E852AAAA25A636D80AF3FC7913EF5B8",
+		x"97961587F6D970FABA6D2478045DE6D1FABD09B61AE50932054D52BC29D31BE4FF9102B9F69E2BBDB83BE13D4B9C06091E5FA0B48BD081B634058BE0EC49BEB3",
+		x"1F7E26F63B6AD25A0896FD978FD050A1766391D2FD0471A77AFB975E5034B7AD2D9CCF8DFB47ABBBE656E1B82FBC634BA42CE186E8DC5E1CE09A885D41F43451"
+	];
+	
+	testDigest(new WrapperDigest!Blake512, plaintexts, hashes);
 }
