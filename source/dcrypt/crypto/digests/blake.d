@@ -13,6 +13,11 @@ alias Blake!256 Blake256;
 alias Blake!384 Blake384;
 alias Blake!512 Blake512;
 
+alias WrapperDigest!Blake224 Blake224Digest;
+alias WrapperDigest!Blake256 Blake256Digest;
+alias WrapperDigest!Blake384 Blake384Digest;
+alias WrapperDigest!Blake512 Blake512Digest;
+
 static assert(isDigest!Blake224, "Blake224 does not fullfill requirements of isDigest.");
 static assert(isDigest!Blake256, "Blake256 does not fullfill requirements of isDigest.");
 static assert(isDigest!Blake384, "Blake384 does not fullfill requirements of isDigest.");
@@ -451,10 +456,7 @@ unittest {
 		x"00",
 		"The quick brown fox jumps over the lazy dog"
 	];
-
-	import std.stdio;
-	writefln("%(%.2x %)", plaintexts[2]);
-	
+		
 	immutable string[] hashes = [
 		x"A8CFBBD73726062DF0C6864DDA65DEFE58EF0CC52A5625090FA17601E1EECD1B628E94F396AE402A00ACC9EAB77B4D4C2E852AAAA25A636D80AF3FC7913EF5B8",
 		x"97961587F6D970FABA6D2478045DE6D1FABD09B61AE50932054D52BC29D31BE4FF9102B9F69E2BBDB83BE13D4B9C06091E5FA0B48BD081B634058BE0EC49BEB3",
