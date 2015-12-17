@@ -119,10 +119,9 @@ if(bitLength == 224 || bitLength == 256 || bitLength == 384 || bitLength == 512)
 			[2, 12, 6, 10, 0, 11, 8, 3, 4, 13, 7, 5, 15, 14, 1, 9]
 		];
 
-		Word[8] h = iv;
-
+		Word[8] 	h = iv;
 		Word[4]		salt = 0;
-		Word[2]		counter;
+		Word[2]		counter = 0;
 
 		ubyte[Word.sizeof * 16] buf = 0;
 		size_t bufPtr = 0;
@@ -131,9 +130,9 @@ if(bitLength == 224 || bitLength == 256 || bitLength == 384 || bitLength == 512)
 	public void start() nothrow @nogc @safe {
 		h = iv;
 		salt[] = 0;
+		counter[] = 0;
 		buf[] = 0;
 		bufPtr = 0;
-		counter[] = 0;
 	}
 
 	~this() {
@@ -191,6 +190,11 @@ if(bitLength == 224 || bitLength == 256 || bitLength == 384 || bitLength == 512)
 
 		toBigEndian(counter[1], buf[$-counterSize..$-Word.sizeof]);
 		toBigEndian(counter[0], buf[$-Word.sizeof..$]);
+
+		// Set counter to zero if last block contains no message bit.
+		counter[0] &= -cast(Word)(bufPtr != 0);
+		counter[1] &= -cast(Word)(bufPtr != 0);
+
 		absorb();
 
 		ubyte[digestLength] hn;
@@ -364,7 +368,7 @@ unittest {
 	
 	blake.put(msg);
 	auto hash = blake.finish();
-	assert(hash == x"F5AA00DD 1CB847E3 140372AF 7B5C46B4 888D82C8 C0A91791 3CFB5D04");
+	assert(hash == x"f5aa00dd1cb847e3140372af7b5c46b4888d82c8c0a917913cfb5d04");
 }
 
 
@@ -375,7 +379,7 @@ unittest {
 
 	blake.put(msg);
 	auto hash = blake.finish();
-	assert(hash == x"D419BAD3 2D504FB7 D44D460C 42C5593F E544FA4C 135DEC31 E21BD9AB DCC22D41");
+	assert(hash == x"d419bad32d504fb7d44d460c42c5593fe544fa4c135dec31e21bd9abdcc22d41");
 }
 
 unittest {
@@ -417,22 +421,46 @@ unittest {
 		x"4504cb0314fb2a4f7a692e696e487912fe3f2468fe312c73a5278ec5"
 	];
 	
-	testDigest(new WrapperDigest!Blake224, plaintexts, hashes);
+	testDigest(new Blake224Digest, plaintexts, hashes);
 }
 
 unittest {
 	
 	immutable string[] plaintexts = [
 		x"00",
-		"The quick brown fox jumps over the lazy dog"
+		"The quick brown fox jumps over the lazy dog",
+		// 54 zeros
+		x"0000000000000000000000000000000000000000000000000000000000000000
+		00000000000000000000000000000000000000000000",
+		// 55 zeros
+		x"0000000000000000000000000000000000000000000000000000000000000000
+		0000000000000000000000000000000000000000000000",
+		// 56 zeros
+		x"0000000000000000000000000000000000000000000000000000000000000000
+		000000000000000000000000000000000000000000000000",
+		// 57 zeros
+		x"0000000000000000000000000000000000000000000000000000000000000000
+		00000000000000000000000000000000000000000000000000",
+		// 63 zeros
+		x"0000000000000000000000000000000000000000000000000000000000000000
+		00000000000000000000000000000000000000000000000000000000000000",
+		// 64 zeros
+		x"0000000000000000000000000000000000000000000000000000000000000000
+		0000000000000000000000000000000000000000000000000000000000000000",
 	];
 	
 	immutable string[] hashes = [
-		x"0CE8D4EF 4DD7CD8D 62DFDED9 D4EDB0A7 74AE6A41 929A74DA 23109E8F 11139C87",
-		x"7576698EE9CAD30173080678E5965916ADBB11CB5245D386BF1FFDA1CB26C9D7"
+		x"0ce8d4ef4dd7cd8d62dfded9d4edb0a774ae6a41929a74da23109e8f11139c87",
+		x"7576698EE9CAD30173080678E5965916ADBB11CB5245D386BF1FFDA1CB26C9D7",
+		x"8b7b134b0450f2ee19935dc82df3e4fa7f990b320b1a9afbf1e40914c6fb67cc",
+		x"dc980544f4181cc43505318e317cdfd4334dab81ae035a28818308867ce23060",
+		x"26ae7c289ebb79c9f3af2285023ab1037a9a6db63f0d6b6c6bbd199ab1627508",
+		x"363446fac666e859deae9e81c458662371b6fdd0793712735911071c2be9456b",
+		x"254b522be8c966d8a2c44a2bffce8469f8223ea3371e14e6387d60fc790361f1",
+		x"6d994042954f8dc5633626cd50b2bc66d733a313d67fd9702c5a8149a8028c98"
 	];
 	
-	testDigest(new WrapperDigest!Blake256, plaintexts, hashes);
+	testDigest(new Blake256Digest, plaintexts, hashes);
 }
 
 unittest {
@@ -446,7 +474,7 @@ unittest {
 		29391E8545B5272D  13A7C2879DA3D807"
 	];
 	
-	testDigest(new WrapperDigest!Blake384, plaintexts, hashes);
+	testDigest(new Blake384Digest, plaintexts, hashes);
 }
 
 unittest {
@@ -463,5 +491,5 @@ unittest {
 		x"1F7E26F63B6AD25A0896FD978FD050A1766391D2FD0471A77AFB975E5034B7AD2D9CCF8DFB47ABBBE656E1B82FBC634BA42CE186E8DC5E1CE09A885D41F43451"
 	];
 	
-	testDigest(new WrapperDigest!Blake512, plaintexts, hashes);
+	testDigest(new Blake512Digest, plaintexts, hashes);
 }
