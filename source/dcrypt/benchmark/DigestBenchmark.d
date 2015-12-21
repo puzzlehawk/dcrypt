@@ -2,7 +2,6 @@ module dcrypt.benchmark.DigestBenchmark;
 
 import dcrypt.benchmark.Benchmark;
 import dcrypt.crypto.digest;
-import std.conv;
 
 public class DigestBenchmark: Benchmark {
 	
@@ -34,7 +33,7 @@ public class DigestBenchmark: Benchmark {
 		
 		double speed = 1e9 * length / sw.peek().nsecs();
 		speed *= 1e-6;
-		return [digest.name, text(speed)];
+		return [digest.name, numberFormat(speed)];
 	}
 	
 }

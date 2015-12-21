@@ -3,7 +3,6 @@
 import dcrypt.benchmark.Benchmark;
 import dcrypt.crypto.ecc.curve25519;
 import dcrypt.crypto.ecc.ed25519;
-import std.conv;
 
 public class Curved25519Benchmark: Benchmark {
 
@@ -29,7 +28,7 @@ public class Curved25519Benchmark: Benchmark {
 		
 		
 		ulong speed = cast(ulong) (1e9 * length / sw.peek().nsecs());
-		return ["", text(speed)];
+		return ["", numberFormat(speed)];
 	}
 	
 }
@@ -71,7 +70,7 @@ public class Ed25519Benchmark: Benchmark {
 		ulong speedVerify = cast(ulong) (1e9 * length / sw.peek().nsecs());
 
 
-		return ["", text(speedSign), text(speedVerify)];
+		return ["", numberFormat(speedSign), numberFormat(speedVerify)];
 	}
 	
 }

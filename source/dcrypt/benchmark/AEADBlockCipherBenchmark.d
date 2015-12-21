@@ -2,7 +2,6 @@ module dcrypt.benchmark.AEADCipherBenchmark;
 
 import dcrypt.benchmark.Benchmark;
 import dcrypt.crypto.modes.aead;
-import std.conv;
 import std.algorithm: swap;
 
 public class AEADCipherBenchmark: Benchmark {
@@ -31,7 +30,7 @@ public class AEADCipherBenchmark: Benchmark {
 		
 		//double decrSpeed = getSpeed(length)*1e-6;
 
-		return [cipher.name, text(aadSpeed), text(encrSpeed)];
+		return [cipher.name, numberFormat(aadSpeed), numberFormat(encrSpeed)];
 			 //decrSpeed);
 	}
 
