@@ -258,7 +258,7 @@ version(unittest) {
 			}
 
 			ubyte[] hash = d.finish();
-			assert(hash == expectedHash, text(d.name, " failed: ",hexEncode(hash), " != ", hexEncode(hashes[i])));
+			assert(hash == expectedHash, text(d.name, " failed: ", toHexStr(hash), " != ", toHexStr(hashes[i])));
 			
 			// the clone should now create the same hash
 			if(clone) {

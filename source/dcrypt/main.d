@@ -8,6 +8,7 @@ import dcrypt.crypto.digest;
 import dcrypt.crypto.digests.sha1;
 import dcrypt.crypto.digests.sha2;
 import dcrypt.crypto.digests.sha3;
+import dcrypt.crypto.digests.blake;
 
 import dcrypt.crypto.pbe.pbkdf2;
 
@@ -57,6 +58,10 @@ version (Benchmark) {
 		digests ~= new SHA3_256Digest;
 		digests ~= new SHA3_384Digest;
 		digests ~= new SHA3_512Digest;
+		digests ~= new Blake224Digest;
+		digests ~= new Blake256Digest;
+		digests ~= new Blake384Digest;
+		digests ~= new Blake512Digest;
 		
 		Benchmark.doBenchmark(len, digests);
 		

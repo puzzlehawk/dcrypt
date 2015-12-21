@@ -14,13 +14,13 @@ unittest {
 unittest {
 	string raw = x"c371d9573a8f3b347fa0cb80629f079ead15e9fa69cf045d762990a8ac64cc9aaec30989d677b0cee9e5362a25f9528b515ad9cde4abd09acb4abc3daa07e396";
 	string hex = "c371d9573a8f3b347fa0cb80629f079ead15e9fa69cf045d762990a8ac64cc9aaec30989d677b0cee9e5362a25f9528b515ad9cde4abd09acb4abc3daa07e396";
-	assert(hexEncode(raw) == hex, "failed to encode hex");
+	assert(toHexStr(raw) == hex, "failed to encode hex");
 	assert(hexDecode(hex) == raw, "failed to decode hex");
 }
 
 /// Convert a string to a hex string.
 @safe
-public string hexEncode(string data, bool upperCase = false) nothrow pure {
+public string toHexStr(string data, bool upperCase = false) nothrow pure {
 	return toHexStr(cast(const ubyte[]) data, upperCase);
 }
 
