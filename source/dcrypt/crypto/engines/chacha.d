@@ -1,7 +1,9 @@
 ﻿module dcrypt.crypto.engines.chacha;
 
 import std.algorithm: min;
+import std.conv: text;
 
+import dcrypt.crypto.streamcipher;
 import dcrypt.util;
 import dcrypt.bitmanip;
 
@@ -12,16 +14,22 @@ import dcrypt.bitmanip;
 /// 
 /// Note: This might not be compatible with BouncyCastle's implementation because that one uses a 64-bit counter. 
 /// 
-public struct ChaCha20 {
+
+alias ChaCha!20 ChaCha20;
+alias ChaCha!12 ChaCha12;
+
+static assert(isStreamCipher!ChaCha20, "ChaCha20 is not a stream cipher!");
+static assert(isStreamCipher!ChaCha12, "ChaCha12 is not a stream cipher!");
+
+public struct ChaCha(uint rounds) if(rounds % 2 == 0, "'rounds' must be even.")  {
 
 	@safe nothrow @nogc:
 
 	public {
-		enum name = "ChaCha"~rounds;
+		enum name = text("ChaCha", rounds);
 	}
 
 	private {
-		enum rounds = 20;
 		static immutable uint[4] constants = [0x61707865, 0x3320646e, 0x79622d32, 0x6b206574];
 
 		uint[16] state;
@@ -42,7 +50,8 @@ public struct ChaCha20 {
 	/// forEncryption = Not used, because encryption and decryptioin are the same.
 	/// key = A secret key of 32 bytes length (256 bit).
 	/// iv = A nonce of 12 bytes length (96 bit).
-	public void start(bool forEncryption, in ubyte[] key, in ubyte[] iv)
+	/// initial_counter = The initial value of the counter. The default is 1. (Set this to 2 to skip the first block.)
+	public void start(bool forEncryption, in ubyte[] key, in ubyte[] iv, in uint initial_counter = 1)
 	in {
 		assert(key.length == 32, name~" requires a 32 byte key.");
 		assert(iv.length == 12, name~" requires a 12 byte nonce.");
@@ -51,7 +60,7 @@ public struct ChaCha20 {
 		ubyte[32] _key = key;
 		ubyte[12] _iv = iv;
 
-		initState(state, _key, 1, _iv);
+		initState(state, _key, initial_counter, _iv);
 		keyStreamIndex = 0;
 		initialized = true;
 	}
@@ -127,6 +136,14 @@ public struct ChaCha20 {
 			"ChaCha quarter round is doing weird things...");
 	}
 
+	/// Do a ChaCha permutation on the input by applying n times the inner round function.
+	/// This is actually the block function without adding the input to the permutation.
+	public static void permute(ref uint[16] state) pure {
+		foreach(i; 0..rounds / 2) {
+			innerRound(state);
+		}
+	}
+
 	private static void innerRound(ref uint[16] state) pure {
 		quarterRound(state[0], state[4], state[8], state[12]);
 		quarterRound(state[1], state[5], state[9], state[13]);
@@ -161,15 +178,11 @@ public struct ChaCha20 {
 	/// Params:
 	/// inState = the state created with `initState()`
 	/// outState = buffer for the new state
-	package static void block(uint rounds = 20)(in ref uint[16] inState, ref uint[16] outState) pure 
-		if(rounds % 2 == 0, "'rounds' must be even.") 
+	public static void block(in ref uint[16] inState, ref uint[16] outState) pure
 	{
-		
 		uint[16] workingState = inState;
 
-		foreach(i; 0..rounds / 2) {
-			innerRound(workingState);
-		}
+		permute(workingState);
 
 		workingState[] += inState[];
 		outState[] = workingState[];
@@ -179,10 +192,10 @@ public struct ChaCha20 {
 	/// Params:
 	/// inState = the state created with `initState()`
 	/// outState = buffer for the new state
-	package static void block(uint rounds = 20)(in ref uint[16] inState, ref ubyte[16*4] outState) pure 
+	package static void block(in ref uint[16] inState, ref ubyte[16*4] outState) pure 
 	{
 		uint[16] key;
-		block!rounds(inState, key);
+		block(inState, key);
 		toLittleEndian!uint(key, outState);
 	}
 
@@ -245,5 +258,4 @@ unittest {
 			b5 12 9c d1 de 16 4e b9 cb d0 83 e8 a2 50 3c 4e";
 	
 	assert(keyStream == expectedKeyStream, "Got unexpected key stream.");
-	
 }

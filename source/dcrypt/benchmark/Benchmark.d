@@ -75,6 +75,17 @@ public class Benchmark {
 		stdout.flush();
 	}
 
+	public static void doSphincs256Benchmark(ulong length) {
+		import dcrypt.benchmark.sphincs256;
+		
+		writeln();
+		printTabbed(Sphincs256Benchmark.header);
+		writeln();
+		auto bench = new Sphincs256Benchmark;
+		printTabbed(bench.benchmark(length));
+		stdout.flush();
+	}
+
 	//	public static void doBenchmark(T)(PKCS5S2ParametersGenerator!T[] gen...) {
 	//		writeln();
 	//		writeln(tabbed(padding, "algorithm", "iterations/s"));

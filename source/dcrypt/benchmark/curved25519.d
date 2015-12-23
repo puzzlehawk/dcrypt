@@ -59,15 +59,16 @@ public class Ed25519Benchmark: Benchmark {
 			buf = sign(buf, secretKey, pk);
 		}
 		sw.stop();
-		ulong speedSign = cast(ulong) (1e9 * length / sw.peek().nsecs());
+		ulong speedSign = cast(ulong) (1.0e9 * length / sw.peek().nsecs());
 
 		// verification
+		sw.reset();
 		sw.start();
 		foreach(size_t i; 0 .. length) {
 			bool v = verify(buf, msg, pk);
 		}
 		sw.stop();
-		ulong speedVerify = cast(ulong) (1e9 * length / sw.peek().nsecs());
+		ulong speedVerify = cast(ulong) (1.0e9 * length / sw.peek().nsecs());
 
 
 		return ["", numberFormat(speedSign), numberFormat(speedVerify)];

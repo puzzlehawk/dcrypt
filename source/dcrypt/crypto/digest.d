@@ -91,6 +91,13 @@ if(isStdDigest!D) {
 }
 
 @safe
+public auto hash(Digest, T...)(in T data) nothrow @nogc {
+	Digest digest;
+	digest.putAll(data);
+	return digest.finish();
+}
+
+@safe
 public abstract class Digest {
 
 	@safe @property
