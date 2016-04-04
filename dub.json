@@ -7,6 +7,9 @@
 		"unittest": {
 			"buildOptions": ["debugMode", "debugInfo", "unittests"]
 		},
+		"unittest-fast": {
+			"buildOptions": ["releaseMode", "optimize", "inline", "unittests"]
+		},
 		"debug": {
 			"buildOptions": ["debugMode", "debugInfo", "optimize"]
 		},
