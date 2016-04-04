@@ -336,7 +336,7 @@ int SHL8(in byte val, in uint shift) pure nothrow @nogc  {
 }
 
 unittest {
-	assert(0xFFFFFFFF << 7 == SHL32(0xFFFFFFFF, 7));
+	assert(cast(int)(0xFFFFFFFF) << 7 == SHL32(0xFFFFFFFF, 7));
 }
 
 private fe fe_invert(in ref fe z)
