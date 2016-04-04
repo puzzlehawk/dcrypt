@@ -419,91 +419,71 @@ private:
 		}
 	}
 
-//	static void keccakPermutation(uint rounds)(ref ubyte[byteStateLength] state) pure
-//	{
-//		ulong[25] longState;
-//
-//		fromLittleEndian(state[], longState[]);
-//		keccakPermutation!rounds(longState);
-//		toLittleEndian(longState[], state[]);
-//	}
+	//	static void keccakPermutation(uint rounds)(ref ubyte[byteStateLength] state) pure
+	//	{
+	//		ulong[25] longState;
+	//
+	//		fromLittleEndian(state[], longState[]);
+	//		keccakPermutation!rounds(longState);
+	//		toLittleEndian(longState[], state[]);
+	//	}
 
 	static void keccakPermutation(uint rounds)(ref ulong[25] state) pure
 	{
 		foreach (uint i; 0..rounds)
 		{
-			theta(state);
-			rho(state);
-			pi(state);
-			chi(state);
-			iota(state, i);
-		}
-	}
-
-	static void theta(ref ulong[25] A) pure
-	{
-		ulong[5] C;
-		foreach (uint x; 0..5)
-		{
-			foreach (uint y; 0..5)
-			{
-				C[x] ^= A[x + 5 * y];
-			}
-		}
-		foreach (uint x; 0..5)
-		{
-			ulong dX = rol(C[(x + 1) % 5], 1) ^ C[(x + 4) % 5];
-			foreach (uint y; 0..5)
-			{
-				A[x + 5 * y] ^= dX;
-			}
-		}
-	}
-
-	/// Rotate each element of A by the index in the KeccakRhoOffsets table.
-	static void rho(ref ulong[25] A) pure
-	{
-		foreach (uint index; 0..25)
-		{
-			immutable uint rhoOffset = KeccakRhoOffsets[index];
-			A[index] = rol(A[index], rhoOffset);
-		}
-	}
-
-	
-	static void pi(ref ulong[25] A) pure
-	{
-		ulong[25] tempA = A;
-
-		foreach (uint x; 0..5)
-		{
-			foreach (uint y; 0..5)
-			{
-				A[y + 5 * ((2 * x + 3 * y) % 5)] = tempA[x + 5 * y];
-			}
-		}
-	}
-
-	
-	static void chi(ref ulong[25] A) pure
-	{
-		ulong[5] chiC;
-		foreach (uint y; 0..5)
-		{
+			// theta
+			ulong[5] C;
 			foreach (uint x; 0..5)
 			{
-				chiC[x] = A[x + 5 * y] ^ ((~A[(((x + 1) % 5) + 5 * y)]) & A[(((x + 2) % 5) + 5 * y)]);
+				foreach (uint y; 0..5)
+				{
+					C[x] ^= state[x + 5 * y];
+				}
+			}
+			foreach (uint x; 0..5)
+			{
+				ulong dX = rol(C[(x + 1) % 5], 1) ^ C[(x + 4) % 5];
+				foreach (uint y; 0..5)
+				{
+					state[x + 5 * y] ^= dX;
+				}
 			}
 
-			A[5*y..5*y+5] = chiC[];
+			ulong[25] temp;
+			// rho
+			foreach (uint index; 0..25)
+			{
+				temp[index] = rol(state[index], KeccakRhoOffsets[index]);
+			}
+			
+
+			// pi
+			foreach (uint x; 0..5)
+			{
+				foreach (uint y; 0..5)
+				{
+					state[y + 5 * ((2 * x + 3 * y) % 5)] = temp[x + 5 * y];
+				}
+			}
+
+			// chi
+			foreach (uint y; 0..5)
+			{
+				foreach (uint x; 0..5)
+				{
+					C[x] = state[x + 5 * y] ^ ((~state[(((x + 1) % 5) + 5 * y)]) & state[(((x + 2) % 5) + 5 * y)]);
+				}
+
+				state[5*y..5*y+5] = C[];
+			}
+
+			// iota
+			state[0] ^= KeccakRoundConstants[i];
+
 		}
 	}
 
-	
-	static void iota(ref ulong[25] A, in uint indexRound) pure
-	{
-		A[0] ^= KeccakRoundConstants[indexRound];
-	}
 
 	static void KeccakAbsorb(uint rounds)(ref ulong[longStateLength] longState, in ubyte[] data) pure
 	in {
@@ -527,8 +507,8 @@ private:
 
 // Keccak constants
 private @safe {
-	enum ulong[24] KeccakRoundConstants = keccakInitializeRoundConstants();
-	enum uint[25] KeccakRhoOffsets = keccakInitializeRhoOffsets();
+	immutable ulong[24] KeccakRoundConstants = keccakInitializeRoundConstants();
+	immutable uint[25] KeccakRhoOffsets = keccakInitializeRhoOffsets();
 	
 	static ulong[24] keccakInitializeRoundConstants() pure nothrow @nogc
 	{
