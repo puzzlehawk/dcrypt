@@ -1,6 +1,7 @@
 ﻿module dcrypt.crypto.ecc.curved25519.fieldElement;
 
 import dcrypt.bitmanip;
+import dcrypt.util;
 
 @safe nothrow @nogc:
 
@@ -178,31 +179,6 @@ struct fe {
 	}
 }
 
-/// Compares a and b in constant time.
-/// 
-/// Returns: 0 if a == b, some other value if a != b.
-/// 
-// TODO move to dcrypt.util
-bool crypto_equals(T)(in T[] a, in T[] b) pure
-in {
-	assert(a.length == b.length, "Unequal length.");
-} body  {
-	T result = 0;
-	foreach(i; 0..a.length) {
-		result |= a[i] ^ b[i];
-	}
-
-	return result == 0;
-}
-
-// test crypto_equals
-unittest {
-	ubyte[32] f = 0;
-	immutable ubyte[32] zero = 0;
-	assert(crypto_equals(f[], zero[]));
-	f[8] = 1;
-	assert(!crypto_equals(f[], zero[]));
-}
 
 
 ///// h = f + g

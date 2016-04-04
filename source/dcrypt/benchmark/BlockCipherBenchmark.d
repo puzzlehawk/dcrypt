@@ -28,7 +28,7 @@ public class BlockCipherBenchmark: Benchmark {
 		
 		double decrSpeed = getSpeed(length)*1e-6;
 
-		return [cipher.name, text(encrSpeed), text(decrSpeed)];
+		return [cipher.name, numberFormat(encrSpeed), numberFormat(decrSpeed)];
 	}
 	
 	private double getSpeed(ulong length) {

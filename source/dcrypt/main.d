@@ -8,6 +8,7 @@ import dcrypt.crypto.digest;
 import dcrypt.crypto.digests.sha1;
 import dcrypt.crypto.digests.sha2;
 import dcrypt.crypto.digests.sha3;
+import dcrypt.crypto.digests.blake;
 
 import dcrypt.crypto.pbe.pbkdf2;
 
@@ -29,6 +30,8 @@ import dcrypt.benchmark.Benchmark;
 import dcrypt.benchmark.DigestBenchmark;
 import dcrypt.benchmark.BlockCipherBenchmark;
 import dcrypt.benchmark.AEADCipherBenchmark;
+
+import dcrypt.random;
 
 version (Benchmark) {
 
@@ -55,6 +58,10 @@ version (Benchmark) {
 		digests ~= new SHA3_256Digest;
 		digests ~= new SHA3_384Digest;
 		digests ~= new SHA3_512Digest;
+		digests ~= new Blake224Digest;
+		digests ~= new Blake256Digest;
+		digests ~= new Blake384Digest;
+		digests ~= new Blake512Digest;
 		
 		Benchmark.doBenchmark(len, digests);
 		
@@ -85,8 +92,8 @@ version (Benchmark) {
 		
 		Benchmark.doBenchmark(len, aeadCiphers);
 
-		Benchmark.doCurved25519Benchmark(512);
-		Benchmark.doEd25519Benchmark(512);
+		Benchmark.doCurved25519Benchmark(1024);
+		Benchmark.doEd25519Benchmark(1024);
 				
 	}
 } else {

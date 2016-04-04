@@ -11,6 +11,7 @@ import dcrypt.crypto.digest;
 import dcrypt.crypto.modes.aead;
 
 import std.stdio;
+import std.string;
 
 public class Benchmark {
 
@@ -93,5 +94,9 @@ public class Benchmark {
 	@trusted
 	static void printTabbed(string[] strs...) {
 		writefln("%-(%-20s%)", strs);
+	}
+
+	public string numberFormat(double d) {
+		return format("%10.2f", d);
 	}
 }

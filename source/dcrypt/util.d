@@ -64,3 +64,35 @@ unittest {
 
 	assert(a == 0 && b == 0 && c == 0, "Wiping integer failed!");
 }
+
+/// Compares a and b in constant time.
+/// 
+/// Returns: 0 if a == b, some other value if a != b.
+bool crypto_equals(T)(in T[] a, in T[] b) pure nothrow @safe @nogc
+in {
+	assert(a.length == b.length, "Unequal length.");
+} body  {
+	T result = 0;
+	size_t i = 0;
+
+	while(i < a.length) {
+		result |= a[i] ^ b[i];
+		++i;
+	}
+
+	if(i != a.length) {
+		// Just to be sure that the compiler optimization does not destroy const time.
+		assert(false);
+	}
+
+	return result == 0;
+}
+
+// test crypto_equals
+unittest {
+	ubyte[32] f = 0;
+	immutable ubyte[32] zero = 0;
+	assert(crypto_equals(f[], zero[]));
+	f[8] = 1;
+	assert(!crypto_equals(f[], zero[]));
+}
