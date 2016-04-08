@@ -428,6 +428,9 @@ private:
 	//		toLittleEndian(longState[], state[]);
 	//	}
 
+	/// Note: This can safely be @trusted because array indices are fixed and
+	/// do never depend on input data.
+	@trusted
 	static void keccakPermutation(uint rounds)(ref ulong[25] state) pure
 	{
 		foreach (uint i; 0..rounds)
