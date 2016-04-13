@@ -162,8 +162,8 @@ nothrow:
 			ubyte[32] buf;
 
 			getSeed(buf);
-
-			assert(std.algorithm.any!"a != 0"(buf[]), "Got only zeros from accumulator instead of noise!");
+			import std.algorithm: any;
+			assert(any!"a != 0"(buf[]), "Got only zeros from accumulator instead of noise!");
 
 			prng.addSeed(buf);
 			
