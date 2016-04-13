@@ -46,20 +46,18 @@ try {
 	assert(false);
 }
 
-/// Possibly someone tries to maliciously modify the encrypted message.
+/// Possibly someone tries to maliciously modify the encrypted message ...
 ubyte[] tampered = boxed.dup;
 tampered[$-1] ^= 1;
 
-// Try to decrypt the forged message.
+/// ... then decryption fails.
 bool exceptionThrown = false;
 try {
 	recv_msg = crypto_secretbox_open(tampered, nonce, secret_key);
-	assert(false, "Tampered message has not been rejected!");
 } catch(InvalidCipherTextException e) {
 	exceptionThrown = true;
 }
 assert(exceptionThrown, "Tampered message has not been rejected!");
-
 
 ```
 
@@ -123,3 +121,16 @@ assert(exceptionThrown, "Tampered message has not been rejected!");
 ```
 
 ## Symmetric Primitives
+
+## ECC
+dcrypt comes with one elliptic curve implemented: curve25519.
+Its close relative, signature scheme ed25519 is present too.
+
+## Having fun with post quantum cryptography.
+If you'd like to generate signatures that can't be forged by an adversary
+with access to a quantum computer then the SPHINCS signature scheme might
+be interesting for you.
+
+The implementation of SHPINCS aims to be as generic as possible but at the
+time of this writing only SPHINCS256 is supported by the template.
+
