@@ -94,9 +94,8 @@ version (Benchmark) {
 
 		Benchmark.doCurved25519Benchmark(1024);
 		Benchmark.doEd25519Benchmark(1024);
+		Benchmark.doSphincs256Benchmark(1);
 				
 	}
 } else {
-//	public void main(string[] args) {
-//	}
 }
