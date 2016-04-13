@@ -7,7 +7,6 @@ There's a lot of work to be done.
 ### Running selftest and benchmark
 `dub run --config=selftest --build=benchmark`
 
-## Quickstart
 
 ## Using the high-level NaCl API
 
@@ -120,8 +119,6 @@ try {
 assert(exceptionThrown, "Tampered message has not been rejected!");
 
 ```
-
-## Symmetric Primitives
 
 ## ECC
 dcrypt comes with one elliptic curve implemented: curve25519.
