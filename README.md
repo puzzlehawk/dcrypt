@@ -4,11 +4,12 @@ dcrypt is an attempt to create a cryptography library written in D.
 dcrypt is still far away from beeing what it should be and productive usage is discouraged.
 There's a lot of work to be done.
 
-Running selftest and benchmark:
--------------------------------
-dub run --config=selftest
+### Running selftest and benchmark
+`dub run --config=selftest --build=benchmark`
 
-## Quickstart: Using the high-level NaCl API
+## Quickstart
+
+## Using the high-level NaCl API
 
 dcrypt provides part of the NaCl API for easy symmetric and asymmetric cryptography.
 
