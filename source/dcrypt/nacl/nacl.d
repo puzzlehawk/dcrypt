@@ -23,7 +23,7 @@ unittest {
 	randombytes(secret_key);
 
 	/// Generate a unique nonce.
-	/// Don't use the same nonce with the same key more than once.
+	/// Don't use the same nonce together with the same key more than once.
 	randombytes(nonce);
 
 	const ubyte[] msg = cast (const ubyte[]) "Hi Bob!";
@@ -43,15 +43,14 @@ unittest {
 		assert(false);
 	}
 
-	/// Possibly someone tries to maliciously modify the encrypted message.
+	/// Possibly someone tries to maliciously modify the encrypted message ...
 	ubyte[] tampered = boxed.dup;
 	tampered[$-1] ^= 1;
 
-	// Try to decrypt the forged message.
+	/// ... then decryption fails.
 	bool exceptionThrown = false;
 	try {
 		recv_msg = crypto_secretbox_open(tampered, nonce, secret_key);
-		assert(false, "Tampered message has not been rejected!");
 	} catch(InvalidCipherTextException e) {
 		exceptionThrown = true;
 	}
