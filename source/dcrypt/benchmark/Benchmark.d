@@ -5,7 +5,6 @@ import std.conv;
 import dcrypt.benchmark.BlockCipherBenchmark;
 import dcrypt.benchmark.AEADCipherBenchmark;
 import dcrypt.benchmark.DigestBenchmark;
-//import dcrypt.benchmark.PKSS52ParameterGeneratorBenchmark;
 import dcrypt.crypto.blockcipher;
 import dcrypt.crypto.digest;
 import dcrypt.crypto.modes.aead;
@@ -85,17 +84,6 @@ public class Benchmark {
 		printTabbed(bench.benchmark(length));
 		stdout.flush();
 	}
-
-	//	public static void doBenchmark(T)(PKCS5S2ParametersGenerator!T[] gen...) {
-	//		writeln();
-	//		writeln(tabbed(padding, "algorithm", "iterations/s"));
-	//		writeln();
-	//		foreach(g; gen) {
-	//			auto bench = new PKSS52ParameterGeneratorBenchmark(g);
-	//			writeln(bench.benchmark(0));
-	//			stdout.flush();
-	//		}
-	//	}
 
 	/// do the calculations, (compute hashes, encrypt data, ...)
 	/// Params: length = length of benchmark (numbers of bytes to process)
