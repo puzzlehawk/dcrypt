@@ -254,12 +254,13 @@ public struct Keccak(uint capacity)
 		enum rate = 1600 - capacity;
 		enum bitLength = capacity / 2;
 		enum byteStateLength = 1600 / 8;
+		enum longStateLength = byteStateLength / 8;
 		enum rounds = 24;
 
 		uint bitsInQueue;
 		bool squeezing;
 		uint bitsAvailableForSqueezing;
-		ubyte[byteStateLength] state;
+		ulong[longStateLength] state;
 		ubyte[rate / 8] dataQueue;
 	}
 
@@ -371,7 +372,7 @@ private:
 		{
 			dataQueue[bitsInQueue / 8] |= 1 << (bitsInQueue % 8);
 			absorbQueue();
-			clearDataQueueSection(0, rate / 8);
+			dataQueue[0..rate/8] = 0;
 		}
 		else
 		{
@@ -418,111 +419,114 @@ private:
 		}
 	}
 
-	static void keccakPermutation(uint rounds)(ref ubyte[byteStateLength] state) pure
-	{
-		ulong[25] longState;
+	//	static void keccakPermutation(uint rounds)(ref ubyte[byteStateLength] state) pure
+	//	{
+	//		ulong[25] longState;
+	//
+	//		fromLittleEndian(state[], longState[]);
+	//		keccakPermutation!rounds(longState);
+	//		toLittleEndian(longState[], state[]);
+	//	}
 
-		fromLittleEndian(state[], longState[]);
-		keccakPermutation!rounds(longState);
-		toLittleEndian(longState[], state[]);
-	}
-
+	/// Note: This can safely be @trusted because array indices are fixed and
+	/// do never depend on input data.
+	@trusted
 	static void keccakPermutation(uint rounds)(ref ulong[25] state) pure
 	{
 		foreach (uint i; 0..rounds)
 		{
-			theta(state);
-			rho(state);
-			pi(state);
-			chi(state);
-			iota(state, i);
-		}
-	}
-
-	static void theta(ref ulong[25] A) pure
-	{
-		ulong[5] C;
-		foreach (uint x; 0..5)
-		{
-			foreach (uint y; 0..5)
-			{
-				C[x] ^= A[x + 5 * y];
-			}
-		}
-		foreach (uint x; 0..5)
-		{
-			ulong dX = rol(C[(x + 1) % 5], 1) ^ C[(x + 4) % 5];
-			foreach (uint y; 0..5)
-			{
-				A[x + 5 * y] ^= dX;
-			}
-		}
-	}
-
-	/// Rotate each element of A by the index in the KeccakRhoOffsets table.
-	static void rho(ref ulong[25] A) pure
-	{
-		foreach (uint index; 0..25)
-		{
-			immutable uint rhoOffset = KeccakRhoOffsets[index];
-			A[index] = rol(A[index], rhoOffset);
+			immutable ulong c0 = state[0] ^ state[5] ^ state[10] ^ state[15] ^ state[20];
+			immutable ulong c1 = state[1] ^ state[6] ^ state[11] ^ state[16] ^ state[21];
+			immutable ulong c2 = state[2] ^ state[7] ^ state[12] ^ state[17] ^ state[22];
+			immutable ulong c3 = state[3] ^ state[8] ^ state[13] ^ state[18] ^ state[23];
+			immutable ulong c4 = state[4] ^ state[9] ^ state[14] ^ state[19] ^ state[24];
+			
+			immutable ulong d0 = rol(c0, 1) ^ c3;
+			immutable ulong d1 = rol(c1, 1) ^ c4;
+			immutable ulong d2 = rol(c2, 1) ^ c0;
+			immutable ulong d3 = rol(c3, 1) ^ c1;
+			immutable ulong d4 = rol(c4, 1) ^ c2;
+			
+			immutable ulong b00 = state[ 0] ^ d1;
+			immutable ulong b01 = rol(state[6] ^ d2, 44);
+			immutable ulong b02 = rol(state[12] ^ d3, 43);
+			immutable ulong b03 = rol(state[18] ^ d4, 21);
+			immutable ulong b04 = rol(state[24] ^ d0, 14);
+			immutable ulong b05 = rol(state[3] ^ d4, 28);
+			immutable ulong b06 = rol(state[9] ^ d0, 20);
+			immutable ulong b07 = rol(state[10] ^ d1, 3);
+			immutable ulong b08 = rol(state[16] ^ d2, 45);
+			immutable ulong b09 = rol(state[22] ^ d3, 61);
+			immutable ulong b10 = rol(state[1] ^ d2, 1);
+			immutable ulong b11 = rol(state[7] ^ d3, 6);
+			immutable ulong b12 = rol(state[13] ^ d4, 25);
+			immutable ulong b13 = rol(state[19] ^ d0, 8);
+			immutable ulong b14 = rol(state[20] ^ d1, 18);
+			immutable ulong b15 = rol(state[4] ^ d0, 27);
+			immutable ulong b16 = rol(state[5] ^ d1, 36);
+			immutable ulong b17 = rol(state[11] ^ d2, 10);
+			immutable ulong b18 = rol(state[17] ^ d3, 15);
+			immutable ulong b19 = rol(state[23] ^ d4, 56);
+			immutable ulong b20 = rol(state[2] ^ d3, 62);
+			immutable ulong b21 = rol(state[8] ^ d4, 55);
+			immutable ulong b22 = rol(state[14] ^ d0, 39);
+			immutable ulong b23 = rol(state[15] ^ d1, 41);
+			immutable ulong b24 = rol(state[21] ^ d2, 2);
+			
+			state[0] = b00 ^ (~b01 & b02);
+			state[1] = b01 ^ (~b02 & b03);
+			state[2] = b02 ^ (~b03 & b04);
+			state[3] = b03 ^ (~b04 & b00);
+			state[4] = b04 ^ (~b00 & b01);
+			state[5] = b05 ^ (~b06 & b07);
+			state[6] = b06 ^ (~b07 & b08);
+			state[7] = b07 ^ (~b08 & b09);
+			state[8] = b08 ^ (~b09 & b05);
+			state[9] = b09 ^ (~b05 & b06);
+			state[10] = b10 ^ (~b11 & b12);
+			state[11] = b11 ^ (~b12 & b13);
+			state[12] = b12 ^ (~b13 & b14);
+			state[13] = b13 ^ (~b14 & b10);
+			state[14] = b14 ^ (~b10 & b11);
+			state[15] = b15 ^ (~b16 & b17);
+			state[16] = b16 ^ (~b17 & b18);
+			state[17] = b17 ^ (~b18 & b19);
+			state[18] = b18 ^ (~b19 & b15);
+			state[19] = b19 ^ (~b15 & b16);
+			state[20] = b20 ^ (~b21 & b22);
+			state[21] = b21 ^ (~b22 & b23);
+			state[22] = b22 ^ (~b23 & b24);
+			state[23] = b23 ^ (~b24 & b20);
+			state[24] = b24 ^ (~b20 & b21);
+			
+			state[0] ^= KeccakRoundConstants[i];
 		}
 	}
 
 	
-	static void pi(ref ulong[25] A) pure
-	{
-		ulong[25] tempA = A;
-
-		foreach (uint x; 0..5)
-		{
-			foreach (uint y; 0..5)
-			{
-				A[y + 5 * ((2 * x + 3 * y) % 5)] = tempA[x + 5 * y];
-			}
-		}
-	}
-
-	
-	static void chi(ref ulong[25] A) pure
-	{
-		ulong[5] chiC;
-		foreach (uint y; 0..5)
-		{
-			foreach (uint x; 0..5)
-			{
-				chiC[x] = A[x + 5 * y] ^ ((~A[(((x + 1) % 5) + 5 * y)]) & A[(((x + 2) % 5) + 5 * y)]);
-			}
-
-			A[5*y..5*y+5] = chiC[];
-		}
-	}
-
-	
-	static void iota(ref ulong[25] A, in uint indexRound) pure
-	{
-		A[0] ^= KeccakRoundConstants[indexRound];
-	}
-
-	static void KeccakAbsorb(uint rounds)(ref ubyte[byteStateLength] byteState, in ubyte[] data) pure
+	static void KeccakAbsorb(uint rounds)(ref ulong[longStateLength] longState, in ubyte[] data) pure
 	in {
-		assert(data.length <= byteState.length);
+		assert(data.length <= longState.length*8);
+		assert(data.length % 8 == 0);
 	} body {
-		byteState[0..data.length] ^= data[];
-		keccakPermutation!rounds(byteState);
+		ubyte[byteStateLength] byteBuf;
+		byteBuf[0..data.length] = data;
+		ulong[longStateLength] buf;
+		fromLittleEndian!ulong(byteBuf, buf);
+		longState[] ^= buf[];
+		keccakPermutation!rounds(longState);
 	}
 
-	static void KeccakExtract(in ubyte[] byteState, ubyte[] data, in uint laneCount) pure
+	static void KeccakExtract(in ulong[] longState, ubyte[] data, size_t laneCount) pure
 	{
-		data[0..laneCount*8] = byteState[0..laneCount*8];
+		toLittleEndian(longState[0..laneCount], data[0..laneCount*8]);
 	}
 }
 
 
 // Keccak constants
 private @safe {
-	enum ulong[24] KeccakRoundConstants = keccakInitializeRoundConstants();
-	enum uint[25] KeccakRhoOffsets = keccakInitializeRhoOffsets();
+	immutable ulong[24] KeccakRoundConstants = keccakInitializeRoundConstants();
 	
 	static ulong[24] keccakInitializeRoundConstants() pure nothrow @nogc
 	{
@@ -561,26 +565,6 @@ private @safe {
 		}
 		
 		return result;
-	}
-	
-	static uint[25] keccakInitializeRhoOffsets() pure nothrow @nogc
-	{
-		uint[25] keccakRhoOffsets;
-		uint x, y, t, newX, newY;
-		
-		keccakRhoOffsets[(((0) % 5) + 5 * ((0) % 5))] = 0;
-		x = 1;
-		y = 0;
-		for (t = 0; t < 24; t++)
-		{
-			keccakRhoOffsets[(((x) % 5) + 5 * ((y) % 5))] = ((t + 1) * (t + 2) / 2) % 64;
-			newX = (0 * x + 1 * y) % 5;
-			newY = (2 * x + 3 * y) % 5;
-			x = newX;
-			y = newY;
-		}
-		
-		return keccakRhoOffsets;
 	}
 }
 
