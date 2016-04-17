@@ -6,6 +6,7 @@ public import dcrypt.crypto.random.prng;
 import dcrypt.crypto.digest;
 import dcrypt.crypto.digests.sha1;
 import dcrypt.crypto.digests.sha2;
+import dcrypt.crypto.digests.sha3;
 import dcrypt.bitmanip;
 import dcrypt.util: wipe;
 import std.algorithm: min;
@@ -54,6 +55,10 @@ alias HashDRNG!(SHA1, 440) HashDRNG_SHA1;
 alias HashDRNG!(SHA256, 440) HashDRNG_SHA256;
 alias HashDRNG!(SHA384, 888) HashDRNG_SHA384;
 alias HashDRNG!(SHA512, 888) HashDRNG_SHA512;
+
+alias HashDRNG!(SHA3_256, 440) HashDRNG_SHA3_256;
+alias HashDRNG!(SHA3_384, 888) HashDRNG_SHA3_384;
+alias HashDRNG!(SHA3_512, 888) HashDRNG_SHA3_512;
 
 static assert(isDRNG!HashDRNG_SHA256 && isRNGWithInput!HashDRNG_SHA256 , HashDRNG.name~" is no DRNG.");
 
