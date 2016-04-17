@@ -67,16 +67,7 @@ public class URandomRNG: RNG {
 	/// Returns: `true` if /dev/urandom PRNG is available.
 	@property
 	public static bool isAvailable() nothrow {
-		// HACK: problem with different standard library version
-		version(LDC) {
-			try {
-				return exists(urand);
-			}catch(Exception e) {}	
-
-			return false;
-		} else {
 			return exists(urand);
-		}
 	}
 
 	override {
