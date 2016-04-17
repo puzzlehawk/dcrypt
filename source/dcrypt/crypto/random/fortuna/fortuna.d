@@ -21,7 +21,7 @@ public alias FortunaCore!PRNGWithInput Fortuna;
 
 /// Get some random bytes from Fortuna.
 unittest {
-	FortunaCore!(FortunaGenerator!(AES, SHA3_256)) fortuna;
+	Fortuna fortuna;
 
 	ubyte[61] buf1;
 	ubyte[buf1.length] buf2;
@@ -113,6 +113,7 @@ private shared static this() {
 
 	}
 }
+
 
 
 static assert(isRNGWithInput!(FortunaCore!(FortunaGenerator!(AES, SHA3_256))), "Fortuna does not meet requirements for PRNGs.");
