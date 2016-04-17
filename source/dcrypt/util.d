@@ -9,11 +9,22 @@ import std.algorithm;
 /// Clears data in memory.
 @safe @nogc nothrow
 void wipe(T)(ref T t) {
-	static if(isArray!T) {
-		t[] = 0;
-		assert(all!"a == 0"(t[]), "Failed to wipe ubyte[].");
+	static if(is(typeof(cast (ubyte[]) t))) {
+		ubyte[] bytes = cast(ubyte[]) t;
+
+		bytes[] = 0;
+
+		if(!all!"a == 0"(bytes[])) {
+			// This should not get optimized away.
+			assert(false, "Wiping failed.");
+		}
 	} else static if ( is(typeof( {T a = T.init;} ))) {
 		t = T.init;
+
+		if(t != T.init) {
+			// This should not get optimized away.
+			assert(false, "Wiping failed.");
+		}
 	} else {
 		static assert(false, "Type not supported for wiping: " ~ T.stringof);
 	}
