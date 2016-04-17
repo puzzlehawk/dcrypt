@@ -8,18 +8,18 @@ import dcrypt.crypto.random.fortuna.generator;
 import dcrypt.crypto.random.fortuna.accumulator;
 
 import dcrypt.crypto.engines.aes;
-import dcrypt.crypto.digests.sha2;
+import dcrypt.crypto.digests.sha3;
 
 import std.datetime;
 
 
 /// OOP wrapper
 public alias WrapperPRNG!Fortuna FortunaRNG;
-public alias FortunaCore!(FortunaGenerator!(AES, SHA256)) Fortuna;
+public alias FortunaCore!(FortunaGenerator!(AES, SHA3_256)) Fortuna;
 
 /// Get some random bytes from Fortuna.
 unittest {
-	FortunaCore!(FortunaGenerator!(AES, SHA256)) fortuna;
+	FortunaCore!(FortunaGenerator!(AES, SHA3_256)) fortuna;
 
 	ubyte[61] buf1;
 	ubyte[buf1.length] buf2;
@@ -97,7 +97,7 @@ private shared static this() {
 }
 
 
-static assert(isRNGWithInput!(FortunaCore!(FortunaGenerator!(AES, SHA256))), "Fortuna does not meet requirements for PRNGs.");
+static assert(isRNGWithInput!(FortunaCore!(FortunaGenerator!(AES, SHA3_256))), "Fortuna does not meet requirements for PRNGs.");
 
 /// FortunaCore is meant to be the mothership of the PRNGs. It should run as a singleton -
 /// one instance per application that handles the accumulator and entropy sources.

@@ -1,7 +1,7 @@
 ﻿module dcrypt.crypto.random.fortuna.accumulator;
 
 
-import dcrypt.crypto.digests.sha2;
+import dcrypt.crypto.digests.sha3;
 import dcrypt.crypto.digest;
 import dcrypt.bitmanip;
 
@@ -45,11 +45,9 @@ unittest {
 @safe
 package class Accumulator
 {
-
+	alias SHA3_256 Digest;
 	public enum pools = 32; // TODO 32 might be overkill
 
-	alias SHA256 Digest; /// use SHA256 as digest
-	
 	nothrow @nogc:
 
 	/// Returns: Amount of new seed bytes in pool0.
@@ -209,8 +207,8 @@ if(isDigest!Digest && Digest.digestLength == bufferSize) {
 // Test cloning of a digest.
 private unittest {
 
-	SHA256 d1;
-	SHA256 d2;
+	SHA3_256 d1;
+	SHA3_256 d2;
 
 	ubyte[d1.digestLength] buf1;
 	ubyte[d2.digestLength] buf2;
