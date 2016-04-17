@@ -38,23 +38,23 @@ private shared static this(){
 	if(RDRand.isSupported) {
 		// start rdrand entropy source
 
-		debug writeln("starting RDRAND entropy source");
+		debug writeln("Starting RDRAND entropy source.");
 		EntropySource rdrand_src = new RDRandEntropySource;
 		rdrand_src.start();
 
 	} else {
-		debug writeln("RDRAND entropy source not available");
+		debug writeln("RDRAND entropy source is not available.");
 	}
 
 	try {
-		debug writeln("starting /dev/urandom entropy source");
+		debug writeln("Starting /dev/urandom entropy source.");
 		EntropySource urandom_src = new FileEntropySource(urandom);
 		urandom_src.start();
 	} catch(Exception e) {
-		debug writeln("/dev/urandom entropy source not available", e);
+		debug writeln("/dev/urandom entropy source is not available.", e);
 	}
 
-	debug writeln("starting system-tick entropy source");
+	debug writeln("Starting system-tick entropy source.");
 	EntropySource systick_src = new SystemTickEntropySource;
 	systick_src.start();
 }
