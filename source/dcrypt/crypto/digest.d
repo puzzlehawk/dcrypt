@@ -91,9 +91,12 @@ if(isStdDigest!D) {
 }
 
 @safe
-public auto hash(Digest, T...)(in T data) nothrow @nogc {
+public auto hash(Digest, T...)(in T data) pure nothrow @nogc
+if(isStdDigest!Digest) {
 	Digest digest;
-	digest.putAll(data);
+	foreach(d; data) {
+		digest.put(cast(const ubyte[]) d);
+	}
 	return digest.finish();
 }
 
