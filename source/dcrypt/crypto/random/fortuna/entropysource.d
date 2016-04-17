@@ -83,11 +83,9 @@ public abstract class EntropySource
 
 		calledSendEntropyEvent = true;
 
-		scope(exit) {
-			pool = (pool + 1) % Accumulator.pools;
-		}
-
 		addEntropy(sourceID, pool, buf);
+
+		++pool;
 
 //		debug {
 //			try {
@@ -95,10 +93,6 @@ public abstract class EntropySource
 //				writeln(sourceID, " ", pool, " ",  name, ":\t", dcrypt.encoders.hex.toHexStr(buf[0..$/4]));
 //			} catch(Exception e) {}
 //		}
-	}
-
-	invariant {
-		assert(pool < Accumulator.pools);
 	}
 
 }

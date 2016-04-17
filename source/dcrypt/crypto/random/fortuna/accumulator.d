@@ -1,17 +1,16 @@
 ﻿module dcrypt.crypto.random.fortuna.accumulator;
 
-
-import dcrypt.crypto.digests.sha3;
-import dcrypt.crypto.digest;
+import dcrypt.crypto.random.drng;
 import dcrypt.bitmanip;
+import dcrypt.util: wipe;
 
 private enum minPoolSize = 64;	/// return empty entropy if pool0's size is < MINPOOLSIZE
 private enum bufferSize = 32;	/// size of the output buffer and internal state
 
 // Test shared and non-shared Accumulator
 unittest {
-	auto acc = new Accumulator;
-	auto accShared = new shared Accumulator;
+	auto acc = new Accumulator!HashDRNG_SHA3_512;
+	auto accShared = new shared Accumulator!HashDRNG_SHA3_512;
 
 	ubyte[32] buf1;
 	ubyte[32] buf2;
@@ -23,8 +22,8 @@ unittest {
 
 		assert(buf1 == buf2, "Accumulator does not behave deterministically!");
 
-		acc.addEntropy(0, i%Accumulator.pools, buf1);
-		accShared.addEntropy(0, i%Accumulator.pools, buf2);
+		acc.addEntropy(0, i%acc.pools, buf1);
+		accShared.addEntropy(0, i%accShared.pools, buf2);
 	}
 
 	// change only one accumulator
@@ -38,15 +37,18 @@ unittest {
 
 
 
-/**
- * This class is a core component of the Fortuna algorithm and is responsible for collecting
- * and accumulating entropy from various sources.
- */
+
+/// This class is a core component of the Fortuna algorithm and is responsible for collecting
+/// and accumulating entropy from various sources.
+///
+/// Params:
+/// DRNG	=	A deterministic RNG with input. This type is used as entropy pool.
 @safe
-package class Accumulator
+package class Accumulator(DRNG, uint num_pools = 32)
+	if(isDRNGWithInput!DRNG)
 {
-	alias SHA3_256 Digest;
-	public enum pools = 32; // TODO 32 might be overkill
+
+	alias num_pools pools;
 
 	nothrow @nogc:
 
@@ -59,11 +61,7 @@ package class Accumulator
 	
 	/// Multithreading aware version of `extractEntropy()`
 	@safe
-	synchronized void extractEntropy(ubyte[] buf)
-	in {
-		assert(buf.length == Digest.digestLength, "buffer size does not match digest size");
-	}
-	body {
+	synchronized void extractEntropy(ubyte[] buf) {
 		transaction(0, 0, null, buf);
 	}
 	
@@ -78,17 +76,14 @@ package class Accumulator
 	 * reseedCount = Used to determine from which pools entropy should be fetched.
 	 * buf = Write the seed in this buffer. Length must be `bufferSize`.
 	 */
-	void extractEntropy(ubyte[] buf)
-	in {
-		assert(buf.length == Digest.digestLength, "buffer size does not match digest size");
-	}
-	body {
+	void extractEntropy(ubyte[] buf) {
+
+		ubyte[32] iBuf;
 
 		scope(exit) {
 			counter++;
+			wipe(iBuf);
 		}
-
-		ubyte[Digest.digestLength] iBuf;
 
 		foreach(i, pool; entropyPools) {
 			if(counter % (1<<i) == 0) { // reseedCount divisible by 2^i ?
@@ -101,7 +96,6 @@ package class Accumulator
 		}
 
 		masterPool.extractEntropy(buf);
-		
 	}
 
 	/// Accumulate an entropy event.
@@ -145,8 +139,8 @@ package class Accumulator
 	}
 
 	private {
-		EntropyPool!Digest[pools] entropyPools;
-		EntropyPool!Digest masterPool;
+		EntropyPool!DRNG[pools] entropyPools;
+		EntropyPool!DRNG masterPool;
 		uint counter = 0; // count how many times extractEntropy() has been called
 	}
 
@@ -154,45 +148,32 @@ package class Accumulator
 }
 
 @safe
-private struct EntropyPool(Digest) 
-if(isDigest!Digest && Digest.digestLength == bufferSize) {
+private struct EntropyPool(DRNG) 
+if(isDRNGWithInput!DRNG) {
 
-	private  Digest accumulator;
+	private  DRNG accumulator;
 	private  uint freshEntropyBytes = 0;
 	
 	nothrow @nogc:
 
-	/// extract a block of entropy bits out of this pool.
-	/// the internal state is not leaked.
+	/// Extract a block of entropy bits out of this pool.
+	/// The internal state is not leaked.
 	/// 
 	/// Returns: Slice pointing to the extracted data
-	/// 
-	/// TODO calls doFinal twice: could be a performance issue
 	ubyte[] extractEntropy(ubyte[] oBuf)
-	in {
-		assert(oBuf.length >= accumulator.digestLength, "output buffer too small");
-	}
 	body {
-		ubyte[bufferSize] iBuf;
-
-		Digest temp = accumulator;
-
-		accumulator.put(0x01, 0x02, 0x03, 0x04);
-
-		ubyte[] slice = accumulator.finishTo(oBuf); // write to output buffer
-
 		freshEntropyBytes = 0; // out of fresh entropy
 
-		accumulator = temp;	// reset to previous state
+		accumulator.nextBytes(oBuf);
 
-		return slice;
+		return oBuf;
 	}
 	
 	/// accumulate some bytes in the entropy pool
 	/// Params:
 	/// b = the entropy to add
 	void addEntropy(in ubyte[] b...) {
-		accumulator.put(b);
+		accumulator.addSeed(b);
 		freshEntropyBytes += b.length;
 	}
 
@@ -201,28 +182,8 @@ if(isDigest!Digest && Digest.digestLength == bufferSize) {
 	uint freshEntropy() {
 		return freshEntropyBytes;
 	}
-}
 
-
-// Test cloning of a digest.
-private unittest {
-
-	SHA3_256 d1;
-	SHA3_256 d2;
-
-	ubyte[d1.digestLength] buf1;
-	ubyte[d2.digestLength] buf2;
-
-	d1.put(0x01);
-	d2.put(0x02);
-	d2 = d1;
-	d1.finishTo(buf1);
-
-	d1 = d2;
-
-	d1.finishTo(buf1);
-	d2.finishTo(buf2);
-
-	assert(buf1 == buf2, "Cloning digests does not work properly.");
-
+	~this() {
+		wipe(accumulator);
+	}
 }

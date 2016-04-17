@@ -15,7 +15,9 @@ import std.datetime;
 
 /// OOP wrapper
 public alias WrapperPRNG!Fortuna FortunaRNG;
-public alias FortunaCore!(FortunaGenerator!(AES, SHA3_256)) Fortuna;
+
+alias FortunaGenerator!(AES, SHA3_256) PRNGWithInput;
+public alias FortunaCore!PRNGWithInput Fortuna;
 
 /// Get some random bytes from Fortuna.
 unittest {
@@ -51,12 +53,9 @@ private unittest {
 /// seed	=	Random data.
 @safe
 public void addEntropy(in ubyte sourceID, in size_t pool, in ubyte[] seed...) nothrow @nogc 
-in {
-	assert(pool < Accumulator.pools, "Pool ID out of range.");
-}
-body {
+{
 	assert(globalAcc !is null, "Accumulator not initialized!");
-	globalAcc.addEntropy(sourceID, pool, seed);
+	globalAcc.addEntropy(sourceID, pool%FortunaAccumulator.pools, seed);
 	
 }
 
@@ -80,19 +79,38 @@ body {
 	globalAcc.extractEntropy(buf);
 }
 
-private shared Accumulator globalAcc;	/// The entropy accumulator is used globally.
+package alias Accumulator!HashDRNG_SHA3_256 FortunaAccumulator;
+private shared FortunaAccumulator globalAcc;	/// The entropy accumulator is used globally.
 
-/// initialize and seed the global accumulator
+/// Initialize and seed the global accumulator.
 private shared static this() {
-	globalAcc = new shared Accumulator;
+	globalAcc = new shared FortunaAccumulator;
 
-	// seed the accumulator
-	ubyte[32] buf;
-	foreach(i;0..4096/buf.length) {
-		import dcrypt.crypto.random.fortuna.sources.systemtick;
+	
+	version(linux) {
+		// Read entropy from /dev/urandom and seed the global accumulator.
 
-		getTimingEntropy(buf);
-		addEntropy(0, i%Accumulator.pools, buf);
+		import dcrypt.crypto.random.urandom;
+		if(URandomRNG.isAvailable) {
+			URandomRNG rng = new URandomRNG;
+			ubyte[64] buf;
+			foreach(i; 0..32) {
+				rng.nextBytes(buf);
+				addEntropy(0, i, buf);
+			}
+		}
+
+	} else {
+
+		// Seed the accumulator with (weak?) timing entropy.
+		ubyte[32] buf;
+		foreach(i;0..4096/buf.length) {
+			import dcrypt.crypto.random.fortuna.sources.systemtick;
+
+			getTimingEntropy(buf);
+			addEntropy(0, i, buf);
+		}
+
 	}
 }
 
@@ -142,10 +160,9 @@ nothrow:
 
 			if(
 				//a.getLength() >= MINPOOLSIZE &&
-				TickDuration.currSystemTick.msecs - lastReseed > minReseedInterval) {
-				
+				TickDuration.currSystemTick.msecs - lastReseed > minReseedInterval)
+			{
 				reseed();
-
 			}
 
 			if(lastReseed == 0 && reseedCount == 0) {
@@ -157,19 +174,16 @@ nothrow:
 		}
 
 		/// get entropy from accumulator
-		@trusted
+		@safe
 		private void reseed() nothrow @nogc {
 			ubyte[32] buf;
 
 			getSeed(buf);
-			import std.algorithm: any;
-			assert(any!"a != 0"(buf[]), "Got only zeros from accumulator instead of noise!");
 
 			prng.addSeed(buf);
 			
 			lastReseed = TickDuration.currSystemTick.msecs;
 			++reseedCount;
-
 		}
 		
 	}
