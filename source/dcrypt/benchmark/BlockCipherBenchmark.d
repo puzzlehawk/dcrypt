@@ -1,7 +1,7 @@
 module dcrypt.benchmark.BlockCipherBenchmark;
 
 import dcrypt.benchmark.Benchmark;
-import dcrypt.crypto.blockcipher;
+import dcrypt.blockcipher.blockcipher;
 import std.conv;
 import std.algorithm: swap;
 

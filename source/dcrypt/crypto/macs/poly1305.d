@@ -1,7 +1,7 @@
 ﻿module dcrypt.crypto.macs.poly1305;
 
 import dcrypt.crypto.macs.mac;
-import dcrypt.crypto.blockcipher;
+import dcrypt.blockcipher.blockcipher;
 import dcrypt.bitmanip;
 
 static assert(isMAC!(Poly1305!void), "Poly1305!void is not a valid mac.");
@@ -324,7 +324,7 @@ unittest {
 }
 
 unittest {
-	import dcrypt.crypto.engines.aes;
+	import dcrypt.blockcipher.aes;
 
 	poly1305Test!(Poly1305!AES)(
 		x"0000000000000000000000000000000000000000000000000000000000000000",
@@ -336,7 +336,7 @@ unittest {
 }
 
 unittest {
-	import dcrypt.crypto.engines.aes;
+	import dcrypt.blockcipher.aes;
 	
 	poly1305Test!(Poly1305!AES)(
 		x"f795bd0a50e29e0710d3130a20e98d0c f795bd4a52e29ed713d313fa20e98dbc",

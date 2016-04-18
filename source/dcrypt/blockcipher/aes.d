@@ -1,6 +1,6 @@
-module dcrypt.crypto.engines.aes;
+module dcrypt.blockcipher.aes;
 
-import dcrypt.crypto.blockcipher;
+import dcrypt.blockcipher.blockcipher;
 import dcrypt.errors, dcrypt.exceptions;
 import dcrypt.bitmanip;
 

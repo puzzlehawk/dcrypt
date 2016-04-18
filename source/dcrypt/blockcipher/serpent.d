@@ -1,6 +1,6 @@
-module dcrypt.crypto.engines.serpent;
+module dcrypt.blockcipher.serpent;
 
-import dcrypt.crypto.blockcipher;
+import dcrypt.blockcipher.blockcipher;
 import dcrypt.bitmanip;
 
 /// Test serpent engine. Test vectors generated with BouncyCastle implementation.

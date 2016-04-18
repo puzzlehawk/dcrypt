@@ -1,6 +1,6 @@
 module dcrypt.crypto.modes.ctr;
 
-import dcrypt.crypto.blockcipher;
+import dcrypt.blockcipher.blockcipher;
 
 
 
@@ -8,7 +8,7 @@ import dcrypt.crypto.blockcipher;
 /// test vectors: http://csrc.nist.gov/publications/nistpubs/800-38a/sp800-38a.pdf
 @safe
 unittest {
-	import dcrypt.crypto.engines.aes;
+	import dcrypt.blockcipher.aes;
 	import std.range;
 	import std.conv: text;
 

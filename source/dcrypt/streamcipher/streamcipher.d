@@ -1,4 +1,4 @@
-module dcrypt.crypto.streamcipher;
+module dcrypt.streamcipher.streamcipher;
 
 
 /// test if struct is a stream cipher

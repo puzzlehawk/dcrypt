@@ -1,6 +1,6 @@
-module dcrypt.crypto.engines.rijndael;
+module dcrypt.blockcipher.rijndael;
 
-import dcrypt.crypto.blockcipher;
+import dcrypt.blockcipher.blockcipher;
 
 import std.conv:text;
 

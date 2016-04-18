@@ -5,7 +5,7 @@
 
 public import dcrypt.nacl.secretbox;
 import dcrypt.crypto.ecc.curve25519;
-import dcrypt.crypto.engines.salsa;
+import dcrypt.streamcipher.salsa;
 import dcrypt.util;
 import dcrypt.exceptions: InvalidCipherTextException;
 
