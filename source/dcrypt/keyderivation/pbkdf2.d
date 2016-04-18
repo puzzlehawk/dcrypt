@@ -1,4 +1,4 @@
-module dcrypt.crypto.pbe.pbkdf2;
+module dcrypt.keyderivation.pbkdf2;
 
 import dcrypt.macs.hmac;
 import dcrypt.digest;

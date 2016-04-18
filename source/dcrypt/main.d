@@ -10,7 +10,7 @@ import dcrypt.digests.sha2;
 import dcrypt.digests.sha3;
 import dcrypt.digests.blake;
 
-import dcrypt.crypto.pbe.pbkdf2;
+import dcrypt.keyderivation.pbkdf2;
 
 import dcrypt.blockcipher.blockcipher;
 import dcrypt.blockcipher.aes;
