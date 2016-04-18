@@ -1,7 +1,7 @@
 module dcrypt.benchmark.DigestBenchmark;
 
 import dcrypt.benchmark.Benchmark;
-import dcrypt.crypto.digest;
+import dcrypt.digest;
 
 public class DigestBenchmark: Benchmark {
 	

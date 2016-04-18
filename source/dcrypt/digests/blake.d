@@ -1,9 +1,9 @@
-﻿module dcrypt.crypto.digests.blake;
+﻿module dcrypt.digests.blake;
 
 /// Implementation of the BLAKE SHA-3 proposal.
 /// https://131002.net/blake/blake.pdf
 
-public import dcrypt.crypto.digest;
+public import dcrypt.digest;
 import dcrypt.bitmanip: ror, fromBigEndian, toBigEndian;
 import dcrypt.util: wipe;
 import std.conv: text;

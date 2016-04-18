@@ -4,12 +4,12 @@ import std.range: chunks;
 
 import dcrypt.crypto.random.drng;
 import dcrypt.crypto.blockcipher;
-import dcrypt.crypto.digest;
+import dcrypt.digest;
 
 ///	generate a deterministic PRNG sequence
 @safe unittest {
 	import dcrypt.crypto.engines.aes;
-	import dcrypt.crypto.digests.sha2;
+	import dcrypt.digests.sha2;
 
 	FortunaGenerator!(AES, SHA256) prng;
 	prng.addSeed([0]);
@@ -29,7 +29,7 @@ import dcrypt.crypto.digest;
 
 // Test if FortunaGenerator fullfills requirements to be a PRNG.
 import dcrypt.crypto.engines.aes;
-import dcrypt.crypto.digests.sha2;
+import dcrypt.digests.sha2;
 static assert(isDRNGWithInput!(FortunaGenerator!(AES, SHA256)), "FortunaGenerator violates requirements of isDRNGWithInput!");
 
 
