@@ -1,8 +1,8 @@
-﻿module dcrypt.crypto.modes.gcm.multiplier;
+﻿module dcrypt.blockcipher.modes.gcm.multiplier;
 
 package:
 
-import dcrypt.crypto.modes.gcm.galoisfield;
+import dcrypt.blockcipher.modes.gcm.galoisfield;
 
 // TODO Make use of intel pclmulqdq instruction for fast multiplication.
 

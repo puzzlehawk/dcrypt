@@ -1,4 +1,4 @@
-﻿module dcrypt.crypto.modes.aead;
+﻿module dcrypt.blockcipher.modes.aead;
 
 public import dcrypt.blockcipher.blockcipher;
 
@@ -239,7 +239,7 @@ version(unittest) {
 		in uint[]	macSize
 		) {
 		
-		import dcrypt.crypto.modes.aead;
+		import dcrypt.blockcipher.modes.aead;
 		import dcrypt.encoders.hex;
 		import std.conv: text;
 		

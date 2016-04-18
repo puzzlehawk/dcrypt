@@ -1,7 +1,7 @@
 module dcrypt.benchmark.AEADCipherBenchmark;
 
 import dcrypt.benchmark.Benchmark;
-import dcrypt.crypto.modes.aead;
+import dcrypt.blockcipher.modes.aead;
 import std.algorithm: swap;
 
 public class AEADCipherBenchmark: Benchmark {

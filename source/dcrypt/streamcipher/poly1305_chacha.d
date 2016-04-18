@@ -4,10 +4,10 @@
 /// 
 /// Standard: RFC 7539
 
-import dcrypt.crypto.modes.aead;
+import dcrypt.blockcipher.modes.aead;
 import dcrypt.streamcipher.chacha;
 import dcrypt.streamcipher.salsa;
-import dcrypt.crypto.macs.poly1305;
+import dcrypt.macs.poly1305;
 import dcrypt.bitmanip;
 
 static assert(isAEADCipher!Poly1305ChaCha20, Poly1305ChaCha20.name~" is not a valid AEAD cipher.");

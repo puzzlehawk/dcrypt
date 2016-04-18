@@ -1,8 +1,8 @@
-﻿module dcrypt.crypto.macs.gmac;
+﻿module dcrypt.macs.gmac;
 
-public import dcrypt.crypto.macs.mac;
+public import dcrypt.macs.mac;
 
-import dcrypt.crypto.modes.gcm.gcm;
+import dcrypt.blockcipher.modes.gcm.gcm;
 
 
 /**

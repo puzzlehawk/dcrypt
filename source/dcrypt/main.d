@@ -19,10 +19,10 @@ import dcrypt.blockcipher.aesopenssl;
 import dcrypt.blockcipher.rijndael;
 import dcrypt.blockcipher.rc6;
 import dcrypt.blockcipher.serpent;
-import dcrypt.crypto.modes.cbc;
-import dcrypt.crypto.modes.ctr;
+import dcrypt.blockcipher.modes.cbc;
+import dcrypt.blockcipher.modes.ctr;
 
-import dcrypt.crypto.modes.gcm.gcm;
+import dcrypt.blockcipher.modes.gcm.gcm;
 
 import dcrypt.streamcipher.poly1305_chacha;
 
