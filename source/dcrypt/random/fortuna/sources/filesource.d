@@ -1,9 +1,9 @@
-﻿module dcrypt.crypto.random.fortuna.sources.filesource;
+﻿module dcrypt.random.fortuna.sources.filesource;
 
 /// Read entropy from a file or special file (/dev/urandom).
 
-import dcrypt.crypto.random.fortuna.entropysource;
-import dcrypt.crypto.random.fortuna.fortuna;
+import dcrypt.random.fortuna.entropysource;
+import dcrypt.random.fortuna.fortuna;
 
 import std.stdio;
 import std.file;

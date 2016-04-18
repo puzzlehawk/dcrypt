@@ -1,7 +1,7 @@
 module dcrypt.crypto.padding.pkcs7;
 
 import dcrypt.crypto.padding.padding;
-import dcrypt.crypto.random.prng;
+import dcrypt.random.prng;
 import dcrypt.exceptions;
 import std.exception: enforce;
 

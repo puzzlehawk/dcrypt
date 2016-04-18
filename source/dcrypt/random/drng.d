@@ -1,8 +1,8 @@
-﻿module dcrypt.crypto.random.drng;
+﻿module dcrypt.random.drng;
 
 /// The DRNG module contains a collection of deterministic random number generators.
 
-public import dcrypt.crypto.random.prng;
+public import dcrypt.random.prng;
 import dcrypt.digest;
 import dcrypt.digests.sha1;
 import dcrypt.digests.sha2;

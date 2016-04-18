@@ -1,12 +1,12 @@
-﻿module dcrypt.crypto.random.fortuna.sources.reboot;
+﻿module dcrypt.random.fortuna.sources.reboot;
 
 /// The reboot entropy source loads entropy from a specified file
 /// and updates the seed in this file with new random data.
 /// The goal of this entropy source is to provide good entropy at start of
 /// the program. This is however not the case when the program is run the first time.
 
-import dcrypt.crypto.random.fortuna.entropysource;
-import dcrypt.crypto.random.fortuna.fortuna;
+import dcrypt.random.fortuna.entropysource;
+import dcrypt.random.fortuna.fortuna;
 
 import std.stdio;
 import std.file;

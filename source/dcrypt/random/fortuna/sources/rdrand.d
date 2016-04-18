@@ -1,8 +1,8 @@
-﻿module dcrypt.crypto.random.fortuna.sources.rdrand;
+﻿module dcrypt.random.fortuna.sources.rdrand;
 
-import dcrypt.crypto.random.rdrand;
-import dcrypt.crypto.random.fortuna.entropysource;
-import dcrypt.crypto.random.fortuna.fortuna: addEntropy;
+import dcrypt.random.rdrand;
+import dcrypt.random.fortuna.entropysource;
+import dcrypt.random.fortuna.fortuna: addEntropy;
 
 /// Generate entropy data with intel rdrand instruction.
 

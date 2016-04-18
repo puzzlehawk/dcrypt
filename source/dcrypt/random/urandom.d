@@ -1,11 +1,11 @@
-module dcrypt.crypto.random.urandom;
+module dcrypt.random.urandom;
 
 import std.stdio;
 import std.file;
 import std.exception;
 import std.conv: text;
 
-import dcrypt.crypto.random.prng;
+import dcrypt.random.prng;
 
 /// This module wraps the /dev/urandom special file into a dcrypt PRNG.
 /// Available for Linux only.

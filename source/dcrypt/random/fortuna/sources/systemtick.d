@@ -1,10 +1,10 @@
-﻿module dcrypt.crypto.random.fortuna.sources.systemtick;
+﻿module dcrypt.random.fortuna.sources.systemtick;
 
 import core.time;
 
 
-import dcrypt.crypto.random.fortuna.entropysource;
-import dcrypt.crypto.random.fortuna.fortuna: addEntropy;
+import dcrypt.random.fortuna.entropysource;
+import dcrypt.random.fortuna.fortuna: addEntropy;
 
 /// Generate entropy data with the system clock.
 /// 

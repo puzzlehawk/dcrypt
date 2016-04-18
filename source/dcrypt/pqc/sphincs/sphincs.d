@@ -5,7 +5,7 @@ import std.traits: ReturnType;
 import dcrypt.bitmanip;
 import dcrypt.util: wipe;
 import dcrypt.digests.blake: Blake512, hash;
-import dcrypt.random: nextBytes;
+import dcrypt.random.random: nextBytes;
 
 import dcrypt.pqc.sphincs.common;
 import dcrypt.pqc.sphincs.wots: WOTS;
