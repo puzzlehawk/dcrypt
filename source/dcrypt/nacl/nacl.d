@@ -4,7 +4,7 @@ public import dcrypt.nacl.secretbox;
 public import dcrypt.nacl.box;
 public import dcrypt.exceptions: InvalidCipherTextException;
 
-public import dcrypt.random: randombytes = nextBytes;
+public import dcrypt.random.random: randombytes = nextBytes;
 public import dcrypt.util: wipe;
 
 public alias secretbox crypto_secretbox;

@@ -1,11 +1,11 @@
-module dcrypt.crypto.random.fortuna.fortuna;
+module dcrypt.random.fortuna.fortuna;
 
-public import dcrypt.crypto.random.drng;
+public import dcrypt.random.drng;
 public import dcrypt.blockcipher.blockcipher;
 public import dcrypt.digest;
 
-import dcrypt.crypto.random.fortuna.generator;
-import dcrypt.crypto.random.fortuna.accumulator;
+import dcrypt.random.fortuna.generator;
+import dcrypt.random.fortuna.accumulator;
 
 import dcrypt.blockcipher.aes;
 import dcrypt.digests.sha3;
@@ -90,7 +90,7 @@ private shared static this() {
 	version(linux) {
 		// Read entropy from /dev/urandom and seed the global accumulator.
 
-		import dcrypt.crypto.random.urandom;
+		import dcrypt.random.urandom;
 		if(URandomRNG.isAvailable) {
 			URandomRNG rng = new URandomRNG;
 			ubyte[64] buf;
@@ -105,7 +105,7 @@ private shared static this() {
 		// Seed the accumulator with (weak?) timing entropy.
 		ubyte[32] buf;
 		foreach(i;0..4096/buf.length) {
-			import dcrypt.crypto.random.fortuna.sources.systemtick;
+			import dcrypt.random.fortuna.sources.systemtick;
 
 			getTimingEntropy(buf);
 			addEntropy(0, i, buf);

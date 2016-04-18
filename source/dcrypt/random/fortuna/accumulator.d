@@ -1,6 +1,6 @@
-﻿module dcrypt.crypto.random.fortuna.accumulator;
+﻿module dcrypt.random.fortuna.accumulator;
 
-import dcrypt.crypto.random.drng;
+import dcrypt.random.drng;
 import dcrypt.bitmanip;
 import dcrypt.util: wipe;
 

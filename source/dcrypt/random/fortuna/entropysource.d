@@ -1,9 +1,9 @@
-﻿module dcrypt.crypto.random.fortuna.entropysource;
+﻿module dcrypt.random.fortuna.entropysource;
 
 
 import core.thread;
 
-import dcrypt.crypto.random.fortuna.accumulator;
+import dcrypt.random.fortuna.accumulator;
 
 ///
 /// This class provides a simple method to pass an entropy event
@@ -79,7 +79,7 @@ public abstract class EntropySource
 	/// use this method to send entropy to the accumulator
 	@safe
 	protected final void sendEntropyEvent(in ubyte[] buf) nothrow {
-		import dcrypt.crypto.random.fortuna.fortuna: addEntropy;
+		import dcrypt.random.fortuna.fortuna: addEntropy;
 
 		calledSendEntropyEvent = true;
 

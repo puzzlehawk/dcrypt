@@ -1,8 +1,8 @@
-﻿module dcrypt.crypto.random.fortuna.generator;
+﻿module dcrypt.random.fortuna.generator;
 
 import std.range: chunks;
 
-import dcrypt.crypto.random.drng;
+import dcrypt.random.drng;
 import dcrypt.blockcipher.blockcipher;
 import dcrypt.digest;
 

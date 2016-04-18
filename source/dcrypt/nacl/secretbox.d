@@ -143,7 +143,7 @@ unittest {
 
 // Test with pseudo random input.
 unittest {
-	import dcrypt.crypto.random.drng;
+	import dcrypt.random.drng;
 	HashDRNG_SHA256 drng;
 	drng.setSeed(0);
 

@@ -159,7 +159,7 @@ package template WOTS (uint n, alias hash_n_n, alias prg, uint log_w)
 
 // Generic sanity test.
 private unittest {
-	import dcrypt.crypto.random.drng: DRNG = HashDRNG_SHA256;
+	import dcrypt.random.drng: DRNG = HashDRNG_SHA256;
 	import dcrypt.pqc.sphincs.sphincs256;
 	alias Wots = WOTS!(256, hash_n_n, prg, 4);
 

@@ -1,16 +1,16 @@
-﻿module dcrypt.random;
+﻿module dcrypt.random.random;
 
 /// Handling global source of randomness.
 
 
-import dcrypt.crypto.random.fortuna.fortuna;
+import dcrypt.random.fortuna.fortuna;
 
-import dcrypt.crypto.random.rdrand;
+import dcrypt.random.rdrand;
 
-import dcrypt.crypto.random.fortuna.entropysource;
-import dcrypt.crypto.random.fortuna.sources.rdrand;
-import dcrypt.crypto.random.fortuna.sources.systemtick;
-import dcrypt.crypto.random.fortuna.sources.filesource;
+import dcrypt.random.fortuna.entropysource;
+import dcrypt.random.fortuna.sources.rdrand;
+import dcrypt.random.fortuna.sources.systemtick;
+import dcrypt.random.fortuna.sources.filesource;
 
 private Fortuna globalRNG;
 

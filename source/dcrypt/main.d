@@ -31,7 +31,7 @@ import dcrypt.benchmark.DigestBenchmark;
 import dcrypt.benchmark.BlockCipherBenchmark;
 import dcrypt.benchmark.AEADCipherBenchmark;
 
-import dcrypt.random;
+import dcrypt.random.random;
 
 version (Benchmark) {
 

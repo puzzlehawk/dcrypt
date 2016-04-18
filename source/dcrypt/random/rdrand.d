@@ -1,4 +1,4 @@
-﻿module dcrypt.crypto.random.rdrand;
+﻿module dcrypt.random.rdrand;
 
 
 /// The RDRand PRNG generates random data with intels rdrand instruction.
@@ -6,7 +6,7 @@
 /// 
 /// TODO: This module is not yet tested.
 
-import dcrypt.crypto.random.prng;
+import dcrypt.random.prng;
 import dcrypt.bitmanip;
 import core.cpuid;
 import std.range: chunks;

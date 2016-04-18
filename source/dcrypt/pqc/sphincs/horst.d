@@ -263,7 +263,7 @@ package template HORST (uint n, uint m, alias hash_n_n, alias hash_2n_n, uint tr
 private unittest {	
 	import dcrypt.pqc.sphincs.sphincs256;
 	alias HORST!(256, 512, hash_n_n, hash_2n_n, 16, prg) Horst;
-	import dcrypt.crypto.random.drng: DRNG = HashDRNG_SHA256;
+	import dcrypt.random.drng: DRNG = HashDRNG_SHA256;
 	
 	DRNG drng;
 	
