@@ -1,11 +1,11 @@
-﻿module dcrypt.crypto.pbe.scrypt;
+﻿module dcrypt.keyderivation.scrypt;
 
 import std.range;
 import std.parallelism;
 
 import dcrypt.streamcipher.salsa;
 import dcrypt.digests.sha2;
-import dcrypt.crypto.pbe.pbkdf2;
+import dcrypt.keyderivation.pbkdf2;
 import dcrypt.bitmanip;
 import dcrypt.util;
 
