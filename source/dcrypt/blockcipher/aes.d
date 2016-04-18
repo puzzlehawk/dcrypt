@@ -1,7 +1,7 @@
 module dcrypt.blockcipher.aes;
 
 import dcrypt.blockcipher.blockcipher;
-import dcrypt.errors, dcrypt.exceptions;
+import dcrypt.exceptions;
 import dcrypt.bitmanip;
 
 /// Test AES encryption and decryption of a single block with 128, 192 and 256 bits key length.
