@@ -1,6 +1,6 @@
-﻿module dcrypt.crypto.ecc.curved25519.base;
+﻿module dcrypt.ecc.curved25519.base;
 
-import dcrypt.crypto.ecc.curved25519.groupElement: ge_precomp;
+import dcrypt.ecc.curved25519.groupElement: ge_precomp;
 
 package:
 

@@ -4,7 +4,7 @@
 /// Compatible to http://nacl.cr.yp.to/box.html.
 
 public import dcrypt.nacl.secretbox;
-import dcrypt.crypto.ecc.curve25519;
+import dcrypt.ecc.curve25519;
 import dcrypt.streamcipher.salsa;
 import dcrypt.util;
 import dcrypt.exceptions: InvalidCipherTextException;

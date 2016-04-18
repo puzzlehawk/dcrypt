@@ -1,6 +1,6 @@
-﻿module dcrypt.crypto.ecc.curve25519;
+﻿module dcrypt.ecc.curve25519;
 
-import dcrypt.crypto.ecc.curved25519.fieldElement;
+import dcrypt.ecc.curved25519.fieldElement;
 import dcrypt.util: wipe;
 
 /// Implementation of Curve25519.

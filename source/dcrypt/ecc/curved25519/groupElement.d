@@ -1,7 +1,7 @@
-﻿module dcrypt.crypto.ecc.curved25519.groupElement;
+﻿module dcrypt.ecc.curved25519.groupElement;
 
-public import dcrypt.crypto.ecc.curved25519.fieldElement;
-import dcrypt.crypto.ecc.curved25519.base;
+public import dcrypt.ecc.curved25519.fieldElement;
+import dcrypt.ecc.curved25519.base;
 
 @safe nothrow @nogc:
 
