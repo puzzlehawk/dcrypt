@@ -1,8 +1,8 @@
 ﻿module dcrypt.benchmark.curved25519;
 
 import dcrypt.benchmark.Benchmark;
-import dcrypt.crypto.ecc.curve25519;
-import dcrypt.crypto.ecc.ed25519;
+import dcrypt.ecc.curve25519;
+import dcrypt.ecc.ed25519;
 
 public class Curved25519Benchmark: Benchmark {
 

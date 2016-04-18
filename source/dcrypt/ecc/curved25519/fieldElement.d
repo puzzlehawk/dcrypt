@@ -1,4 +1,4 @@
-﻿module dcrypt.crypto.ecc.curved25519.fieldElement;
+﻿module dcrypt.ecc.curved25519.fieldElement;
 
 import dcrypt.bitmanip;
 import dcrypt.util;

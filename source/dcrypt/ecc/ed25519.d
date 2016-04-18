@@ -1,7 +1,7 @@
-﻿module dcrypt.crypto.ecc.ed25519;
+﻿module dcrypt.ecc.ed25519;
 
-import dcrypt.crypto.ecc.curved25519.groupElement;
-import dcrypt.crypto.ecc.curve25519: clamp;
+import dcrypt.ecc.curved25519.groupElement;
+import dcrypt.ecc.curve25519: clamp;
 import dcrypt.digests.sha2: SHA512;
 import dcrypt.util;
 
@@ -831,7 +831,7 @@ private:
 version(unittest) {
 	/// Extended tests for ed25519 from http://ed25519.cr.yp.to/python/sign.input.
 	
-	import dcrypt.crypto.ecc.ed25519;
+	import dcrypt.ecc.ed25519;
 	import std.algorithm;
 	
 	unittest {
