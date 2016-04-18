@@ -1,6 +1,6 @@
-module dcrypt.crypto.padding.x923;
+module dcrypt.blockcipher.padding.x923;
 
-import dcrypt.crypto.padding.padding;
+import dcrypt.blockcipher.padding.padding;
 import dcrypt.exceptions;
 import std.exception: enforce;
 
