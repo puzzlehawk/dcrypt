@@ -1,6 +1,6 @@
-module dcrypt.crypto.padding.pkcs7;
+module dcrypt.blockcipher.padding.pkcs7;
 
-import dcrypt.crypto.padding.padding;
+import dcrypt.blockcipher.padding.padding;
 import dcrypt.random.prng;
 import dcrypt.exceptions;
 import std.exception: enforce;

@@ -1,4 +1,4 @@
-module dcrypt.crypto.padding.padding;
+module dcrypt.blockcipher.padding.padding;
 
 public import dcrypt.exceptions: InvalidCipherTextException;
 public import dcrypt.blockcipher.blockcipher;
@@ -25,7 +25,7 @@ template isBlockCipherPadding(T)
 /// Test PaddedBufferedBlockCipher with AES and PKCS7 padding.
 @safe
 unittest {
-	import dcrypt.crypto.padding.pkcs7;
+	import dcrypt.blockcipher.padding.pkcs7;
 	import dcrypt.blockcipher.aes;
 	
 	PaddedBufferedBlockCipher!(AES, PKCS7Pad) c;
