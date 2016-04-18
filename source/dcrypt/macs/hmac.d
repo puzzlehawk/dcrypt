@@ -1,6 +1,6 @@
-module dcrypt.crypto.macs.hmac;
+module dcrypt.macs.hmac;
 
-public import dcrypt.crypto.macs.mac;
+public import dcrypt.macs.mac;
 import dcrypt.digest;
 
 // TODO optimize reset()

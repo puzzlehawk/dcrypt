@@ -1,5 +1,5 @@
 
-module dcrypt.crypto.macs.mac;
+module dcrypt.macs.mac;
 
 // TODO as output range
 

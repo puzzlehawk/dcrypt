@@ -1,4 +1,4 @@
-module dcrypt.crypto.modes.ctr;
+module dcrypt.blockcipher.modes.ctr;
 
 import dcrypt.blockcipher.blockcipher;
 

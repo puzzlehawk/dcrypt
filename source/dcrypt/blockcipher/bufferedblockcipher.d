@@ -1,7 +1,7 @@
 ﻿module dcrypt.blockcipher.bufferedblockcipher;
 
 import dcrypt.blockcipher.blockcipher;
-import dcrypt.crypto.modes.ctr;
+import dcrypt.blockcipher.modes.ctr;
 import std.algorithm: min;
 
 unittest {
@@ -42,8 +42,8 @@ unittest {
 @safe
 unittest {
 	import dcrypt.blockcipher.aes;
-	import dcrypt.crypto.modes.ctr;
-	import dcrypt.crypto.modes.cbc;
+	import dcrypt.blockcipher.modes.ctr;
+	import dcrypt.blockcipher.modes.cbc;
 	import std.range;
 	import std.conv: text;
 
@@ -95,8 +95,8 @@ unittest {
 @safe
 unittest {
 	import dcrypt.blockcipher.aes;
-	import dcrypt.crypto.modes.ctr;
-	import dcrypt.crypto.modes.cbc;
+	import dcrypt.blockcipher.modes.ctr;
+	import dcrypt.blockcipher.modes.cbc;
 	import std.range;
 	import std.conv: text;
 	

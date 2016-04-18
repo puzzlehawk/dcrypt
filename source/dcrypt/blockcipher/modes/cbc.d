@@ -1,4 +1,4 @@
-module dcrypt.crypto.modes.cbc;
+module dcrypt.blockcipher.modes.cbc;
 
 import std.algorithm: fill;
 import dcrypt.blockcipher.blockcipher;

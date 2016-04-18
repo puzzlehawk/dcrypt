@@ -1,6 +1,6 @@
 module dcrypt.crypto.pbe.pbkdf2;
 
-import dcrypt.crypto.macs.hmac;
+import dcrypt.macs.hmac;
 import dcrypt.digest;
 import dcrypt.exceptions;
 import dcrypt.bitmanip;

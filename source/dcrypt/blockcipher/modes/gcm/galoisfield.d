@@ -1,4 +1,4 @@
-﻿module dcrypt.crypto.modes.gcm.galoisfield;
+﻿module dcrypt.blockcipher.modes.gcm.galoisfield;
 
 import std.traits: isIntegral;
 

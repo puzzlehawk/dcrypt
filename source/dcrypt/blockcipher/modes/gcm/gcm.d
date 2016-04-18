@@ -1,8 +1,8 @@
-﻿module dcrypt.crypto.modes.gcm.gcm;
+﻿module dcrypt.blockcipher.modes.gcm.gcm;
 
-public import dcrypt.crypto.modes.aead;
-import dcrypt.crypto.modes.gcm.ghash;
-import dcrypt.crypto.modes.gcm.multiplier;
+public import dcrypt.blockcipher.modes.aead;
+import dcrypt.blockcipher.modes.gcm.ghash;
+import dcrypt.blockcipher.modes.gcm.multiplier;
 
 public import dcrypt.exceptions: InvalidCipherTextException, IllegalArgumentException;
 

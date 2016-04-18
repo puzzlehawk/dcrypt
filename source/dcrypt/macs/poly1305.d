@@ -1,6 +1,6 @@
-﻿module dcrypt.crypto.macs.poly1305;
+﻿module dcrypt.macs.poly1305;
 
-import dcrypt.crypto.macs.mac;
+import dcrypt.macs.mac;
 import dcrypt.blockcipher.blockcipher;
 import dcrypt.bitmanip;
 

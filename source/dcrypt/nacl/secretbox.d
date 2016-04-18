@@ -3,7 +3,7 @@
 /// High level API for symmetric authenticated encryption.
 /// Compatible to http://nacl.cr.yp.to/secretbox.html.
 
-import dcrypt.crypto.macs.poly1305;
+import dcrypt.macs.poly1305;
 import dcrypt.streamcipher.salsa;
 import dcrypt.util;
 import dcrypt.exceptions;
