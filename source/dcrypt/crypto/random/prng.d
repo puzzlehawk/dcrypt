@@ -4,7 +4,7 @@ import std.range;
 import dcrypt.crypto.random.fortuna.fortuna;
 import dcrypt.crypto.random.fortuna.generator;
 
-import dcrypt.crypto.engines.aes;
+import dcrypt.blockcipher.aes;
 import dcrypt.digests.sha2;
 
 alias FortunaGenerator!(AES, SHA256) DRNG; /// Deterministic PRNG

@@ -1,12 +1,12 @@
-﻿module dcrypt.crypto.engines.poly1305_chacha;
+﻿module dcrypt.streamcipher.poly1305_chacha;
 
 /// Implementation of the Poly1305-ChaCha20 AEAD cipher.
 /// 
 /// Standard: RFC 7539
 
 import dcrypt.crypto.modes.aead;
-import dcrypt.crypto.engines.chacha;
-import dcrypt.crypto.engines.salsa;
+import dcrypt.streamcipher.chacha;
+import dcrypt.streamcipher.salsa;
 import dcrypt.crypto.macs.poly1305;
 import dcrypt.bitmanip;
 

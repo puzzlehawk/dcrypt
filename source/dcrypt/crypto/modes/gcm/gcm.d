@@ -18,7 +18,7 @@ public import dcrypt.exceptions: InvalidCipherTextException, IllegalArgumentExce
 
 //alias GCMCipher(T) = AEADCipherWrapper!(GCM!T); // would be nice but does not yet work
 
-import dcrypt.crypto.engines.aes;
+import dcrypt.blockcipher.aes;
 static assert(isAEADCipher!(GCM!AES), "GCM ist not a AEADCipher.");
 
 ///
@@ -356,7 +356,7 @@ public struct GCM(T) if(is(T == void) || (isBlockCipher!T && T.blockSize == 16))
 /// http://www.ieee802.org/1/files/public/docs2011/bn-randall-test-vectors-0511-v1.pdf
 /// section 2.2.1
 unittest {
-	import dcrypt.crypto.engines.aes;
+	import dcrypt.blockcipher.aes;
 
 	alias const(ubyte)[] octets;
 
@@ -394,7 +394,7 @@ unittest {
 /// http://www.ieee802.org/1/files/public/docs2011/bn-randall-test-vectors-0511-v1.pdf
 /// section 2.2.1
 unittest {
-	import dcrypt.crypto.engines.aes;
+	import dcrypt.blockcipher.aes;
 	
 	alias const(ubyte)[] octets;
 	
@@ -437,7 +437,7 @@ unittest {
 /// http://www.ieee802.org/1/files/public/docs2011/bn-randall-test-vectors-0511-v1.pdf
 /// section 2.2.1
 unittest {
-	import dcrypt.crypto.engines.aes;
+	import dcrypt.blockcipher.aes;
 	
 	alias const(ubyte)[] octets;
 	
@@ -472,7 +472,7 @@ unittest {
 /// http://www.ieee802.org/1/files/public/docs2011/bn-randall-test-vectors-0511-v1.pdf
 /// section 2.2.1
 unittest {
-	import dcrypt.crypto.engines.aes;
+	import dcrypt.blockcipher.aes;
 	
 	alias const(ubyte)[] octets;
 	
@@ -513,7 +513,7 @@ unittest {
 // gcm-spec: Test Case 6
 unittest {
 
-	import dcrypt.crypto.engines.aes;
+	import dcrypt.blockcipher.aes;
 	
 	alias const(ubyte)[] octets;
 	
@@ -567,7 +567,7 @@ unittest {
 /// test GCM with different MAC sizes
 unittest { 
 
-	import dcrypt.crypto.engines.aes;
+	import dcrypt.blockcipher.aes;
 
 	string[] keys = [
 		"00000000000000000000000000000000",

@@ -1,7 +1,7 @@
 module dcrypt.crypto.modes.cbc;
 
 import std.algorithm: fill;
-import dcrypt.crypto.blockcipher;
+import dcrypt.blockcipher.blockcipher;
 import dcrypt.errors, dcrypt.exceptions;
 
 
@@ -9,7 +9,7 @@ import dcrypt.errors, dcrypt.exceptions;
 /// test vectors: http://csrc.nist.gov/publications/nistpubs/800-38a/sp800-38a.pdf
 @safe
 unittest {
-	import dcrypt.crypto.engines.aes;
+	import dcrypt.blockcipher.aes;
 	import std.range;
 	import std.conv: text;
 	

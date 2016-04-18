@@ -2,7 +2,7 @@
 
 import dcrypt.bitmanip;
 
-import dcrypt.crypto.engines.chacha;
+import dcrypt.streamcipher.chacha;
 import dcrypt.digests.blake: Blake512, hash;
 
 import dcrypt.pqc.sphincs.common;
@@ -57,7 +57,7 @@ private unittest {
 
 @safe @nogc pure nothrow
 private ubyte[64] chacha_permute(in ref ubyte[64] input) {
-	import dcrypt.crypto.engines.chacha;
+	import dcrypt.streamcipher.chacha;
 
 	uint[16] ibuf;
 	fromLittleEndian!uint(input, ibuf);

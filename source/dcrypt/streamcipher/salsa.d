@@ -1,6 +1,6 @@
-﻿module dcrypt.crypto.engines.salsa;
+﻿module dcrypt.streamcipher.salsa;
 
-public import dcrypt.crypto.streamcipher;
+public import dcrypt.streamcipher.streamcipher;
 
 import dcrypt.bitmanip: rotl=rotateLeft;
 import dcrypt.util: wipe;

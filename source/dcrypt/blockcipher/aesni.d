@@ -1,4 +1,4 @@
-module dcrypt.crypto.engines.aesni;
+module dcrypt.blockcipher.aesni;
 
 /// 
 /// This module provides a hardware accelerated implementation of AES using the Intel AES instructionset.
@@ -11,7 +11,7 @@ module dcrypt.crypto.engines.aesni;
 /// 
 
 import core.cpuid;
-import dcrypt.crypto.blockcipher;
+import dcrypt.blockcipher.blockcipher;
 
 /// OOP API wrapper for AESNI
 alias BlockCipherWrapper!AESNI AESNIEngine;
@@ -24,7 +24,7 @@ version (D_InlineAsm_X86_64) {
 // TODO what if AESNI is not supported?
 version(AESNI) {} else {
 	// fall back to software aes implementation
-	import dcrypt.crypto.engines.aes;
+	import dcrypt.blockcipher.aes;
 	alias AESNI = AES; // use software AES on non x86_64 platforms
 	
 }

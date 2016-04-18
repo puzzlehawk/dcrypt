@@ -90,7 +90,7 @@ public struct GMac(T) if(isBlockCipher!T)
 /// http://www.ieee802.org/1/files/public/docs2011/bn-randall-test-vectors-0511-v1.pdf, section 2.1.1
 unittest {
 
-	import dcrypt.crypto.engines.aes;
+	import dcrypt.blockcipher.aes;
 	
 	alias const(ubyte)[] octets;
 	

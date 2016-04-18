@@ -1,6 +1,6 @@
-module dcrypt.crypto.engines.rc6;
+module dcrypt.blockcipher.rc6;
 
-import dcrypt.crypto.blockcipher;
+import dcrypt.blockcipher.blockcipher;
 import dcrypt.bitmanip;
 
 /// test the RC6 block cipher engine

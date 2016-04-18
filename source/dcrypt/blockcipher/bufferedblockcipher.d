@@ -1,11 +1,11 @@
-﻿module dcrypt.crypto.bufferedblockcipher;
+﻿module dcrypt.blockcipher.bufferedblockcipher;
 
-import dcrypt.crypto.blockcipher;
+import dcrypt.blockcipher.blockcipher;
 import dcrypt.crypto.modes.ctr;
 import std.algorithm: min;
 
 unittest {
-	import dcrypt.crypto.engines.aes;
+	import dcrypt.blockcipher.aes;
 	import dcrypt.encoders.hex;
 	import std.stdio;
 	
@@ -41,7 +41,7 @@ unittest {
 /// test vectors: http://csrc.nist.gov/publications/nistpubs/800-38a/sp800-38a.pdf
 @safe
 unittest {
-	import dcrypt.crypto.engines.aes;
+	import dcrypt.blockcipher.aes;
 	import dcrypt.crypto.modes.ctr;
 	import dcrypt.crypto.modes.cbc;
 	import std.range;
@@ -94,7 +94,7 @@ unittest {
 /// test vectors: http://csrc.nist.gov/publications/nistpubs/800-38a/sp800-38a.pdf
 @safe
 unittest {
-	import dcrypt.crypto.engines.aes;
+	import dcrypt.blockcipher.aes;
 	import dcrypt.crypto.modes.ctr;
 	import dcrypt.crypto.modes.cbc;
 	import std.range;

@@ -1,4 +1,4 @@
-module dcrypt.crypto.blockcipher;
+module dcrypt.blockcipher.blockcipher;
 
 /// Use this to check if type is a block cipher.
 @safe

@@ -2,7 +2,7 @@
 
 import std.stdio;
 import std.conv;
-import dcrypt.crypto.streamcipher;
+import dcrypt.streamcipher.streamcipher;
 import dcrypt.encoders.hex;
 import dcrypt.digest;
 import dcrypt.digests.sha1;
@@ -12,19 +12,19 @@ import dcrypt.digests.blake;
 
 import dcrypt.crypto.pbe.pbkdf2;
 
-import dcrypt.crypto.blockcipher;
-import dcrypt.crypto.engines.aes;
-import dcrypt.crypto.engines.aesni;
-import dcrypt.crypto.engines.aesopenssl;
-import dcrypt.crypto.engines.rijndael;
-import dcrypt.crypto.engines.rc6;
-import dcrypt.crypto.engines.serpent;
+import dcrypt.blockcipher.blockcipher;
+import dcrypt.blockcipher.aes;
+import dcrypt.blockcipher.aesni;
+import dcrypt.blockcipher.aesopenssl;
+import dcrypt.blockcipher.rijndael;
+import dcrypt.blockcipher.rc6;
+import dcrypt.blockcipher.serpent;
 import dcrypt.crypto.modes.cbc;
 import dcrypt.crypto.modes.ctr;
 
 import dcrypt.crypto.modes.gcm.gcm;
 
-import dcrypt.crypto.engines.poly1305_chacha;
+import dcrypt.streamcipher.poly1305_chacha;
 
 import dcrypt.benchmark.Benchmark;
 import dcrypt.benchmark.DigestBenchmark;

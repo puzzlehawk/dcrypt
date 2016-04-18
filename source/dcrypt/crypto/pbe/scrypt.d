@@ -3,10 +3,11 @@
 import std.range;
 import std.parallelism;
 
-import dcrypt.crypto.engines.salsa;
+import dcrypt.streamcipher.salsa;
 import dcrypt.digests.sha2;
 import dcrypt.crypto.pbe.pbkdf2;
 import dcrypt.bitmanip;
+import dcrypt.util;
 
 
 /// generate a 256 bit key
@@ -116,8 +117,8 @@ body {
 	
 	// wipe data on exit
 	scope (exit) {
-		bytes[] = 0;
-		B[] = 0;
+		wipe(bytes);
+		wipe(B);
 	}
 	
 	fromLittleEndian(bytes, B);
@@ -167,12 +168,12 @@ void SMix(uint[] B, in uint N, in uint r) pure nothrow
 	// wipe data on exit
 	scope (exit) {
 		foreach(ref v;V) {
-			v[] = 0;
+			wipe(v);
 		}
-		X[] = 0;
-		blockX1[] = 0;
-		blockX2[] = 0;
-		blockY[] = 0;
+		wipe(X);
+		wipe(blockX1);
+		wipe(blockX2);
+		wipe(blockY);
 	}
 
 	X[] = B[0..BCount];

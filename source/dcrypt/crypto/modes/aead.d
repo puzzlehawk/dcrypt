@@ -1,6 +1,6 @@
 ﻿module dcrypt.crypto.modes.aead;
 
-public import dcrypt.crypto.blockcipher;
+public import dcrypt.blockcipher.blockcipher;
 
 ///
 /// test if T is a AEAD cipher

@@ -1,9 +1,9 @@
-﻿module dcrypt.crypto.engines.chacha;
+﻿module dcrypt.streamcipher.chacha;
 
 import std.algorithm: min;
 import std.conv: text;
 
-import dcrypt.crypto.streamcipher;
+import dcrypt.streamcipher.streamcipher;
 import dcrypt.util;
 import dcrypt.bitmanip;
 
