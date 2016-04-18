@@ -2,7 +2,7 @@ module dcrypt.blockcipher.modes.cbc;
 
 import std.algorithm: fill;
 import dcrypt.blockcipher.blockcipher;
-import dcrypt.errors, dcrypt.exceptions;
+import dcrypt.exceptions;
 
 
 /// test AES/CBC encryption

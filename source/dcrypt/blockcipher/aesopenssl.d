@@ -1,7 +1,7 @@
 module dcrypt.blockcipher.aesopenssl;
 
 import dcrypt.blockcipher.blockcipher;
-import dcrypt.errors, dcrypt.exceptions;
+import dcrypt.exceptions;
 import dcrypt.bitmanip;
 
 unittest {
