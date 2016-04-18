@@ -3,7 +3,7 @@
 import dcrypt.bitmanip;
 
 import dcrypt.crypto.engines.chacha;
-import dcrypt.crypto.digests.blake: Blake512, hash;
+import dcrypt.digests.blake: Blake512, hash;
 
 import dcrypt.pqc.sphincs.common;
 import dcrypt.pqc.sphincs.sphincs;

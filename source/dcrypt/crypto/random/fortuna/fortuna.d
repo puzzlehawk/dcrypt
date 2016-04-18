@@ -2,13 +2,13 @@ module dcrypt.crypto.random.fortuna.fortuna;
 
 public import dcrypt.crypto.random.drng;
 public import dcrypt.crypto.blockcipher;
-public import dcrypt.crypto.digest;
+public import dcrypt.digest;
 
 import dcrypt.crypto.random.fortuna.generator;
 import dcrypt.crypto.random.fortuna.accumulator;
 
 import dcrypt.crypto.engines.aes;
-import dcrypt.crypto.digests.sha3;
+import dcrypt.digests.sha3;
 
 import std.datetime;
 

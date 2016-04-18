@@ -6,7 +6,7 @@ import dcrypt.benchmark.BlockCipherBenchmark;
 import dcrypt.benchmark.AEADCipherBenchmark;
 import dcrypt.benchmark.DigestBenchmark;
 import dcrypt.crypto.blockcipher;
-import dcrypt.crypto.digest;
+import dcrypt.digest;
 import dcrypt.crypto.modes.aead;
 
 import std.stdio;

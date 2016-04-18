@@ -4,7 +4,7 @@
 
 import std.traits: ReturnType;
 
-import dcrypt.crypto.digests.blake;
+import dcrypt.digests.blake;
 import dcrypt.bitmanip;
 
 package:

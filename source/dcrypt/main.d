@@ -4,11 +4,11 @@ import std.stdio;
 import std.conv;
 import dcrypt.crypto.streamcipher;
 import dcrypt.encoders.hex;
-import dcrypt.crypto.digest;
-import dcrypt.crypto.digests.sha1;
-import dcrypt.crypto.digests.sha2;
-import dcrypt.crypto.digests.sha3;
-import dcrypt.crypto.digests.blake;
+import dcrypt.digest;
+import dcrypt.digests.sha1;
+import dcrypt.digests.sha2;
+import dcrypt.digests.sha3;
+import dcrypt.digests.blake;
 
 import dcrypt.crypto.pbe.pbkdf2;
 

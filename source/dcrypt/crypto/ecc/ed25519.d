@@ -2,7 +2,7 @@
 
 import dcrypt.crypto.ecc.curved25519.groupElement;
 import dcrypt.crypto.ecc.curve25519: clamp;
-import dcrypt.crypto.digests.sha2: SHA512;
+import dcrypt.digests.sha2: SHA512;
 import dcrypt.util;
 
 /// Generate a ed25519 public key from a secret key.

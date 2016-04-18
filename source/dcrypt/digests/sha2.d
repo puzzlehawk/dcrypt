@@ -1,8 +1,8 @@
-﻿module dcrypt.crypto.digests.sha2;
+﻿module dcrypt.digests.sha2;
 
 /// Implementation of SHA256, SHA384 and SHA512 hash algorithms.
 
-public import dcrypt.crypto.digest;
+public import dcrypt.digest;
 
 import dcrypt.bitmanip;
 import std.conv: text;

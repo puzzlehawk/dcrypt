@@ -1,6 +1,6 @@
-module dcrypt.crypto.digests.sha1;
+module dcrypt.digests.sha1;
 
-import dcrypt.crypto.digest;
+import dcrypt.digest;
 import dcrypt.bitmanip;
 
 unittest {

@@ -1,4 +1,4 @@
-module dcrypt.crypto.digest;
+module dcrypt.digest;
 
 import std.range: isOutputRange;
 import std.range: OutputRange;
@@ -45,7 +45,7 @@ template isDigest(T)
 //}
 
 //unittest {
-//	import dcrypt.crypto.digests.sha2: SHA256;
+//	import dcrypt.digests.sha2: SHA256;
 //	ubyte[32] buf;
 //	SHA256 digest;
 //	digest.finish(buf);

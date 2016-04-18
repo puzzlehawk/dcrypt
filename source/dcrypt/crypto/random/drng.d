@@ -3,10 +3,10 @@
 /// The DRNG module contains a collection of deterministic random number generators.
 
 public import dcrypt.crypto.random.prng;
-import dcrypt.crypto.digest;
-import dcrypt.crypto.digests.sha1;
-import dcrypt.crypto.digests.sha2;
-import dcrypt.crypto.digests.sha3;
+import dcrypt.digest;
+import dcrypt.digests.sha1;
+import dcrypt.digests.sha2;
+import dcrypt.digests.sha3;
 import dcrypt.bitmanip;
 import dcrypt.util: wipe;
 import std.algorithm: min;
@@ -39,7 +39,7 @@ template isDRNGWithInput(T)
 
 /// Generate a pseudo random but deterministic sequence of bytes.
 unittest {
-	import dcrypt.crypto.digests.sha2;
+	import dcrypt.digests.sha2;
 	//import std.stdio;
 
 	HashDRNG_SHA256 drng;

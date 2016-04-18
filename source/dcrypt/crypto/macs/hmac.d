@@ -1,13 +1,13 @@
 module dcrypt.crypto.macs.hmac;
 
 public import dcrypt.crypto.macs.mac;
-import dcrypt.crypto.digest;
+import dcrypt.digest;
 
 // TODO optimize reset()
 // TODO wipe sensitive data in destructor
 
 static {
-	import dcrypt.crypto.digests.sha2: SHA256;
+	import dcrypt.digests.sha2: SHA256;
 
 	static assert(isMAC!(HMac!SHA256), "HMac is not a valid MAC");
 }
@@ -134,8 +134,8 @@ private:
 ///
 /// test case: 1 2 3 4 6 7 (without 5)
 unittest {
-	import dcrypt.crypto.digests.sha2;
-	import dcrypt.crypto.digests.sha2;
+	import dcrypt.digests.sha2;
+	import dcrypt.digests.sha2;
 	import dcrypt.encoders.hex;
 	import std.stdio;
 	

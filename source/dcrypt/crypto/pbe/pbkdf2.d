@@ -1,7 +1,7 @@
 module dcrypt.crypto.pbe.pbkdf2;
 
 import dcrypt.crypto.macs.hmac;
-import dcrypt.crypto.digest;
+import dcrypt.digest;
 import dcrypt.exceptions;
 import dcrypt.bitmanip;
 import std.datetime;
@@ -13,7 +13,7 @@ unittest {
 	
 	// test vectors from http://tools.ietf.org/html/rfc6070
 	
-	import dcrypt.crypto.digests.sha1;
+	import dcrypt.digests.sha1;
 	import dcrypt.encoders.hex;
 	import std.datetime: StopWatch;
 

@@ -1,10 +1,10 @@
-module dcrypt.crypto.digests.sha3;
+module dcrypt.digests.sha3;
 
 /// Implementation of Keccak, SHA3 and extendable output functions SHAKE128/256.
 /// 
 /// Standard: FIPS 202, SHA 3
 
-import dcrypt.crypto.digest;
+import dcrypt.digest;
 import dcrypt.bitmanip;
 
 import std.conv: text;

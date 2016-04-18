@@ -4,7 +4,7 @@ import std.traits: ReturnType;
 
 import dcrypt.bitmanip;
 import dcrypt.util: wipe;
-import dcrypt.crypto.digests.blake: Blake512, hash;
+import dcrypt.digests.blake: Blake512, hash;
 import dcrypt.random: nextBytes;
 
 import dcrypt.pqc.sphincs.common;
