@@ -14,7 +14,6 @@ unittest {
 	// test vectors from http://tools.ietf.org/html/rfc6070
 	
 	import dcrypt.digests.sha1;
-	import dcrypt.encoders.hex;
 	import std.datetime: StopWatch;
 
 	const ubyte[] pass = cast(const ubyte[]) "password";
