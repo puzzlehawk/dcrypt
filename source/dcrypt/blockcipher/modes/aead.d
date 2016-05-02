@@ -22,10 +22,10 @@ template isAEADCipher(T)
 
 						//BlockCipher c = bc.getUnderlyingCipher();
 						bc.processAADBytes(cast (const ubyte[])block);
-						size_t outLen = bc.processBytes(cast(const ubyte[]) [0], cast(ubyte[]) [0]);
-						// TODO: ubyte[] slice = bc.processBytes(cast(const ubyte[]) [0], cast(ubyte[]) [0]);
-						//bc.doFinal(cast(const ubyte[]) [0]);
-						// TODO: ubyte[] mac = finish(block);
+
+						ubyte[] slice = bc.processBytes(cast(const ubyte[]) [0], cast(ubyte[]) [0]);
+						//ubyte[] mac = bc.finish(block);
+
 						size_t len = bc.finish(cast(ubyte[]) [0], cast(ubyte[]) [0]);
 						size_t s1 = bc.getUpdateOutputSize(cast(size_t) 0);
 						size_t s2 = bc.getOutputSize(cast(size_t) 0);
@@ -72,7 +72,7 @@ public interface AEADCipher
 		 * Returns: the number of bytes written to out.
 		 * Throws: Error if the output buffer is too small.
 		 */
-		size_t processBytes(in ubyte[] input, ubyte[] output) nothrow;
+		ubyte[] processBytes(in ubyte[] input, ubyte[] output) nothrow;
 
 		/**
 		 * Finish the operation either appending or verifying the MAC at the end of the data.
@@ -84,7 +84,7 @@ public interface AEADCipher
 		 * Throws: IllegalStateError = if the cipher is in an inappropriate state.
 		 * dcrypt.exceptions.InvalidCipherTextException =  if the MAC fails to match.
 		 */
-		size_t doFinal(ubyte[] macBuf, ubyte[] output);
+		size_t finish(ubyte[] macBuf, ubyte[] output);
 
 		
 		/**
@@ -165,7 +165,7 @@ public class AEADCipherWrapper(T) if(isAEADCipher!T): AEADCipher
 		 * Returns: the number of bytes written to out.
 		 * Throws: Error if the output buffer is too small.
 		 */
-		size_t processBytes(in ubyte[] input, ubyte[] output) nothrow {
+		ubyte[] processBytes(in ubyte[] input, ubyte[] output) nothrow {
 			return cipher.processBytes(input, output);
 		}
 		
@@ -178,7 +178,7 @@ public class AEADCipherWrapper(T) if(isAEADCipher!T): AEADCipher
 		 * Returns: number of bytes written into out.
 		 * Throws: IllegalStateError = if the cipher is in an inappropriate state.
 		 */
-		size_t doFinal(ubyte[] macBuf, ubyte[] output){
+		size_t finish(ubyte[] macBuf, ubyte[] output){
 			return cipher.finish(macBuf, output);
 		}
 		
@@ -268,10 +268,10 @@ version(unittest) {
 
 			// test encryption
 			cipher.processAADBytes(aad);
-			size_t offset = cipher.processBytes(plain, output);
+			ubyte[] out_slice = cipher.processBytes(plain, output);
 
 			ubyte[16] mac;
-			size_t len = offset+cipher.doFinal(mac, output[offset..$]);
+			size_t len = out_slice.length+cipher.finish(mac, output[out_slice.length..$]);
 
 			assert(output == ciphertext,
 				text(cipher.name~" encrypt: (",hexEncode(output),") != ("~hexCipherTexts[i]~")"));

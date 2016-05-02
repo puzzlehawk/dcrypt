@@ -113,7 +113,7 @@ if (isSupportedCipher!Cipher)
 		aadLength += aad.length;
 	}
 
-	public size_t processBytes(in ubyte[] input, ubyte[] output)
+	public ubyte[] processBytes(in ubyte[] input, ubyte[] output)
 	in {
 		assert(initialized, name~" not initialized.");
 		assert(output.length >= input.length, "Output buffer too small.");
@@ -126,12 +126,12 @@ if (isSupportedCipher!Cipher)
 			pad16(aadLength);
 		}
 
-		cipher.processBytes(input, output);
+		ubyte[] slice = cipher.processBytes(input, output);
 		poly.put(output);
 
 		cipherTextLength += input.length;
 
-		return input.length;
+		return slice;
 	}
 
 	/// Returns: The MAC value of the processed AAD and cipher data.

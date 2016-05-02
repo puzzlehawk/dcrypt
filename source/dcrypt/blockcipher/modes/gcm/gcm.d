@@ -167,7 +167,7 @@ public struct GCM(T) if(is(T == void) || (isBlockCipher!T && T.blockSize == 16))
 		 * Returns: Number of written bytes to output.
 		 * Throws: Error if the output buffer is too small.
 		 */
-		size_t processBytes(in ubyte[] input, ubyte[] output) nothrow 
+		ubyte[] processBytes(in ubyte[] input, ubyte[] output) nothrow 
 		in {
 			assert(initialized, "not initialized");
 			assert(output.length >= getUpdateOutputSize(input.length), "output buffer too short");
@@ -175,15 +175,17 @@ public struct GCM(T) if(is(T == void) || (isBlockCipher!T && T.blockSize == 16))
 		body {
 
 			import std.algorithm: min;
+
 			size_t outputBytes = 0;
 
 			const(ubyte)[] iBuf = input;
+			ubyte[] outPtr = output;
 
 			while(iBuf.length > 0) {
 				if(buf.isFull()) {
 					// encrypt one block
-					outputBlock(output);
-					output = output[blockSize..$];
+					outputBlock(outPtr);
+					outPtr = outPtr[blockSize..$];
 					outputBytes += blockSize;
 				}
 
@@ -192,7 +194,7 @@ public struct GCM(T) if(is(T == void) || (isBlockCipher!T && T.blockSize == 16))
 				iBuf = iBuf[procLen..$];
 			}
 
-			return outputBytes;
+			return output[0..outputBytes];
 		}
 		
 		/**
@@ -372,12 +374,12 @@ unittest {
 
 	gcm.processAADBytes(cast(octets)x"D609B1F056637A0D46DF998D88E52E00");
 
-	outLen = gcm.processBytes(cast(octets)x"08000F101112131415161718191A1B1C", oBuf);
+	outLen = gcm.processBytes(cast(octets)x"08000F101112131415161718191A1B1C", oBuf).length;
 	oBuf = oBuf[outLen..$];
-	outLen = gcm.processBytes(cast(octets)x"1D1E1F202122232425262728292A2B2C2D2E2F303132333435363738393A", oBuf);
+	outLen = gcm.processBytes(cast(octets)x"1D1E1F202122232425262728292A2B2C2D2E2F303132333435363738393A", oBuf).length;
 	oBuf = oBuf[outLen..$];
 
-	outLen = gcm.processBytes(cast(octets)x"0002", oBuf);
+	outLen = gcm.processBytes(cast(octets)x"0002", oBuf).length;
 	oBuf = oBuf[outLen..$];
 
 	gcm.processAADBytes(cast(octets)x"B2C2846512153524C0895E81");
@@ -414,7 +416,7 @@ unittest {
 	outLen = gcm.processBytes(cast(octets)
 		x"701AFA1CC039C0D765128A665DAB6924
 	      3899BF7318CCDC81C9931DA17FBE8EDD
-	      7D17CB8B4C26FC81E3284F2B7FBA713D", oBuf);
+	      7D17CB8B4C26FC81E3284F2B7FBA713D", oBuf).length;
 	oBuf = oBuf[outLen..$];
 
 	gcm.processAADBytes(cast(octets)x"B2C2846512153524C0895E81");
@@ -457,7 +459,7 @@ unittest {
 	outLen = gcm.processBytes(cast(octets)
 		x"701AFA1CC039C0D765128A665DAB6924
 	      3899BF7318CCDC81C9931DA17FBE8EDD
-	      7D17CB8B4C26FC81E3284F2B7FBA713D", oBuf); // 880 has been changed do EEF
+	      7D17CB8B4C26FC81E3284F2B7FBA713D", oBuf).length; // 880 has been changed do EEF
 	oBuf = oBuf[outLen..$];
 	
 	gcm.processAADBytes(cast(octets)x"B2C2846512153524C0895E81");
@@ -492,7 +494,7 @@ unittest {
 	outLen = gcm.processBytes(cast(octets)
 		x"701AFA1CC039C0D765128A665DAB6924
 	      3899BF7318CCDC81C9931DA17FBE8EDD
-	      7D17CB8B4C26FC81E3284F2B7FBA713D", oBuf);
+	      7D17CB8B4C26FC81E3284F2B7FBA713D", oBuf).length;
 	oBuf = oBuf[outLen..$];
 	
 	gcm.processAADBytes(cast(octets)x"B2C2846512153524C089beef"); // changed 5E81 to beef
@@ -543,7 +545,7 @@ unittest {
 	ubyte[] oBuf = output;
 	size_t outLen;
 
-	outLen = gcm.processBytes(plaintext, oBuf);
+	outLen = gcm.processBytes(plaintext, oBuf).length;
 	oBuf = oBuf[outLen..$];
 
 	gcm.processAADBytes(aad);
@@ -731,10 +733,10 @@ public class GCMCipher: AEADCipher {
 		 * Params:
 		 * in = the input byte array.
 		 * out = the output buffer the processed bytes go into.
-		 * Returns: the number of bytes written to out.
+		 * Returns: Returns a slice pointing to the processed data.
 		 * Throws: Error if the output buffer is too small.
 		 */
-		size_t processBytes(in ubyte[] input, ubyte[] output) nothrow {
+		ubyte[] processBytes(in ubyte[] input, ubyte[] output) nothrow {
 			return cipher.processBytes(input, output);
 		}
 		
@@ -748,7 +750,7 @@ public class GCMCipher: AEADCipher {
 		 * Throws: IllegalStateError = if the cipher is in an inappropriate state.
 		 * dcrypt.exceptions.InvalidCipherTextException =  if the MAC fails to match.
 		 */
-		size_t doFinal(ubyte[] macBuf, ubyte[] output) {
+		size_t finish(ubyte[] macBuf, ubyte[] output) {
 			return cipher.finish(macBuf, output);
 		}
 		
