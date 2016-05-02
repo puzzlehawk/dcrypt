@@ -6,8 +6,6 @@ import std.range: OutputRange;
 public import std.digest.digest: isStdDigest = isDigest;
 import std.traits: ReturnType;
 
-// TODO compatibility with std.digest?
-
 template isDigest(T)
 {
 	enum bool isDigest =
