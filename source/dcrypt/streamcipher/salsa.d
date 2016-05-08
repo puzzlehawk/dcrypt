@@ -158,8 +158,7 @@ public struct Salsa(uint rounds = 20, bool xsalsa = false)
 		initialized = true;
 	}
 
-	///
-	/// encrypt or decrypt input bytes but no more than 2^70!
+	/// Encrypt or decrypt input bytes (but no more than 2^70 bytes!).
 	/// 
 	/// Params:
 	/// input = input bytes
