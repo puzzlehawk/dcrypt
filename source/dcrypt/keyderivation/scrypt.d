@@ -13,7 +13,7 @@ import dcrypt.util;
 /// generate a 256 bit key
 unittest {
 	ubyte[32] key;
-	scrypt(key, cast(const(ubyte)[])"password", cast(const(ubyte)[])"salt", 123, 1, 1);
+	scrypt(key, "password", cast(const(ubyte)[])"salt", 123, 1, 1);
 }
 
 /// generate keys and compare them with test vectors from
@@ -22,7 +22,7 @@ unittest {
 
 	ubyte[] key = new ubyte[64];
 
-	key.scrypt(cast(const(ubyte)[])"",cast(const(ubyte)[])"", 16, 1, 1);
+	key.scrypt("", "", 16, 1, 1);
 
 	assert(key == x"
 77 d6 57 62 38 65 7b 20 3b 19 ca 42 c1 8a 04 97
@@ -30,7 +30,7 @@ f1 6b 48 44 e3 07 4a e8 df df fa 3f ed e2 14 42
 fc d0 06 9d ed 09 48 f8 32 6a 75 3a 0f c8 1f 17
 e8 d3 e0 fb 2e 0d 36 28 cf 35 e2 0c 38 d1 89 06");
 
-	scrypt(key, cast(const(ubyte)[])"password",cast(const(ubyte)[])"NaCl", 1024, 8, 16);
+	scrypt(key, "password", "NaCl", 1024, 8, 16);
 
 	assert(key == x"
 fd ba be 1c 9d 34 72 00 78 56 e7 19 0d 01 e9 fe
@@ -38,7 +38,7 @@ fd ba be 1c 9d 34 72 00 78 56 e7 19 0d 01 e9 fe
 2e af 30 d9 2e 22 a3 88 6f f1 09 27 9d 98 30 da
 c7 27 af b9 4a 83 ee 6d 83 60 cb df a2 cc 06 40");
 
-	scrypt(key, cast(const(ubyte)[])"pleaseletmein",cast(const(ubyte)[])"SodiumChloride",
+	scrypt(key, "pleaseletmein", "SodiumChloride",
 		16384, 8, 1);
 	
 	assert(key == x"
@@ -67,20 +67,20 @@ e6 1e 85 dc 0d 65 1e 40 df cf 01 7b 45 57 58 87");
 /// 		
 /// Params:
 /// output = Output buffer for derived key. Buffer length defines the key length. Lenght < 2^32.
-/// pass = password
-/// salt = cryptographic salt
+/// pass = Secret password. Either a string or something else that can be casted to `const ubyte[]`.
+/// salt = Cryptographic salt. Either a string or something else that can be casted to `const ubyte[]`.
 /// N = CPU/memory cost parameter
 /// r = block size parameter
 /// p = parallelization parameter. p <= (2^32-1)*hashLen/MFLen
 /// 
-public void scrypt(ubyte[] output, in ubyte[] pass, in ubyte[] salt, in uint N, in uint r, in uint p)
+public void scrypt(P,S)(ubyte[] output, in P pass, in S salt, in uint N, in uint r, in uint p)
 in {
 	assert(p <= ((1L<<32)-1)*32/(r * 128), "parallelization parameter p too large");
 	assert(output.length < 1L<<32, "dkLen must be smaller than 2^32");
 }
 body {
 
-	MFCrypt(output, pass, salt, N, r, p);
+	MFCrypt(output, cast(const ubyte[]) pass, cast(const ubyte[]) salt, N, r, p);
 	
 }
 
