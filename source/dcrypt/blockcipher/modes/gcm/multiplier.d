@@ -4,7 +4,7 @@ package:
 
 import dcrypt.blockcipher.modes.gcm.galoisfield;
 
-// TODO Make use of intel pclmulqdq instruction for fast multiplication.
+// TODO Dynamically make use of intel pclmulqdq instruction for fast multiplication.
 
 /// test if T is a GCM multiplier
 @safe
