@@ -14,6 +14,12 @@ private {
 
 alias Poly1305!void Poly1305Raw;
 
+/// Poly1305 MAC.
+/// 
+/// Params:
+/// Cipher	=	A block cipher used to derive the key. Set this to `void` if no block cipher should be used.
+/// 
+/// Standard: RFC 7539
 @safe nothrow @nogc
 public struct Poly1305(Cipher) if ((isBlockCipher!Cipher && Cipher.blockSize == 16) || is(Cipher == void)) {
 
@@ -32,26 +38,25 @@ public struct Poly1305(Cipher) if ((isBlockCipher!Cipher && Cipher.blockSize == 
 		static if(useCipher) {
 			Cipher cipher;
 		}
-		// Initialised state
 
-		/** Polynomial key */
+		// Polynomial key
 		int r0, r1, r2, r3, r4;
 
-		/** Precomputed 5 * r[1..4] */
+		// Precomputed 5 * r[1..4]
 		int s1, s2, s3, s4;
 
-		/** Encrypted nonce */
+		// Encrypted nonce
 		int k0, k1, k2, k3;
 
 		// Accumulating state
 
-		/** Current block of buffered input */
+		// Current block of buffered input
 		ubyte[blockSize] currentBlock;
 
-		/** Current offset in input buffer */
+		// Current offset in input buffer
 		uint currentBlockOffset = 0;
 
-		/** Polynomial accumulator */
+		// Polynomial accumulator
 		int h0, h1, h2, h3, h4;
 	}
 
@@ -78,7 +83,7 @@ public struct Poly1305(Cipher) if ((isBlockCipher!Cipher && Cipher.blockSize == 
 
 	private void setKey(in ubyte[] key, in ubyte[] nonce)
 	in {
-		if(useCipher) {
+		static if(useCipher) {
 			assert(nonce !is null && nonce.length == blockSize, "Poly1305 requires an 256 bit IV when used with a block cipher.");
 		}
 
