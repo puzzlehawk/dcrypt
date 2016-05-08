@@ -158,32 +158,6 @@ public struct Salsa(uint rounds = 20, bool xsalsa = false)
 		initialized = true;
 	}
 
-	/// 
-	/// Throws: Error if limit of 2^70 bytes is exceeded.
-	///
-	public ubyte returnByte(ubyte input)
-	{
-		if (limitExceeded())
-		{
-			assert(false, "2^70 byte limit per IV. Change IV");
-		}
-		
-		if (index == 0)
-		{
-			generateKeyStream(keyStream);
-			
-			if (++engineState[8] == 0)
-			{
-				++engineState[9];
-			}
-		}
-		
-		ubyte output = keyStream[index]^input;
-		index = (index + 1) % keyStream.length;
-		
-		return output;
-	}
-
 	///
 	/// encrypt or decrypt input bytes but no more than 2^70!
 	/// 
@@ -234,18 +208,6 @@ public struct Salsa(uint rounds = 20, bool xsalsa = false)
 
 		
 		return initialOutputSlice[0..input.length];
-	}
-
-	/// reset the cipher to its initial state
-	deprecated("The reset() function might lead to insecure use of a stream cipher.")
-		public void reset() nothrow @nogc
-	in {
-		assert(initialized, "not yet initialized");
-	}
-	body {
-		//setKey(workingKey, workingIV);
-		// reset counter
-		engineState[8..10] = 0;
 	}
 
 	/// Salsa20/rounds function

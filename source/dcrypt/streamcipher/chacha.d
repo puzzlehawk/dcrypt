@@ -65,22 +65,6 @@ public struct ChaCha(uint rounds) if(rounds % 2 == 0, "'rounds' must be even.") 
 		initialized = true;
 	}
 
-	/// Process a single byte.
-	public ubyte returnByte(in ubyte input)
-	in {
-		assert(initialized, name~" not initialized.");
-	} body {
-
-		if (keyStreamIndex == 0) {
-			genKeyStream();
-		}
-		
-		ubyte output = keyStream[keyStreamIndex]^input;
-		keyStreamIndex = (keyStreamIndex + 1) % keyStream.length;
-		
-		return output;
-	}
-
 	/// Returns: Slice pointing to processed data which might be smaller than `output`.
 	public ubyte[] processBytes(in ubyte[] input, ubyte[] output)
 	in {
@@ -108,13 +92,6 @@ public struct ChaCha(uint rounds) if(rounds % 2 == 0, "'rounds' must be even.") 
 		return initialOutput[0..input.length]; // Return slice to processed data.
 	}
 
-	/// Reset the cipher to its initial state. Same as calling start() with same parameters again.
-	/// Warning: Don't encrypt different data with the same initial state.
-	deprecated("The reset() function might lead to insecure use of a stream cipher.")
-	public void reset() {
-		state[12] = 1; // reset the counter
-		keyStreamIndex = 0;
-	}
 
 	/// Performs a ChaCha quarter round on a, b, c, d
 	/// Params:
