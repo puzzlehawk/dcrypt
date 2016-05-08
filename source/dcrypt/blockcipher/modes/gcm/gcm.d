@@ -40,7 +40,7 @@ public struct GCM(T) if(is(T == void) || (isBlockCipher!T && T.blockSize == 16))
 		 * Params:
 		 * c = underlying BlockCipher
 		 */
-		public this(BlockCipher c)
+		public this(IBlockCipher c)
 		in {
 			assert(c.blockSize() == blockSize, "GCM: block size of underlying cipher must be 128 bits!");	
 		}
@@ -54,7 +54,7 @@ public struct GCM(T) if(is(T == void) || (isBlockCipher!T && T.blockSize == 16))
 	private {
 
 		static if(OOP) {
-			BlockCipher blockCipher;
+			IBlockCipher blockCipher;
 		} else {
 			T blockCipher;	/// underlying BlockCipher
 		}
@@ -134,7 +134,7 @@ public struct GCM(T) if(is(T == void) || (isBlockCipher!T && T.blockSize == 16))
 			/**
 			 * Returns: the cipher this object wraps.
 			 */
-			BlockCipher getUnderlyingCipher() pure nothrow @nogc {
+			IBlockCipher getUnderlyingCipher() pure nothrow @nogc {
 				return blockCipher;
 			}
 		} else {
@@ -675,14 +675,14 @@ unittest {
 
 /// OOP Wrapper for GCM
 @safe
-public class GCMCipher: AEADCipher {
+public class GCMCipher: IAEADCipher {
 
 	private GCM!void cipher = void;
 	
 	public {
 		
 		/// Params: c = underlying block cipher
-		this(BlockCipher c) {
+		this(IBlockCipher c) {
 			cipher = GCM!void(c);
 		}
 		
@@ -713,7 +713,7 @@ public class GCMCipher: AEADCipher {
 		 *
 		 * Returns: the cipher this object wraps.
 		 */
-		BlockCipher getUnderlyingCipher() pure nothrow {
+		IBlockCipher getUnderlyingCipher() pure nothrow {
 			return cipher.getUnderlyingCipher();
 		}
 		

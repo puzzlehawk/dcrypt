@@ -34,7 +34,7 @@ template isAEADCipher(T)
 }
 
 @safe
-public interface AEADCipher
+public interface IAEADCipher
 {
 
 	public {
@@ -114,7 +114,7 @@ public interface AEADCipher
 // TODO AEAD cipher wrapper
 /// Wrapper class for AEAD ciphers
 @safe
-public class AEADCipherWrapper(T) if(isAEADCipher!T): AEADCipher
+public class AEADCipherWrapper(T) if(isAEADCipher!T): IAEADCipher
 {
 
 	private T cipher;
@@ -230,7 +230,7 @@ version(unittest) {
 	/// AssertionError	if encryption or decryption failed
 	@safe
 	public void AEADCipherTest(
-		AEADCipher cipher, 
+		IAEADCipher cipher, 
 		in string[] hexKeys, 
 		in string[] hexIVs,
 		in string[] hexPlaintexts,

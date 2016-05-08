@@ -7,9 +7,9 @@ import std.algorithm: swap;
 
 public class BlockCipherBenchmark: Benchmark {
 	
-	private BlockCipher cipher;
+	private IBlockCipher cipher;
 	 
-	this (BlockCipher c){
+	this (IBlockCipher c){
 		cipher = c;
 	}
 

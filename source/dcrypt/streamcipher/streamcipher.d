@@ -20,7 +20,7 @@ template isStreamCipher(T)
 }
 
 @safe
-public interface StreamCipher {
+public interface IStreamCipher {
 	/**
 	 * Initialize the cipher.
 	 *
@@ -78,7 +78,7 @@ public interface StreamCipher {
 }
 
 @safe
-public class StreamCipherWrapper(T) if(isStreamCipher!T): StreamCipher {
+public class StreamCipherWrapper(T) if(isStreamCipher!T): IStreamCipher {
 
 	private T cipher;
 
@@ -142,7 +142,7 @@ public class StreamCipherWrapper(T) if(isStreamCipher!T): StreamCipher {
 /// ciphertexts	=	cipher texts in binary format
 /// ivs	=	initialisation vectors, could be 'null'
 @safe
-void streamCipherTest(StreamCipher c, string[] keys, string[] plaintexts, string[] ciphertexts, string[] ivs = null) 
+void streamCipherTest(IStreamCipher c, string[] keys, string[] plaintexts, string[] ciphertexts, string[] ivs = null) 
 in {
 	assert(keys.length == plaintexts.length, "expected as much plaintexts as keys");
 	assert(keys.length == ciphertexts.length, "expected as much ciphertexts as keys");

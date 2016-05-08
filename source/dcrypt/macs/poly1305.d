@@ -63,8 +63,8 @@ public struct Poly1305(Cipher) if ((isBlockCipher!Cipher && Cipher.blockSize == 
 	/// Wipe sensitive data.
 	~this() {
 		wipe(r0, r1, r2, r3, r4);
-		wipe(s0, s1, s2, s3, s4);
-		wipe(k0, k1, k2, k3, k4);
+		wipe(s1, s2, s3, s4);
+		wipe(k0, k1, k2, k3);
 		wipe(h0, h1, h2, h3, h4);
 
 		wipe(currentBlock);

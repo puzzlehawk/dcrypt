@@ -18,7 +18,7 @@ public class Benchmark {
 	/// Params:
 	/// length	=	the length of benchmark in bytes
 	/// ciphers	=	BlockCiphers to test
-	public static void doBenchmark(ulong length, BlockCipher[] ciphers...) {
+	public static void doBenchmark(ulong length, IBlockCipher[] ciphers...) {
 		writeln();
 
 		printTabbed(BlockCipherBenchmark.header);
@@ -30,7 +30,7 @@ public class Benchmark {
 		}
 	}
 
-	public static void doBenchmark(ulong length, AEADCipher[] ciphers...) {
+	public static void doBenchmark(ulong length, IAEADCipher[] ciphers...) {
 		writeln();
 		printTabbed(AEADCipherBenchmark.header);
 		writeln();
