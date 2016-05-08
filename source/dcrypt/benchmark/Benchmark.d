@@ -30,7 +30,7 @@ public class Benchmark {
 		}
 	}
 
-	public static void doBenchmark(ulong length, IAEADCipher[] ciphers...) {
+	public static void doBenchmark(ulong length, IAEADEngine[] ciphers...) {
 		writeln();
 		printTabbed(AEADCipherBenchmark.header);
 		writeln();

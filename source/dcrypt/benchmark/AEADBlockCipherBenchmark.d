@@ -6,9 +6,9 @@ import std.algorithm: swap;
 
 public class AEADCipherBenchmark: Benchmark {
 	
-	private IAEADCipher cipher;
+	private IAEADEngine cipher;
 	 
-	this (IAEADCipher c){
+	this (IAEADEngine c){
 		cipher = c;
 	}
 

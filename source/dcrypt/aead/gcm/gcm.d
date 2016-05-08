@@ -16,7 +16,7 @@ public import dcrypt.exceptions: InvalidCipherTextException, IllegalArgumentExce
 // TODO Shoup tables
 // TODO support for uneven macSize
 
-//alias GCMCipher(T) = AEADCipherWrapper!(GCM!T); // would be nice but does not yet work
+//alias GCMEngine(T) = AEADCipherWrapper!(GCM!T); // would be nice but does not yet work
 
 import dcrypt.blockcipher.aes;
 static assert(isAEADCipher!(GCM!AES), "GCM ist not a AEADCipher.");
@@ -74,16 +74,11 @@ public struct GCM(T) if(is(T == void) || (isBlockCipher!T && T.blockSize == 16))
 
 	public {
 
-		/**
-		 * init cipher, H, Y0, E0
-		 * 
-		 * Params:
-		 * forEncryption = encrypt (true) or decrypt (false)
-		 * iv = Initialization vector. Length of 96 bits is most efficient.
-		 * key = encryption key
-		 * macSize = length of authentication tag in bits. 32 <= macSize <= 128. Only multiples of 8 supported.
-		 * 
-		 */
+		/// Initialize the underlying cipher.
+		/// Params:
+		/// forEncryption = true if we are setting up for encryption, false otherwise.
+		/// key	= Secret key.
+		/// nonce	= Number used only once.
 		void start(bool forEncryption, in ubyte[] key, in ubyte[] iv) nothrow @nogc
 		in {
 			assert(iv !is null, "Must provide an IV.");
@@ -146,11 +141,7 @@ public struct GCM(T) if(is(T == void) || (isBlockCipher!T && T.blockSize == 16))
 			}
 		}
 		
-		/**
-		 * Add a sequence of bytes to the associated data check.
-		 * 
-		 * Params: in = the input byte array.
-		 */
+		/// Process additional authenticated data.
 		void processAADBytes(in ubyte[] aad...) nothrow @nogc 
 		in {
 			assert(initialized, "not initialized");
@@ -159,14 +150,14 @@ public struct GCM(T) if(is(T == void) || (isBlockCipher!T && T.blockSize == 16))
 			gHash.updateAAD(aad);
 		}
 
-		/**
-		 * process a block of bytes from in putting the result into out.
-		 * Params:
-		 * in = the input byte array.
-		 * out = the output buffer the processed bytes go into.
-		 * Returns: Number of written bytes to output.
-		 * Throws: Error if the output buffer is too small.
-		 */
+		/// Process a block of bytes from in putting the result into out.
+		///
+		/// Params:
+		/// input = The input byte array.
+		/// output = The output buffer the processed bytes go into.
+		/// 
+		/// Returns:
+		/// Returns a slice pointing to the output data.
 		ubyte[] processBytes(in ubyte[] input, ubyte[] output) nothrow 
 		in {
 			assert(initialized, "not initialized");
@@ -197,13 +188,12 @@ public struct GCM(T) if(is(T == void) || (isBlockCipher!T && T.blockSize == 16))
 			return output[0..outputBytes];
 		}
 		
-		/**
-		 * Finish the operation. Does not append mac tag to the cipher text.
-		 * Mac tag does NOT get verified in decryption mode.
-		 *
-		 * Params: out = space for any resulting output data.
-		 * Returns: number of bytes written into out.
-		 */
+
+		/// Finish the operation. Does not append mac tag to the cipher text.
+		/// Mac tag does NOT get verified in decryption mode.
+		///
+		/// Params: out = space for any resulting output data.
+		/// Returns: number of bytes written into out.
 		size_t finish(ubyte[] macBuf, ubyte[] output) nothrow
 		in {
 			assert(initialized, "not initialized");
@@ -255,37 +245,22 @@ public struct GCM(T) if(is(T == void) || (isBlockCipher!T && T.blockSize == 16))
 
 			return outputBytes;
 		}
-		
-		/**
-		 * return the size of the output buffer required for a processBytes
-		 * an input of len bytes.
-		 *
-		 * Params: len = the length of the input.
-		 * Returns: the space required to accommodate a call to processBytes
-		 * with len bytes of input.
-		 */
-		size_t getUpdateOutputSize(size_t len) nothrow @nogc pure{
+
+		/// Returns: Return the size of the output buffer required for a processBytes an input of len bytes.
+		size_t getUpdateOutputSize(size_t len) nothrow @nogc pure const {
 			size_t total = len + buf.length;
 			//return (total + blockSize - 1) && (~blockSize+1);
 			return total - (total % blockSize);
 		}
 		
-		/**
-		 * return the size of the output buffer required for a processBytes plus a
-		 * doFinal with an input of len bytes.
-		 *
-		 * Params: len = the total length of the input.
-		 * Returns: the space required to accommodate a call to processBytes and doFinal
-		 * with len bytes of input.
-		 */
-		size_t getOutputSize(size_t len) nothrow @nogc pure {
+
+		/// Returns: Return the size of the output buffer required for a processBytes plus a finish with an input of len bytes.
+		size_t getOutputSize(size_t len) nothrow @nogc pure const {
 			return len;
 		}
-		
-		/**
-		 * Reset the cipher. After resetting the cipher is in the same state
-		 * as it was after the last init (if there was one).
-		 */
+
+		/// Reset the cipher. After resetting the cipher is in the same state
+		/// as it was after the last init (if there was one).
 		void reset() nothrow 
 		{
 			gHash.reset();
@@ -354,7 +329,7 @@ public struct GCM(T) if(is(T == void) || (isBlockCipher!T && T.blockSize == 16))
 	}
 }
 
-/// Test OOP API with test vectors from
+/// Test with test vectors from
 /// http://www.ieee802.org/1/files/public/docs2011/bn-randall-test-vectors-0511-v1.pdf
 /// section 2.2.1
 unittest {
@@ -502,13 +477,13 @@ unittest {
 	gcm.finish(mac, oBuf);
 	assert(mac != x"4F8D55E7D3F06FD5A13C0C29B9D5B880");
 	// verify that an InvalidCipherTextException is thrown
-//	bool exception = false;
-//	try {
-//		outLen = gcm.finish(oBuf);
-//	} catch (InvalidCipherTextException e) {
-//		exception = true;
-//	}
-//	assert(exception, "AAD has been altered but no exception has been thrown!");
+	//	bool exception = false;
+	//	try {
+	//		outLen = gcm.finish(oBuf);
+	//	} catch (InvalidCipherTextException e) {
+	//		exception = true;
+	//	}
+	//	assert(exception, "AAD has been altered but no exception has been thrown!");
 }
 
 // test vectors from
@@ -663,7 +638,7 @@ unittest {
 	];
 
 	AEADCipherTest(
-		new GCMCipher(new AESEngine()), 
+		new GCMEngine(new AESEngine), 
 		keys,
 		ivs,
 		plains,
@@ -675,7 +650,7 @@ unittest {
 
 /// OOP Wrapper for GCM
 @safe
-public class GCMCipher: IAEADCipher {
+public class GCMEngine: IAEADEngine {
 
 	private GCM!void cipher = void;
 	
@@ -686,113 +661,46 @@ public class GCMCipher: IAEADCipher {
 			cipher = GCM!void(c);
 		}
 		
-		/**
-		 * initialize the underlying cipher..
-		 * Params:
-		 * forEncryption = true if we are setting up for encryption, false otherwise.
-		 * key = Secret key.
-		 * iv = None.
-		 * macSize = Size of mac tag in bits.
-		 */
 		void start(bool forEncryption, in ubyte[] key, in ubyte[] iv) nothrow @nogc {
 			cipher.start(forEncryption, key, iv);
 		}
 		
-		/**
-		 * Return the name of the algorithm.
-		 * 
-		 * Returns: the algorithm name.
-		 */
 		@property
 		string name() pure nothrow {
 			return cipher.name;
 		}
 		
-		/**
-		 * return the cipher this object wraps.
-		 *
-		 * Returns: the cipher this object wraps.
-		 */
 		IBlockCipher getUnderlyingCipher() pure nothrow {
 			return cipher.getUnderlyingCipher();
 		}
 		
-		
-		/**
-		 * Add a sequence of bytes to the associated data check.
-		 * If the implementation supports it, this will be an online operation and will not retain the associated data.
-		 *
-		 * Params: in = the input byte array.
-		 */
 		void processAADBytes(in ubyte[] aad) nothrow {
 			cipher.processAADBytes(aad);
 		}
-		
-		/**
-		 * process a block of bytes from in putting the result into out.
-		 * Params:
-		 * in = the input byte array.
-		 * out = the output buffer the processed bytes go into.
-		 * Returns: Returns a slice pointing to the processed data.
-		 * Throws: Error if the output buffer is too small.
-		 */
+
 		ubyte[] processBytes(in ubyte[] input, ubyte[] output) nothrow {
 			return cipher.processBytes(input, output);
 		}
-		
-		/**
-		 * Finish the operation either appending or verifying the MAC at the end of the data.
-		 *
-		 * Params:
-		 * out = space for any resulting output data.
-		 * macBuf = Buffer for MAC tag.
-		 * Returns: number of bytes written into out.
-		 * Throws: IllegalStateError = if the cipher is in an inappropriate state.
-		 * dcrypt.exceptions.InvalidCipherTextException =  if the MAC fails to match.
-		 */
+
 		size_t finish(ubyte[] macBuf, ubyte[] output) {
 			return cipher.finish(macBuf, output);
 		}
-		
-		/**
-		 * return the size of the output buffer required for a processBytes
-		 * an input of len bytes.
-		 *
-		 * Params: len = the length of the input.
-		 * Returns: the space required to accommodate a call to processBytes
-		 * with len bytes of input.
-		 */
-		size_t getUpdateOutputSize(size_t len) nothrow {
+
+		size_t getUpdateOutputSize(size_t len) nothrow const {
 			return cipher.getUpdateOutputSize(len);
 		}
 		
-		/**
-		 * return the size of the output buffer required for a processBytes plus a
-		 * doFinal with an input of len bytes.
-		 *
-		 * Params:
-		 * len = the length of the input.
-		 * Returns: the space required to accommodate a call to processBytes and doFinal
-		 * with len bytes of input.
-		 */
-		size_t getOutputSize(size_t len) nothrow {
+		size_t getOutputSize(size_t len) nothrow const {
 			return cipher.getOutputSize(len);
 		}
-		
-		/**
-		 * Reset the cipher. After resetting the cipher is in the same state
-		 * as it was after the last init (if there was one).
-		 */
+
 		void reset() nothrow {
 			cipher.reset();
 		}
 	}
-
 }
 
-/**
- * circular buffer holding 2*BLOCKSIZE bytes of data
- */
+/// Circular buffer holding 2*BLOCKSIZE bytes of data.
 @safe
 private struct CircularBlockBuffer(size_t BLOCKSIZE) {
 
@@ -895,7 +803,7 @@ private struct CircularBlockBuffer(size_t BLOCKSIZE) {
 		}
 
 		@property
-		size_t length() {
+		size_t length() const {
 			return contentLen;
 		}
 
