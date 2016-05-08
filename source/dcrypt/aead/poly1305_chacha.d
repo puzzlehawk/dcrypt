@@ -168,14 +168,14 @@ if (isSupportedCipher!Cipher)
 
 	/// Get the minimal size of the output buffer for an input of length `len`.
 	/// Since this is a stream cipher, input and output are equal in length.
-	public size_t getUpdateOutputSize(in size_t len) pure {
+	public size_t getUpdateOutputSize(in size_t len) const pure {
 		return len;
 	}
 
 	/// Get the minimal buffer size needed for a call to `finish()`.
 	/// Since this is a stream cipher all data gets processed instantaneously.
 	/// Returns: 0
-	public size_t getOutputSize(in size_t len) pure {
+	public size_t getOutputSize(in size_t len) const pure {
 		return 0;
 	}
 

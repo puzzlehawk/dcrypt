@@ -4,7 +4,7 @@ public import dcrypt.macs.mac;
 import dcrypt.aead.gcm.gcm;
 
 
-/// Special case of GCMCipher where no data gets encrypted
+/// Special case of GCMEngine where no data gets encrypted
 /// but all processed as AAD.
 /// 
 /// Standards: NIST Special Publication 800-38D

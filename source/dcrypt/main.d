@@ -83,12 +83,11 @@ version (Benchmark) {
 		
 		Benchmark.doBenchmark(len, ciphers);
 		
-		IAEADCipher[] aeadCiphers = [
-			new GCMCipher(new AESEngine()),
-			new GCMCipher(new AESNIEngine()),
-			new GCMCipher(new SerpentEngine())
+		IAEADEngine[] aeadCiphers = [
+			new GCMEngine(new AESEngine()),
+			new GCMEngine(new AESNIEngine()),
+			new GCMEngine(new SerpentEngine())
 		];
-		//aeadCiphers ~=	new Poly1305ChaChaEngine;
 		
 		Benchmark.doBenchmark(len, aeadCiphers);
 
