@@ -4,7 +4,7 @@
 /// 
 /// Standard: RFC 7539
 
-import dcrypt.blockcipher.modes.aead;
+import dcrypt.aead.aead;
 import dcrypt.streamcipher.chacha;
 import dcrypt.streamcipher.salsa;
 import dcrypt.macs.poly1305;

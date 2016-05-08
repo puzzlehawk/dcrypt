@@ -1,7 +1,7 @@
 ﻿module dcrypt.macs.gmac;
 
 public import dcrypt.macs.mac;
-import dcrypt.blockcipher.modes.gcm.gcm;
+import dcrypt.aead.gcm.gcm;
 
 
 /// Special case of GCMCipher where no data gets encrypted

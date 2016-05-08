@@ -1,9 +1,9 @@
-﻿module dcrypt.blockcipher.modes.aead;
+﻿module dcrypt.aead.aead;
 
 public import dcrypt.blockcipher.blockcipher;
 
 ///
-/// test if T is a AEAD cipher
+/// Test if T is a AEAD cipher.
 ///
 @safe
 template isAEADCipher(T)
@@ -29,7 +29,6 @@ template isAEADCipher(T)
 						size_t len = bc.finish(cast(ubyte[]) [0], cast(ubyte[]) [0]);
 						size_t s1 = bc.getUpdateOutputSize(cast(size_t) 0);
 						size_t s2 = bc.getOutputSize(cast(size_t) 0);
-						//bc.reset();
 					}));
 }
 
@@ -239,7 +238,7 @@ version(unittest) {
 		in uint[]	macSize
 		) {
 		
-		import dcrypt.blockcipher.modes.aead;
+		import dcrypt.aead.aead;
 		import dcrypt.encoders.hex;
 		import std.conv: text;
 		

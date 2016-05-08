@@ -1,8 +1,8 @@
-﻿module dcrypt.blockcipher.modes.gcm.multiplier;
+﻿module dcrypt.aead.gcm.multiplier;
 
 package:
 
-import dcrypt.blockcipher.modes.gcm.galoisfield;
+import dcrypt.aead.gcm.galoisfield;
 
 // TODO Dynamically make use of intel pclmulqdq instruction for fast multiplication.
 
