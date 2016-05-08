@@ -66,7 +66,7 @@ version (Benchmark) {
 		Benchmark.doBenchmark(len, digests);
 		
 		
-		BlockCipher[] ciphers;
+		IBlockCipher[] ciphers;
 		ciphers ~=	new AESEngine();
 		ciphers ~=	new AESNIEngine();
 		ciphers ~=	new AESOpenSSLEngine();
@@ -83,7 +83,7 @@ version (Benchmark) {
 		
 		Benchmark.doBenchmark(len, ciphers);
 		
-		AEADCipher[] aeadCiphers = [
+		IAEADCipher[] aeadCiphers = [
 			new GCMCipher(new AESEngine()),
 			new GCMCipher(new AESNIEngine()),
 			new GCMCipher(new SerpentEngine())

@@ -20,7 +20,7 @@ template isBlockCipher(T)
 
 /// OOP API for block ciphers
 @safe
-public interface BlockCipher {
+public interface IBlockCipher {
 
 	
 	@safe public:
@@ -75,7 +75,7 @@ public interface BlockCipher {
 
 /// Wraps block ciphers into the OOP API
 @safe
-public class BlockCipherWrapper(T) if(isBlockCipher!T): BlockCipher {
+public class BlockCipherWrapper(T) if(isBlockCipher!T): IBlockCipher {
 
 	private T cipher;
 
@@ -155,7 +155,7 @@ version(unittest) {
 	/// AssertionError	if encryption or decryption failed
 	///
 	@safe
-	public void blockCipherTest(BlockCipher bc, string[] keys, string[] plaintexts, string[] cipherTexts, string[] ivs = null) {
+	public void blockCipherTest(IBlockCipher bc, string[] keys, string[] plaintexts, string[] cipherTexts, string[] ivs = null) {
 		import dcrypt.encoders.hex;
 		import std.conv: text;
 		
