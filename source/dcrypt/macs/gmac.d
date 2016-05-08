@@ -1,16 +1,13 @@
 ﻿module dcrypt.macs.gmac;
 
 public import dcrypt.macs.mac;
-
 import dcrypt.blockcipher.modes.gcm.gcm;
 
 
-/**
- * Special case of GCMCipher where no data gets encrypted
- * but all processed as AAD.
- * 
- * Standards: NIST Special Publication 800-38D
- */
+/// Special case of GCMCipher where no data gets encrypted
+/// but all processed as AAD.
+/// 
+/// Standards: NIST Special Publication 800-38D
 @safe
 public struct GMac(T) if(isBlockCipher!T)
 {
@@ -22,30 +19,18 @@ public struct GMac(T) if(isBlockCipher!T)
 	}
 
 	public {
+
+		enum name = "GMAC-"~T.name;
 		
 		void start(in ubyte[] key, in ubyte[] nonce) {
 			gcm.start(true, key, nonce);
 			initialized = true;
 		}
-	}
 
-	public {
-		
-		@property
-		string name() pure nothrow {
-			static if(is(T == void)) {
-				return gcm.getUnderlyingCipher.getAlgorithmName()~"-GMAC";
-			} else {
-				return T.name~"/GMAC";
-			}
-		}
-
-		/**
-		 * update the MAC with a block of bytes.
-		 *
-		 * Params:
-		 * input the ubyte slice containing the data.
-		 */
+		/// Update the MAC with a block of bytes.
+		///
+		/// Params:
+		/// input = The ubyte slice containing the data.
 		void put(in ubyte[] input...) nothrow @nogc
 		in {
 			assert(initialized, "GMac not initialized. call init() first.");
@@ -54,10 +39,13 @@ public struct GMac(T) if(isBlockCipher!T)
 			gcm.processAADBytes(input);
 		}
 		
-		/**
-		 * close the MAC, producing the final MAC value. The doFinal
-		 * call leaves the MAC reset(). 
-		 */
+		/// Close the MAC, producing the final MAC value.
+		/// Leaves the MAC reset.
+		/// 
+		/// Params:
+		/// output	=	Output buffer for MAC tag.
+		/// 
+		/// Returns: Returns a slice pointing to the MAC tag in the output buffer.
 		void finish(ubyte[] output) nothrow
 		in {
 			assert(initialized, "GMac not initialized. call init() first.");
@@ -72,9 +60,7 @@ public struct GMac(T) if(isBlockCipher!T)
 			gcm.finish(output[0..macSize], output[0..0]);
 		}
 
-		/**
-		 * reset the digest back to it's initial state.
-		 */
+		/// Reset the digest back to it's initial state.
 		void reset() nothrow 
 		in {
 			assert(initialized, "GMac not initialized. call init() first.");

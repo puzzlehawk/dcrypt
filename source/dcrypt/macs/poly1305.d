@@ -3,6 +3,7 @@
 import dcrypt.macs.mac;
 import dcrypt.blockcipher.blockcipher;
 import dcrypt.bitmanip;
+import dcrypt.util: wipe;
 
 static assert(isMAC!(Poly1305!void), "Poly1305!void is not a valid mac.");
 
@@ -56,12 +57,12 @@ public struct Poly1305(Cipher) if ((isBlockCipher!Cipher && Cipher.blockSize == 
 
 	/// Wipe sensitive data.
 	~this() {
-		r0 = r1 = r2 = r3 = r4 = 0;
-		s1 = s2 = s3 = s4 = 0;
-		k0 = k1 = k2 = k2 = 0;
-		
-		currentBlock[] = 0;
-		h0 = h1 = h2 = h3 = h4 = 0;
+		wipe(r0, r1, r2, r3, r4);
+		wipe(s0, s1, s2, s3, s4);
+		wipe(k0, k1, k2, k3, k4);
+		wipe(h0, h1, h2, h3, h4);
+
+		wipe(currentBlock);
 	}
 
 	/// Initializes the Poly1305 MAC.
@@ -254,7 +255,6 @@ public struct Poly1305(Cipher) if ((isBlockCipher!Cipher && Cipher.blockSize == 
 	public void reset()
 	{
 		currentBlockOffset = 0;
-		
 		h0 = h1 = h2 = h3 = h4 = 0;
 	}
 

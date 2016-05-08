@@ -3,6 +3,8 @@ module dcrypt.macs.hmac;
 public import dcrypt.macs.mac;
 import dcrypt.digest;
 
+import dcrypt.util: wipe;
+
 // TODO optimize reset()
 // TODO wipe sensitive data in destructor
 
@@ -13,9 +15,9 @@ static {
 }
 
 //static {
-//	import std.digest.sha;
+//	import std.digest.sha: StdSHA256 = SHA256;
 //	
-//	static assert(isMAC!(HMac!(std.digest.sha.SHA256)), "HMac is not a valid MAC");
+//	static assert(isMAC!(HMac!StdSHA256), "HMac is not a valid MAC");
 //}
 
 @safe
@@ -27,9 +29,7 @@ public:
 	public enum name = "HMAC-"~D.name;
 	public enum macSize = digestLength!D;
 
-	/**
-	 * Params: keyParam = the HMac key
-	 */
+	/// Params: keyParam = The HMac key.
 	@safe @nogc
 	void start(in ubyte[] macKey = null)
 	in {
@@ -65,12 +65,10 @@ public:
 	}
 
 	
-	/**
-	 * update the MAC with a block of bytes.
-	 *
-	 * Params:
-	 * input = the ubyte slice containing the data.
-	 */
+	/// Update the MAC with a block of bytes.
+	///
+	/// Params:
+	/// input = The ubyte slice containing the data.
 	@safe
 	void put(in ubyte[] input...) nothrow @nogc
 	in {
@@ -80,9 +78,13 @@ public:
 		digest.put(input);
 	}
 
-	/**
-	 * close the MAC, producing the final MAC value. The doFinal
-	 * call leaves the MAC reset(). */
+	/// Close the MAC, producing the final MAC value.
+	/// Leaves the MAC reset.
+	/// 
+	/// Params:
+	/// output	=	Output buffer for MAC tag.
+	/// 
+	/// Returns: Returns a slice pointing to the MAC tag in the output buffer.
 	@safe
 	ubyte[] finish(ubyte[] output) nothrow @nogc {
 		iHash = digest.finish();
@@ -93,7 +95,9 @@ public:
 		output[0..macSize] = digest.finish();
 		
 		digest.put(iKey);
-		
+
+		start();
+
 		return output[0..macSize];
 	}
 
@@ -103,10 +107,8 @@ public:
 		finish(buf);
 		return buf;
 	}
-	
-	/**
-	 * reset the digest back to it's initial state.
-	 */
+
+	/// Reset the digest back to it's initial state.
 	@safe
 	public void reset() nothrow @nogc
 	in{
@@ -114,6 +116,12 @@ public:
 	}
 	body {
 		start();
+	}
+
+	~this () nothrow {
+		wipe(iKey);
+		wipe(oKey);
+		wipe(iHash);
 	}
 	
 private:
