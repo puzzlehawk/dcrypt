@@ -22,7 +22,7 @@ import dcrypt.blockcipher.serpent;
 import dcrypt.blockcipher.modes.cbc;
 import dcrypt.blockcipher.modes.ctr;
 
-import dcrypt.blockcipher.modes.gcm.gcm;
+import dcrypt.aead.gcm.gcm;
 
 import dcrypt.streamcipher.poly1305_chacha;
 

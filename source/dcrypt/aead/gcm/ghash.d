@@ -1,7 +1,7 @@
-﻿module dcrypt.blockcipher.modes.gcm.ghash;
+﻿module dcrypt.aead.gcm.ghash;
 
-import dcrypt.blockcipher.modes.gcm.galoisfield;
-import dcrypt.blockcipher.modes.gcm.multiplier;
+import dcrypt.aead.gcm.galoisfield;
+import dcrypt.aead.gcm.multiplier;
 
 
 // BUG: llvm crashes when using GCMMultiplier64kTable
