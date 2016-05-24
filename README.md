@@ -1,12 +1,24 @@
-# dcrypt - Cryptography library for D
+# dcrypt - A simple cryptography library for D
 
-dcrypt is an attempt to create a cryptography library written in D.
-dcrypt is still far away from beeing what it should be and productive usage is discouraged.
-There's a lot of work to be done.
+dcrypt is a light-weight cryptography library written in D.
+It is still far away from beeing what it should be and therefore productive usage is discouraged.
 
 ### Running selftest and benchmark
 `dub run --config=selftest --build=benchmark`
 
+### Supported algorithms
+
+* Digests: sha1, sha2, sha3, blake
+* MAC: hmac, gmac
+* Blockciphers: aes (with support for hardware acceleration on Intel platforms), serpent, rc6
+* Streamciphers: chacha, salsa
+* Blockcipher modes: cbc, ctr, gcm
+* Authenticated encryption: poly1305, gcm
+* Password based key derivation: pbkdf2, scrypt
+* ECC: curve25519, ed25519
+* Quantum resistant signature scheme: sphincs256
+* NaCl API
+* Fortuna entropy daemon
 
 ## Using the high-level NaCl API
 
@@ -119,10 +131,6 @@ try {
 assert(exceptionThrown, "Tampered message has not been rejected!");
 
 ```
-
-## ECC
-dcrypt comes with one elliptic curve implemented: curve25519.
-Its close relative, signature scheme ed25519 is present too.
 
 ## Having fun with post quantum cryptography.
 If you'd like to generate signatures that can't be forged by an adversary
