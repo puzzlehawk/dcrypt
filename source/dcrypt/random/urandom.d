@@ -29,7 +29,7 @@ version(linux) {
 
 unittest {
 	if(URandomRNG.isAvailable) {
-		RNG rand = new URandomRNG();
+		PRNG rand = new URandomRNG();
 		
 		auto buf1 = new ubyte[64];
 		auto buf2 = new ubyte[64];
@@ -46,7 +46,7 @@ unittest {
 ///	most Unix like systems.
 ///
 @safe
-public class URandomRNG: RNG {
+public class URandomRNG: PRNG {
 
 	/**
 	 Throws: exception if /dev/urandom is not available
