@@ -86,7 +86,6 @@ private shared FortunaAccumulator globalAcc;	/// The entropy accumulator is used
 private shared static this() {
 	globalAcc = new shared FortunaAccumulator;
 
-	
 	version(linux) {
 		// Read entropy from /dev/urandom and seed the global accumulator.
 
@@ -112,6 +111,7 @@ private shared static this() {
 		}
 
 	}
+
 }
 
 

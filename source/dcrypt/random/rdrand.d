@@ -25,6 +25,9 @@ unittest {
 	}
 }
 
+// OOP wrapper
+alias WrapperPRNG!RDRand RDRandRNG;
+
 static assert(isRNG!RDRand);
 
 @safe
@@ -87,21 +90,26 @@ public struct RDRand {
 		}
 	}
 
-//	public void nextBytes(ubyte[] buf) nothrow @nogc 
-//	{
-//
-//		if(!isSupported) {
-//			assert(false, "RDRAND is not supported by your platform!");
-//		}
-//
-//		while(buf.length > 0) {
-//			long r = nextLong();
-//			for(uint i = 0; i < 8 && buf.length > 0; ++i) {
-//				buf[0] = cast(ubyte) r & 0xFF;
-//				r >>= 8;
-//			}
-//		}
-//	}
+	/// RDRAND is not seedable.
+	public void addSeed(in ubyte[] seed...) nothrow @nogc {
+		// Don't do anything.
+	}
+
+	//	public void nextBytes(ubyte[] buf) nothrow @nogc 
+	//	{
+	//
+	//		if(!isSupported) {
+	//			assert(false, "RDRAND is not supported by your platform!");
+	//		}
+	//
+	//		while(buf.length > 0) {
+	//			long r = nextLong();
+	//			for(uint i = 0; i < 8 && buf.length > 0; ++i) {
+	//				buf[0] = cast(ubyte) r & 0xFF;
+	//				r >>= 8;
+	//			}
+	//		}
+	//	}
 
 	/// Returns: A uniformly random ulong.
 	/// 
@@ -118,7 +126,7 @@ public struct RDRand {
 		return r;
 	}
 
-
+	
 	unittest {
 		if(isSupported) {
 			long r1 = nextLong();

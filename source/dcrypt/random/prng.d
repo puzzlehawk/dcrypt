@@ -62,7 +62,7 @@ if(isRNGWithInput!D) {
 }
 
 @safe
-public abstract class RNG {
+public abstract class PRNG {
 
 // TODO: default RNG
 //	/**
@@ -77,8 +77,9 @@ public abstract class RNG {
 //	}
 	
 	/// Fill the buffer with random bytes.
+	/// 
 	/// Params:
-	/// buf = output buffer to be filled with PRNG data
+	/// buf = Output buffer to be filled with PRNG data.
 	public abstract void nextBytes(ubyte[] buf) nothrow;
 	
 	/// Returns: The name of the RNG algorithm.
@@ -98,15 +99,16 @@ public abstract class RNG {
 ///	Wrapper class for PRNGs.
 ///
 @safe
-public class WrapperPRNG(R) if(isRNGWithInput!R): RNG {
+public class WrapperPRNG(R) if(isRNGWithInput!R): PRNG {
 
 	private R rng;
 
 override:
-	/// fill the buffer with random bytes
+	/// Fill the buffer with random bytes.
+	/// 
 	/// Params:
-	/// buf = output buffer to be filled with PRNG data
-	public void nextBytes(ubyte[] buf) nothrow @nogc {
+	/// buf = Output buffer to be filled with PRNG data.
+	public void nextBytes(ubyte[] buf) nothrow {
 		rng.nextBytes(buf);
 	}
 	
@@ -124,5 +126,4 @@ override:
 	public void addSeed(in ubyte[] seed) nothrow @nogc {
 		rng.addSeed(seed);
 	}
-	
 }
