@@ -9,7 +9,6 @@
 import dcrypt.random.prng;
 import dcrypt.bitmanip;
 import core.cpuid;
-import std.range: chunks;
 
 unittest {
 	if(RDRand.isSupported) {
@@ -22,6 +21,9 @@ unittest {
 		rand.nextBytes(buf2);
 		
 		assert(buf1 != buf2, "rdrand produced twice the same output!");
+
+		ubyte[32] buf3; // Test multiple of 8.
+		rand.nextBytes(buf3);
 	}
 }
 
@@ -58,7 +60,7 @@ public struct RDRand {
 			assert(false, "RDRAND is not supported by your platform!");
 		}
 
-		while(buf.length > 8) {
+		while(buf.length >= 8) {
 			ulong r = nextLong();
 			toLittleEndian!long(r, buf);
 			buf = buf[8..$];
