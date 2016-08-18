@@ -93,7 +93,9 @@ public enum ubyte[32] publicBasePoint = cast(immutable (ubyte[32]) ) x"090000000
 /// 
 /// ubyte[32] sharedKey = curve25519_scalarmult(mySecretKey, herPublicKey);
 /// 
-ubyte[32] curve25519_scalarmult(in ubyte[] secret, in ubyte[] p = publicBasePoint) @safe nothrow @nogc
+ubyte[32] curve25519_scalarmult(
+	in ubyte[] secret, 
+	in ubyte[] p = cast(const ubyte[32]) publicBasePoint) @safe nothrow @nogc
 in {
 	assert(secret.length == 32, "Secret key must be 32 bytes long.");
 	assert(p.length == 32, "Public key must be 32 bytes long.");
