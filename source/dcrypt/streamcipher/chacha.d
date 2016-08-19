@@ -1,7 +1,7 @@
 ﻿module dcrypt.streamcipher.chacha;
 
 import std.algorithm: min;
-import std.conv: text;
+import std.range;
 
 import dcrypt.streamcipher.streamcipher;
 import dcrypt.util;
@@ -26,7 +26,7 @@ public struct ChaCha(uint rounds) if(rounds % 2 == 0, "'rounds' must be even.") 
 	@safe nothrow @nogc:
 
 	public {
-		enum name = text("ChaCha", rounds);
+		enum name = "ChaCha"~rounds;
 	}
 
 	private {
@@ -92,7 +92,23 @@ public struct ChaCha(uint rounds) if(rounds % 2 == 0, "'rounds' must be even.") 
 		return initialOutput[0..input.length]; // Return slice to processed data.
 	}
 
+	ubyte processByte(in ubyte b)
+	in {
+		assert(initialized, name~" not initialized.");
+	} body {
+		
+		if (keyStreamIndex == 0) {
+			genKeyStream();
+		}
+		
+		enum len = 1;
+		ubyte o = b ^ keyStream[keyStreamIndex];
+		keyStreamIndex = (keyStreamIndex + len) % keyStream.length;
 
+		return o;
+	}
+
+	
 	/// Performs a ChaCha quarter round on a, b, c, d
 	/// Params:
 	/// a, b, c, d = Values to perform the round on. They get modified.

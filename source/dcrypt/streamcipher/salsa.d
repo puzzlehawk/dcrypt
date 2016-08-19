@@ -188,14 +188,7 @@ public struct Salsa(uint rounds = 20, bool xsalsa = false)
 
 			if (index == 0)
 			{
-				generateKeyStream(keyStream);
-
-				// increment counter
-				// engineState[9] += ++engineState[8] == 0;
-				if (++engineState[8] == 0)
-				{
-					++engineState[9];
-				}
+				nextKeyStreamBlock();
 			}
 
 			size_t len = min(keyStream.length-index, inp.length);
@@ -207,6 +200,31 @@ public struct Salsa(uint rounds = 20, bool xsalsa = false)
 
 		
 		return initialOutputSlice[0..input.length];
+	}
+
+	public ubyte processByte(in ubyte b)
+	in {
+		assert(initialized, "Salsa20Engine not initialized!");
+	}
+	body {
+		
+		// can't encrypt more than 2^70 bytes per iv
+		if (limitExceeded(1))
+		{
+			assert(false, "2^70 byte limit per IV would be exceeded. Change IV!");
+		}
+
+		if (index == 0)
+		{
+			nextKeyStreamBlock();
+		}
+		enum len = 1;
+
+		ubyte o = b^keyStream[index];
+
+		index = (index + len) % keyStream.length;
+
+		return o;
 	}
 
 	/// Salsa20/rounds function
@@ -292,18 +310,22 @@ public struct Salsa(uint rounds = 20, bool xsalsa = false)
 	//
 	// Private implementation
 	//
-	
+
 private:
 
 	/// generate a block (64 bytes) of keystream
-	void generateKeyStream(ubyte[] output) nothrow @nogc
-	in {
-		assert(output.length == stateSize*4, "invalid length of output buffer: 64 bytes required");
-	}
-	body {
+	void nextKeyStreamBlock() nothrow @nogc
+	{
 		uint[stateSize] x;
 		block!rounds(engineState, x);
-		toLittleEndian!uint(x, output);
+		toLittleEndian!uint(x, keyStream);
+
+		// increment counter
+		// engineState[9] += ++engineState[8] == 0;
+		if (++engineState[8] == 0)
+		{
+			++engineState[9];
+		}
 	}
 
 	void resetCounter() nothrow @nogc
@@ -312,7 +334,7 @@ private:
 		cW1 = 0;
 		cW2 = 0;
 	}
-	
+
 	bool limitExceeded() nothrow @nogc
 	{
 		if (++cW0 == 0)
@@ -325,7 +347,7 @@ private:
 		
 		return false;
 	}
-	
+
 	/*
 	 * test if limit will be exceeded for input of size len
 	 */

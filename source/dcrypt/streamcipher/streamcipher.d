@@ -11,9 +11,10 @@ template isStreamCipher(T)
 					{
 						ubyte[0] block;
 						T c = void; //Can define
-						string name = c.name;
+						string name = T.name;
 						c.start(true, cast(const ubyte[]) block, cast(const ubyte[]) block); // init with key and IV
 						ubyte[] outSlice = c.processBytes(cast(const ubyte[]) block, block);
+						ubyte b = c.processByte(ubyte(0));
 					}));
 }
 
