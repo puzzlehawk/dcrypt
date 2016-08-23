@@ -1,6 +1,7 @@
 ﻿module dcrypt.streamcipher.chacha;
 
 import std.algorithm: min;
+import std.conv: text;
 import std.range;
 
 import dcrypt.streamcipher.streamcipher;
@@ -26,7 +27,7 @@ public struct ChaCha(uint rounds) if(rounds % 2 == 0, "'rounds' must be even.") 
 	@safe nothrow @nogc:
 
 	public {
-		enum name = "ChaCha"~rounds;
+		enum name = text("ChaCha", rounds);
 	}
 
 	private {

@@ -143,22 +143,19 @@ version(unittest) {
 	
 	// unittest helper functions
 
+	import std.format: format;
 	
 	/// Runs decryption and encryption using BlockCipher bc with given keys, plaintexts, and ciphertexts
 	///
 	/// Params:
-	/// hexKeys	=	the keys encoded in hex
-	/// hexPlaintexts	=	the plaintexts encoded in hex
-	/// hexCiphertexts	=	the corresponding ciphertexts in hex
-	///
-	/// Throws:
-	/// AssertionError	if encryption or decryption failed
+	/// keys	=	The encryption/decryption keys.
+	/// plaintexts	=	Plaintexts.
+	/// cipherTexts	=	Corresponding ciphertexts.
+	/// ivs	=	Initialization vectors.
 	///
 	@safe
 	public void blockCipherTest(IBlockCipher bc, string[] keys, string[] plaintexts, string[] cipherTexts, string[] ivs = null) {
-		import dcrypt.encoders.hex;
-		import std.conv: text;
-		
+
 		foreach (uint i, string test_key; keys)
 		{
 			ubyte[] buffer = new ubyte[bc.blockSize];
@@ -175,13 +172,13 @@ version(unittest) {
 			bc.processBlock(cast(const ubyte[]) plaintexts[i], buffer);
 			
 			assert(buffer == cipherTexts[i],
-				text(bc.name, " encrypt: (", toHexStr(buffer), ") != (", toHexStr(cipherTexts[i]), ")"));
+				format("%s failed to encrypt.", bc.name));
 			
 			// Decryption
 			bc.start(false, key, iv);
 			bc.processBlock(cast(const ubyte[]) cipherTexts[i], buffer);
 			assert(buffer == plaintexts[i],
-				text(bc.name, " decrypt: (", toHexStr(buffer),") != (", toHexStr(plaintexts[i]), ")"));
+				format("%s failed to decrypt.", bc.name));
 		}
 	}
 }

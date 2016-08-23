@@ -240,7 +240,6 @@ version(unittest) {
 	/// AssertionError	if generated hash != expected hash
 	@safe
 	public void testDigest(Digest d, in string[] plaintext, in  string[] hashes) {
-		import dcrypt.encoders.hex;
 		import std.conv: text;
 		
 		foreach (i; 0 .. plaintext.length)
@@ -266,7 +265,7 @@ version(unittest) {
 			}
 
 			ubyte[] hash = d.finish();
-			assert(hash == expectedHash, text(d.name, " failed: ", toHexStr(hash), " != ", toHexStr(hashes[i])));
+			assert(hash == expectedHash, text(d.name, " failed."));
 			
 			// the clone should now create the same hash
 			if(clone) {

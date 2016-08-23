@@ -6,15 +6,15 @@ import std.algorithm: min;
 
 unittest {
 	import dcrypt.blockcipher.aes;
-	import dcrypt.encoders.hex;
-	import std.stdio;
 	
+	alias const(ubyte)[] octets;
+
 	IBufferedBlockCipher bbc = new BufferedBlockCipherWrapper!AES;
-	bbc.start(true, hexDecode("2b7e151628aed2a6abf7158809cf4f3c"));
-	
-	ubyte[] plain = hexDecode("6bc1bee22e409f96e93d7e117393172a");
+	bbc.start(true, cast(octets) x"2b7e151628aed2a6abf7158809cf4f3c");
+
+	octets plain = cast(octets) x"6bc1bee22e409f96e93d7e117393172a";
 	plain ~= plain;
-	ubyte[] cipher = hexDecode("3ad77bb40d7a3660a89ecaf32466ef97");
+	octets cipher = cast(octets) x"3ad77bb40d7a3660a89ecaf32466ef97";
 	cipher ~= cipher;
 	
 	ubyte[] output = new ubyte[32];

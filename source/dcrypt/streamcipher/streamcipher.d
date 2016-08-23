@@ -103,7 +103,6 @@ version(unittest) {
 	}
 	body {
 		import std.conv: text;
-		import dcrypt.encoders.hex;
 		alias const(ubyte)[] octets;
 
 		ubyte[] buf;
@@ -117,10 +116,8 @@ version(unittest) {
 			buf.length = plain.length;
 			
 			c.processBytes(plain, buf);
-			
-			//debug writeln(hexEncode(buf));
-			assert(buf == ciphertext, text(c.name(), " encryption failed: ", buf.toHexStr(),
-					" != ", ciphertext.toHexStr));
+
+			assert(buf == ciphertext, text(c.name, ": encryption failed."));
 		}
 
 		if(ivs !is null) {
