@@ -33,6 +33,7 @@ public struct ChaCha(uint rounds) if(rounds % 2 == 0, "'rounds' must be even.") 
 		static immutable uint[4] constants = [0x61707865, 0x3320646e, 0x79622d32, 0x6b206574];
 
 		uint[16] state;
+
 		ubyte[16*4] keyStream;
 		size_t keyStreamIndex = 0;
 
@@ -107,7 +108,6 @@ public struct ChaCha(uint rounds) if(rounds % 2 == 0, "'rounds' must be even.") 
 
 		return o;
 	}
-
 	
 	/// Performs a ChaCha quarter round on a, b, c, d
 	/// Params:
@@ -192,18 +192,15 @@ public struct ChaCha(uint rounds) if(rounds % 2 == 0, "'rounds' must be even.") 
 		toLittleEndian!uint(key, outState);
 	}
 
-	private void incrementCounter() {
-		state[12]++;
-	}
-
 	/// Generate a block of key stream and write it to `keyStream`.
 	private void genKeyStream() 
 	in {
 		assert(initialized, name~" not initialized.");
+		assert(state[12] < uint.max, name~": counter overflow.");
 	} body {
 		// generate the key stream
 		block(state, keyStream);
-		incrementCounter();
+		++state[12];
 	}
 }
 
