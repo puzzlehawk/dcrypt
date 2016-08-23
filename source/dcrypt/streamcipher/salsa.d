@@ -8,7 +8,6 @@ import dcrypt.util: wipe;
 import dcrypt.bitmanip;
 
 import std.algorithm: min;
-import std.conv: text;
 
 // Test Salsa20
 unittest {
@@ -99,7 +98,11 @@ public struct Salsa(uint rounds = 20, bool xsalsa = false)
 
 	@nogc nothrow:
 
-	public enum name = text(xsalsa ? "X" : "", "Salsa20/", rounds);
+	static if(xsalsa) {
+		public enum name = "XSalsa20/"~rounds;
+	} else {
+		public enum name = "Salsa20/"~rounds;
+	}
 
 	private {
 
