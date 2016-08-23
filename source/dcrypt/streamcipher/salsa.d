@@ -147,8 +147,8 @@ public struct Salsa(uint rounds = 20, bool xsalsa = false)
 		static if(xsalsa) {
 			// XSalsa
 			ubyte[32] xkey = HSalsa(key, iv[0..16]);
+			scope(exit) wipe(xkey);
 			initState(engineState, xkey, 0, iv[16..24]);
-			wipe(xkey);
 		} else {
 			// Salsa
 			initState(engineState, key, 0, iv);

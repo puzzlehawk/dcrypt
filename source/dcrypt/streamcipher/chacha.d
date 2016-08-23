@@ -156,7 +156,7 @@ public struct ChaCha(uint rounds) if(rounds % 2 == 0, "'rounds' must be even.") 
 	/// state = The state.
 	/// key = 32 bytes.
 	/// nonce = 12 bytes.
-	package static void initState(ref uint[16] state, in ubyte[] key, in uint counter, in ubyte[] nonce) pure 
+	private static void initState(ref uint[16] state, in ubyte[] key, in uint counter, in ubyte[] nonce) pure 
 	in {
 		assert(key.length == 32, "ChaCha requires 256 bit key.");
 		assert(nonce.length == 12, "ChaCha requires 96 bit nonce.");
@@ -171,7 +171,7 @@ public struct ChaCha(uint rounds) if(rounds % 2 == 0, "'rounds' must be even.") 
 	/// Params:
 	/// inState = the state created with `initState()`
 	/// outState = buffer for the new state
-	public static void block(in ref uint[16] inState, ref uint[16] outState) pure
+	private static void block(in ref uint[16] inState, ref uint[16] outState) pure
 	{
 		uint[16] workingState = inState;
 
@@ -185,7 +185,7 @@ public struct ChaCha(uint rounds) if(rounds % 2 == 0, "'rounds' must be even.") 
 	/// Params:
 	/// inState = the state created with `initState()`
 	/// outState = buffer for the new state
-	package static void block(in ref uint[16] inState, ref ubyte[16*4] outState) pure 
+	private static void block(in ref uint[16] inState, ref ubyte[16*4] outState) pure 
 	{
 		uint[16] key;
 		block(inState, key);

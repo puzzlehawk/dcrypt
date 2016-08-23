@@ -6,17 +6,15 @@
 
 import dcrypt.aead.aead;
 import dcrypt.streamcipher.chacha;
-import dcrypt.streamcipher.salsa;
 import dcrypt.macs.poly1305;
 import dcrypt.bitmanip;
+import dcrypt.util: wipe;
 
 static assert(isAEADCipher!Poly1305ChaCha20, Poly1305ChaCha20.name~" is not a valid AEAD cipher.");
 
+alias Poly1305Cipher!ChaCha20 Poly1305ChaCha20;
 alias AEADCipherWrapper!Poly1305ChaCha20 Poly1305ChaChaEngine;
 
-alias Poly1305Cipher!ChaCha20 Poly1305ChaCha20;
-alias Poly1305Cipher!Salsa20 Poly1305Salsa20;
-//alias Poly1305Cipher!XSalsa20 Poly1305XSalsa20;
 
 @safe
 private template isSupportedCipher(T)
@@ -25,16 +23,15 @@ private template isSupportedCipher(T)
 		is(T == struct) &&
 			is(typeof(
 					{
-						uint[16] block;
 						ubyte[] key, nonce;
-						T.initState(block, key, cast(uint)0, nonce);
-						T.block(block, block);
+						T cipher;
+						cipher.start(true, key, nonce, uint(0)); // Can set initial counter.
 					}));
 }
 
 @safe
 private struct Poly1305Cipher(Cipher)
-if (isSupportedCipher!Cipher)
+	if (isSupportedCipher!Cipher)
 {
 
 	@safe nothrow @nogc:
@@ -90,13 +87,10 @@ if (isSupportedCipher!Cipher)
 	} body {
 		this.forEncryption = forEncryption;
 
-		immutable ubyte[32] _key = key;
-		immutable ubyte[12] _nonce = nonce;
+		// Generate the key for poly1305.
+		poly.start(poly1305KeyGen!Cipher(key, nonce));
 
-		version(unittest) { polyKey = poly1305KeyGen(_key, _nonce); }
-
-		poly.start(poly1305KeyGen(_key, _nonce));
-		cipher.start(forEncryption, key, nonce);
+		cipher.start(forEncryption, key, nonce, 1);
 
 		aadMode = true;
 		aadLength = cipherTextLength = 0;
@@ -188,30 +182,31 @@ private:
 			poly.put(zeros[0..16-len%16]);
 		}
 	}
+}
 
-	static ubyte[32] poly1305KeyGen(in ubyte[] key, in ubyte[] nonce) pure {
-		uint[16] block;
+private ubyte[32] poly1305KeyGen(Cipher)(in ubyte[] key, in ubyte[] nonce) pure 
+	if(isSupportedCipher!Cipher)
+{
+	Cipher cipher;
+	cipher.start(true, key, nonce, 0);
 
-		Cipher.initState(block, key, 0, nonce);
-		Cipher.block(block, block);
-		
-		ubyte[32] poly1305Key;
-		toLittleEndian(block[0..8], poly1305Key[]);
-		return poly1305Key;
-	}
+	ubyte[32] poly1305Key;
+	cipher.processBytes(poly1305Key, poly1305Key);
+
+	return poly1305Key;
+}
+
+// Test poly1305KeyGen
+// Test vectors from RFC7539, section 2.6.2
+private unittest {
+	ubyte[32] key = cast(const ubyte[]) x"808182838485868788898a8b8c8d8e8f 909192939495969798999a9b9c9d9e9f";
+	ubyte[12] nonce = cast(const ubyte[]) x"000000000001020304050607";
 	
-	// Test poly1305KeyGen
-	// Test vectors from RFC7539, section 2.6.2
-	unittest {
-		ubyte[32] key = cast(const ubyte[]) x"808182838485868788898a8b8c8d8e8f 909192939495969798999a9b9c9d9e9f";
-		ubyte[12] nonce = cast(const ubyte[]) x"000000000001020304050607";
-		
-		ubyte[32] expectedPoly1305Key = cast(const ubyte[]) x"8ad5a08b905f81cc815040274ab29471 a833b637e3fd0da508dbb8e2fdd1a646";
-		
-		ubyte[32] poly1305Key = Poly1305ChaCha20.poly1305KeyGen(key, nonce);
-		
-		assert(poly1305Key == expectedPoly1305Key, "poly1305KeyGen() failed.");
-	}
+	ubyte[32] expectedPoly1305Key = cast(const ubyte[]) x"8ad5a08b905f81cc815040274ab29471 a833b637e3fd0da508dbb8e2fdd1a646";
+	
+	ubyte[32] poly1305Key = poly1305KeyGen!ChaCha20(key, nonce);
+	
+	assert(poly1305Key == expectedPoly1305Key, "poly1305KeyGen() failed.");
 }
 
 // Test vectors from RFC7539, section 2.8.2
