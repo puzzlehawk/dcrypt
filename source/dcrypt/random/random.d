@@ -13,7 +13,7 @@ import dcrypt.random.fortuna.sources.rdrand;
 import dcrypt.random.fortuna.sources.systemtick;
 import dcrypt.random.fortuna.sources.filesource;
 
-//version = FortunaRNG;
+version = FortunaRNG;
 
 version (FortunaRNG) {
 	private Fortuna globalRNG;
