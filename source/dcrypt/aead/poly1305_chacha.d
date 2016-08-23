@@ -1,4 +1,4 @@
-﻿module dcrypt.streamcipher.poly1305_chacha;
+﻿module dcrypt.aead.poly1305_chacha;
 
 /// Implementation of the Poly1305-ChaCha20 AEAD cipher.
 /// 
