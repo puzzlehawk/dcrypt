@@ -417,17 +417,10 @@ private:
 		}
 	}
 
-	//	static void keccakPermutation(uint rounds)(ref ubyte[byteStateLength] state) pure
-	//	{
-	//		ulong[25] longState;
-	//
-	//		fromLittleEndian(state[], longState[]);
-	//		keccakPermutation!rounds(longState);
-	//		toLittleEndian(longState[], state[]);
-	//	}
 
 	/// Note: This can safely be @trusted because array indices are fixed and
 	/// do never depend on input data.
+	/// TODO: Performance impact if @safe?
 	@trusted
 	static void keccakPermutation(uint rounds)(ref ulong[25] state) pure
 	{
