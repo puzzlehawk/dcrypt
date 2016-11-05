@@ -1,4 +1,4 @@
-﻿module nacl;
+﻿module drypt.nacl.api;
 
 public import dcrypt.nacl.secretbox;
 public import dcrypt.nacl.box;
