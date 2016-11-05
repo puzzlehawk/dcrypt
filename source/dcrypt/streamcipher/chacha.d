@@ -22,7 +22,7 @@ alias ChaCha!12 ChaCha12;
 static assert(isStreamCipher!ChaCha20, "ChaCha20 is not a stream cipher!");
 static assert(isStreamCipher!ChaCha12, "ChaCha12 is not a stream cipher!");
 
-public struct ChaCha(uint rounds) if(rounds % 2 == 0, "'rounds' must be even.")  {
+public struct ChaCha(uint rounds) if(rounds % 2 == 0)  {
 
 	@safe nothrow @nogc:
 
@@ -55,8 +55,8 @@ public struct ChaCha(uint rounds) if(rounds % 2 == 0, "'rounds' must be even.") 
 	/// initial_counter = The initial value of the counter. The default is 1. (Set this to 2 to skip the first block.)
 	public void start(bool forEncryption, in ubyte[] key, in ubyte[] iv, in uint initial_counter = 1)
 	in {
-		assert(key.length == 32, name~" requires a 32 byte key.");
-		assert(iv.length == 12, name~" requires a 12 byte nonce.");
+		assert(key.length == 32, "ChaCha requires a 32 byte key.");
+		assert(iv.length == 12, "ChaCha requires a 12 byte nonce.");
 	} body {
 
 		ubyte[32] _key = key;
@@ -70,7 +70,7 @@ public struct ChaCha(uint rounds) if(rounds % 2 == 0, "'rounds' must be even.") 
 	/// Returns: Slice pointing to processed data which might be smaller than `output`.
 	public ubyte[] processBytes(in ubyte[] input, ubyte[] output)
 	in {
-		assert(initialized, name~" not initialized.");
+		assert(initialized, "ChaCha not initialized.");
 		assert(output.length >= input.length, "Output buffer too small.");
 	} body {
 		
@@ -96,7 +96,7 @@ public struct ChaCha(uint rounds) if(rounds % 2 == 0, "'rounds' must be even.") 
 
 	ubyte processByte(in ubyte b)
 	in {
-		assert(initialized, name~" not initialized.");
+		assert(initialized, "ChaCha not initialized.");
 	} body {
 		
 		if (keyStreamIndex == 0) {
@@ -196,8 +196,8 @@ public struct ChaCha(uint rounds) if(rounds % 2 == 0, "'rounds' must be even.") 
 	/// Generate a block of key stream and write it to `keyStream`.
 	private void genKeyStream() 
 	in {
-		assert(initialized, name~" not initialized.");
-		assert(state[12] < uint.max, name~": counter overflow.");
+		assert(initialized, "ChaCha not initialized.");
+		assert(state[12] < uint.max, "ChaCha: Counter overflow.");
 	} body {
 		// generate the key stream
 		block(state, keyStream);

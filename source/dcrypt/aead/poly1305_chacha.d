@@ -10,7 +10,7 @@ import dcrypt.macs.poly1305;
 import dcrypt.bitmanip;
 import dcrypt.util: wipe;
 
-static assert(isAEADCipher!Poly1305ChaCha20, Poly1305ChaCha20.name~" is not a valid AEAD cipher.");
+static assert(isAEADCipher!Poly1305ChaCha20);
 
 alias Poly1305Cipher!ChaCha20 Poly1305ChaCha20;
 alias AEADCipherWrapper!Poly1305ChaCha20 Poly1305ChaChaEngine;
@@ -62,8 +62,8 @@ private struct Poly1305Cipher(Cipher)
 	/// nonce = Unique per secret key. 8 bytes.
 	public void start(bool forEncryption, in ubyte[] key, in uint constant, in ubyte[] nonce)
 	in {
-		assert(key.length == 32, name~" requires a 256 bit key.");
-		assert(nonce.length == 8, name~" requires a 64 bit nonce.");
+		assert(key.length == 32, "Poly1305Cipher requires a 256 bit key.");
+		assert(nonce.length == 8, "Poly1305Cipher requires a 64 bit nonce.");
 	} body {
 
 		// start(forEncryption, key, nonce); // Salsa20
@@ -100,7 +100,7 @@ private struct Poly1305Cipher(Cipher)
 
 	public void processAADBytes(in ubyte[] aad)
 	in {
-		assert(initialized, name~" not initialized.");
+		assert(initialized, "Not initialized.");
 		assert(aadMode, "Must process AAD before cipher data!");
 	} body {
 		poly.put(aad);
@@ -109,7 +109,7 @@ private struct Poly1305Cipher(Cipher)
 
 	public ubyte[] processBytes(in ubyte[] input, ubyte[] output)
 	in {
-		assert(initialized, name~" not initialized.");
+		assert(initialized, "Not initialized.");
 		assert(output.length >= input.length, "Output buffer too small.");
 	} body {
 

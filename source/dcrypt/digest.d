@@ -175,7 +175,7 @@ if(isDigest!T) {
 
 	/// Returns: The name of the digest algorithm.
 	@safe @property
-	public override string name() pure nothrow @nogc {
+	public override string name() pure nothrow {
 		return T.name;
 	}
 	
