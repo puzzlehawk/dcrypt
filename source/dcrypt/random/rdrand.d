@@ -92,9 +92,16 @@ public struct RDRand {
 	private static ulong nextLong() nothrow @nogc {
 		ulong r;
 
-		asm nothrow @nogc {
-			rdrand	R8;
-			mov		r, R8;
+		version(LDC) {
+			asm nothrow @nogc {
+				db 0x49, 0x0f, 0xc7, 0xf0; // rdrand R8;
+				mov		r, R8;
+			}
+		} else {
+			asm nothrow @nogc {
+				rdrand	R8;
+				mov		r, R8;
+			}
 		}
 
 		return r;
