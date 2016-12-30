@@ -90,21 +90,28 @@ public struct RDRand {
 	// TODO: optimize to fill an array
 	@trusted
 	private static ulong nextLong() nothrow @nogc {
-		ulong r;
 
-		version(LDC) {
-			asm nothrow @nogc {
-				db 0x49, 0x0f, 0xc7, 0xf0; // rdrand R8;
-				mov		r, R8;
+		version(X86_64) {
+
+			ulong r;
+
+			version(LDC) {
+				asm nothrow @nogc {
+					db 0x49, 0x0f, 0xc7, 0xf0; // rdrand R8;
+					mov		r, R8;
+				}
+			} else {
+				asm nothrow @nogc {
+					rdrand	R8;
+					mov		r, R8;
+				}
 			}
+
+			return r;
+
 		} else {
-			asm nothrow @nogc {
-				rdrand	R8;
-				mov		r, R8;
-			}
+			assert(false, "RDRAND is supported on x86_64 only.");
 		}
-
-		return r;
 	}
 
 	
