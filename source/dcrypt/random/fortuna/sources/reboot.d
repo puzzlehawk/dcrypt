@@ -14,13 +14,6 @@ import std.file;
 private enum blockSize = 32*32;
 private enum blocksPerFile = 16;
 
-version (linux) {
-	unittest {
-		RebootEntropySource rbs = new RebootEntropySource("/tmp/reboot.seed");
-		rbs.start();
-	}
-}
-
 @safe
 public class RebootEntropySource: EntropySource
 {

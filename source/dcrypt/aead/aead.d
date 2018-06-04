@@ -145,33 +145,34 @@ version(unittest) {
 	@safe
 	public void AEADCipherTest(
 		IAEADEngine cipher, 
-		in string[] hexKeys, 
-		in string[] hexIVs,
-		in string[] hexPlaintexts,
-		in string[] hexAAD, 
-		in string[] hexCipherTexts,
+		in string[] keys, 
+		in string[] ivs,
+		in string[] plaintexts,
+		in string[] aads, 
+		in string[] ciphertexts,
 		in uint[]	macSize
 		) {
 		
 		import dcrypt.aead.aead;
-		import dcrypt.encoders.hex;
-		import std.conv: text;
+		import std.format: format;
+
+		alias const (ubyte)[] octets;
 		
-		foreach (uint i, string test_key; hexKeys)
+		foreach (uint i, string test_key; keys)
 		{
-			ubyte[] plain = hexDecode(hexPlaintexts[i]);
-			ubyte[] aad = hexDecode(hexAAD[i]);
-			ubyte[] ciphertext = hexDecode(hexCipherTexts[i]);
+			octets plain = cast(octets) plaintexts[i];
+			octets aad = cast(octets) aads[i];
+			octets ciphertext = cast(octets) ciphertexts[i];
 			
 			ubyte[] output = new ubyte[plain.length];
 						
 			// set to encryption mode
-			cipher.start(true, hexDecode(test_key), hexDecode(hexIVs[i]));
+			cipher.start(true, cast(octets) test_key, cast(octets) ivs[i]);
 
 			output.length = cipher.getOutputSize(plain.length);
 
 			immutable size_t taglen = macSize[i]/8;
-			ubyte[] expectedMac = ciphertext[$-taglen..$];
+			octets expectedMac = ciphertext[$-taglen..$];
 			ciphertext = ciphertext[0..$-taglen];
 
 //			assert(cipher.getUpdateOutputSize(plain.length) == plain.length);
@@ -188,7 +189,7 @@ version(unittest) {
 			size_t len = out_slice.length+cipher.finish(mac, output[out_slice.length..$]);
 
 			assert(output == ciphertext,
-				text(cipher.name~" encrypt: (",hexEncode(output),") != ("~hexCipherTexts[i]~")"));
+				format("%s encrypt: %(%.2x%) != %(%.2x%)", cipher.name, output, ciphertexts[i]));
 				
 			assert(mac[0..taglen] == expectedMac);
 			

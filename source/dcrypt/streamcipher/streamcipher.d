@@ -11,9 +11,10 @@ template isStreamCipher(T)
 					{
 						ubyte[0] block;
 						T c = void; //Can define
-						string name = c.name;
+						string name = T.name;
 						c.start(true, cast(const ubyte[]) block, cast(const ubyte[]) block); // init with key and IV
 						ubyte[] outSlice = c.processBytes(cast(const ubyte[]) block, block);
+						ubyte b = c.processByte(ubyte(0));
 					}));
 }
 
@@ -81,56 +82,52 @@ public class StreamCipherWrapper(T) if(isStreamCipher!T): IStreamCipher {
 	}
 }
 
-/// Use this to test a stream cipher with multiple keys, plaintexts and ivs.
-/// 
-/// Params:
-/// c	=	the cipher engine
-/// keys	=	keys in binary format
-/// plaintexts	=	plaintexts in binary format
-/// ciphertexts	=	cipher texts in binary format
-/// ivs	=	initialisation vectors, could be 'null'
-@safe
-void streamCipherTest(IStreamCipher c, string[] keys, string[] plaintexts, string[] ciphertexts, string[] ivs = null) 
-in {
-	assert(keys.length == plaintexts.length, "expected as much plaintexts as keys");
-	assert(keys.length == ciphertexts.length, "expected as much ciphertexts as keys");
+version(unittest) {
+	/// Use this to test a stream cipher with multiple keys, plaintexts and ivs.
+	/// 
+	/// Params:
+	/// c	=	the cipher engine
+	/// keys	=	keys in binary format
+	/// plaintexts	=	plaintexts in binary format
+	/// ciphertexts	=	cipher texts in binary format
+	/// ivs	=	initialisation vectors, could be 'null'
+	@safe
+	void streamCipherTest(IStreamCipher c, string[] keys, string[] plaintexts, string[] ciphertexts, string[] ivs = null) 
+	in {
+		assert(keys.length == plaintexts.length, "expected as much plaintexts as keys");
+		assert(keys.length == ciphertexts.length, "expected as much ciphertexts as keys");
 
-	if(ivs != null) {
-		assert(keys.length == ivs.length, "expected as much ivs as keys");
-	}
-}
-body {
-	import std.conv: text;
-	import dcrypt.encoders.hex;
-	alias const(ubyte)[] octets;
-
-	ubyte[] buf;
-
-	import std.range: zip;
-
-	void doTest(in ubyte[] key, in ubyte[] plain, in ubyte[] ciphertext, in ubyte[] iv) {
-		
-		c.start(true, key, iv);
-		
-		buf.length = plain.length;
-		
-		c.processBytes(plain, buf);
-		
-		//debug writeln(hexEncode(buf));
-		assert(buf == ciphertext, text(c.name(), " encryption failed: ", buf.toHexStr(),
-				" != ", ciphertext.toHexStr));
-	}
-
-	if(ivs !is null) {
-		foreach(key, plain, cipher, iv; zip(keys, plaintexts, ciphertexts, ivs)) {
-			doTest(cast(octets) key, cast(octets) plain, cast(octets) cipher, cast(octets) iv);
-		}
-	}else {
-		foreach(key, plain, cipher; zip(keys, plaintexts, ciphertexts)) {
-			doTest(cast(octets) key, cast(octets) plain, cast(octets) cipher, null);
+		if(ivs != null) {
+			assert(keys.length == ivs.length, "expected as much ivs as keys");
 		}
 	}
+	body {
+		import std.conv: text;
+		alias const(ubyte)[] octets;
 
-	
+		ubyte[] buf;
 
+		import std.range: zip;
+
+		void doTest(in ubyte[] key, in ubyte[] plain, in ubyte[] ciphertext, in ubyte[] iv) {
+			
+			c.start(true, key, iv);
+			
+			buf.length = plain.length;
+			
+			c.processBytes(plain, buf);
+
+			assert(buf == ciphertext, text(c.name, ": encryption failed."));
+		}
+
+		if(ivs !is null) {
+			foreach(key, plain, cipher, iv; zip(keys, plaintexts, ciphertexts, ivs)) {
+				doTest(cast(octets) key, cast(octets) plain, cast(octets) cipher, cast(octets) iv);
+			}
+		}else {
+			foreach(key, plain, cipher; zip(keys, plaintexts, ciphertexts)) {
+				doTest(cast(octets) key, cast(octets) plain, cast(octets) cipher, null);
+			}
+		}
+	}
 }

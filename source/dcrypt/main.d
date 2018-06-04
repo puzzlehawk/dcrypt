@@ -23,8 +23,7 @@ import dcrypt.blockcipher.modes.cbc;
 import dcrypt.blockcipher.modes.ctr;
 
 import dcrypt.aead.gcm.gcm;
-
-import dcrypt.streamcipher.poly1305_chacha;
+import dcrypt.aead.poly1305_chacha;
 
 import dcrypt.benchmark.Benchmark;
 import dcrypt.benchmark.DigestBenchmark;

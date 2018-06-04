@@ -393,8 +393,6 @@ struct GCMPCLMULQDQMultiplier
 	@trusted
 	unittest {
 		import core.cpuid;
-		import std.conv: text;
-		import dcrypt.encoders.hex;
 		version(D_InlineAsm_X86_64) {
 			if(aes) {
 				
@@ -411,7 +409,7 @@ struct GCMPCLMULQDQMultiplier
 					movdqu c[EBP], XMM3;
 				}
 				
-				assert(c == x"12345678000000000000000000000000", text("c = ", hexEncode(c)));
+				assert(c == x"12345678000000000000000000000000");
 			}
 		}
 	}
@@ -421,9 +419,7 @@ struct GCMPCLMULQDQMultiplier
 	@trusted
 	unittest {
 		import core.cpuid;
-		import std.conv: text;
-		//import std.algorithm: reverse;
-		import dcrypt.encoders.hex;
+
 		version(D_InlineAsm_X86_64) {
 			if(aes) {
 
@@ -490,8 +486,6 @@ struct GCMPCLMULQDQMultiplier
 	
 //	/// test hardware accelerated multiplication (pclmulqdq)
 //	unittest {
-//		import std.conv: text;
-//		import dcrypt.encoders.hex;
 //		
 //		immutable ubyte[16] H = cast(immutable ubyte[16]) x"00000000000000000000000000000080"; // neutral element
 //		ubyte[16] X1 = cast(immutable ubyte[16]) x"0388dace60b6a392f328c2b971b2fe78";
@@ -500,13 +494,11 @@ struct GCMPCLMULQDQMultiplier
 //		
 //		mult.multiply(X1);
 //		
-//		assert(X1 == x"0388dace60b6a392f328c2b971b2fe78", text("GF128 multiplication with pclmulqdq failed!: ", hexEncode(X1)));
+//		assert(X1 == x"0388dace60b6a392f328c2b971b2fe78", "GF128 multiplication with pclmulqdq failed!");
 //	}
 	
 	/// test hardware accelerated multiplication (pclmulqdq)
 	unittest {
-		import std.conv: text;
-		import dcrypt.encoders.hex;
 
 		import std.algorithm: reverse;
 		
@@ -524,13 +516,11 @@ struct GCMPCLMULQDQMultiplier
 		
 		mult.multiply(X1);
 		
-		assert(X1 == expected, text("GF128 multiplication with pclmulqdq failed!: ", hexEncode(X1)));
+		assert(X1 == expected, "GF128 multiplication with pclmulqdq failed!");
 	}
 
 //	/// test hardware accelerated multiplication (pclmulqdq)
 //	unittest {
-//		import std.conv: text;
-//		import dcrypt.encoders.hex;
 //		
 //		ulong[2] H = [0xb32b6656a05b40b6, 0x952b2a56a5604ac0];
 //		ulong[2] X1 = [0xffcaff95f830f061, 0xdfa6bf4ded81db03];
@@ -542,7 +532,7 @@ struct GCMPCLMULQDQMultiplier
 //		
 //		mult.multiply(cast(ubyte[16])X1);
 //		
-//		assert(X1 == expected, text("GF128 multiplication with pclmulqdq failed!: ", hexEncode(cast(ubyte[16])X1)));
+//		assert(X1 == expected, "GF128 multiplication with pclmulqdq failed!");
 //	}
 	
 }

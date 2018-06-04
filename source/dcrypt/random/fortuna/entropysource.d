@@ -13,15 +13,24 @@ import dcrypt.random.fortuna.accumulator;
 @safe
 public abstract class EntropySource
 {
-	private static ubyte idCounter = 0;
-	private ubyte sourceID;
-	private size_t pool = 0; // ID of the pool where the entropy gets sent to.
-	private bool calledSendEntropyEvent; /// Used to control wether the source calls sendEntropyEvent or not.
-	private Thread worker;
+	private 
+	{
+		static ubyte idCounter = 0;
+		ubyte sourceID;
+		size_t pool = 0; // ID of the pool where the entropy gets sent to.
+		bool calledSendEntropyEvent; /// Used to control wether the source calls sendEntropyEvent or not.
+		Thread worker;
+
+		bool running = true;
+	}
 
 	
 	final this() nothrow {
 		this.sourceID = idCounter++; // give each source another ID (as long as there are less than 256 sources)
+	}
+
+	public final void stop() nothrow {
+		running = false;
 	}
 
 	@trusted
@@ -36,7 +45,6 @@ public abstract class EntropySource
 	}
 
 	private void run() {
-		bool running = true;
 
 		while(running) {
 
@@ -82,17 +90,8 @@ public abstract class EntropySource
 		import dcrypt.random.fortuna.fortuna: addEntropy;
 
 		calledSendEntropyEvent = true;
-
 		addEntropy(sourceID, pool, buf);
-
 		++pool;
-
-//		debug {
-//			try {
-//				import std.stdio;
-//				writeln(sourceID, " ", pool, " ",  name, ":\t", dcrypt.encoders.hex.toHexStr(buf[0..$/4]));
-//			} catch(Exception e) {}
-//		}
 	}
 
 }

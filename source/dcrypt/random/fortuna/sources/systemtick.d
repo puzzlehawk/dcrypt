@@ -7,13 +7,6 @@ import dcrypt.random.fortuna.entropysource;
 import dcrypt.random.fortuna.fortuna: addEntropy;
 
 /// Generate entropy data with the system clock.
-/// 
-
-unittest {
-	auto st = new SystemTickEntropySource;
-	st.start();
-}
-
 @safe
 public class SystemTickEntropySource: EntropySource
 {

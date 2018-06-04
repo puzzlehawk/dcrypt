@@ -1,13 +1,16 @@
 
 module dcrypt.macs.mac;
 
-// TODO as output range
+import std.range: isOutputRange;
 
 /// Test if T is a message authentication code (MAC).
 template isMAC(T)
 {
 	enum bool isMAC =
-		is(T == struct) &&
+		is(T == struct)
+			&& isOutputRange!(T, ubyte)
+			&& isOutputRange!(T, ubyte[])
+			&&
 			is(typeof(
 					{
 						ubyte[] data;
@@ -50,46 +53,46 @@ if(isMAC!M) {
 @safe
 public abstract class Mac {
 
+	
 
+	@safe @property
+	public abstract string name() pure nothrow;
 
-    @safe @property
-    public abstract string name() pure nothrow;
+	/**
+	 * Returns: the size, in bytes, of the MAC.
+	 */
+	@safe @property
+	public abstract uint macSize() pure nothrow;
 
-    /**
-    * Returns: the size, in bytes, of the MAC.
-    */
-    @safe @property
-    public abstract uint macSize() pure nothrow;
+	/**
+	 * update the MAC with a block of bytes.
+	 *
+	 * Params:
+	 * input the ubyte slice containing the data.
+	 */
+	@safe
+	public abstract void put(in ubyte[] input...) nothrow;
 
-    /**
-     * update the MAC with a block of bytes.
-    *
-    * Params:
-     * input the ubyte slice containing the data.
-     */
-    @safe
-    public abstract void put(in ubyte[] input...) nothrow;
-
-    /**
-     * close the MAC, producing the final MAC value. The doFinal
-     * call leaves the MAC reset(). */
-    @safe
-    public abstract size_t doFinal(ubyte[] output) nothrow;
-    
-     /**
-     * close the MAC, producing the final MAC value. The doFinal
-     * call leaves the MAC reset(). */
-    @safe
-    public final ubyte[] doFinal() nothrow {
-    	ubyte[] output = new ubyte[macSize];
-    	doFinal(output);
-    	return output;
-    }
-    /**
-     * reset the digest back to it's initial state.
-     */
-    @safe
-    public abstract void reset() nothrow ;
+	/**
+	 * close the MAC, producing the final MAC value. The doFinal
+	 * call leaves the MAC reset(). */
+	@safe
+	public abstract size_t doFinal(ubyte[] output) nothrow;
+	
+	/**
+	 * close the MAC, producing the final MAC value. The doFinal
+	 * call leaves the MAC reset(). */
+	@safe
+	public final ubyte[] doFinal() nothrow {
+		ubyte[] output = new ubyte[macSize];
+		doFinal(output);
+		return output;
+	}
+	/**
+	 * reset the digest back to it's initial state.
+	 */
+	@safe
+	public abstract void reset() nothrow ;
 
 }
 
@@ -104,8 +107,8 @@ public class WrapperMac(T) if(isMAC!T) {
 	}
 	
 	/**
-    * Returns: the size, in bytes, of the MAC.
-    */
+	 * Returns: the size, in bytes, of the MAC.
+	 */
 	@safe @property
 	public uint macSize() pure nothrow {
 		return mac.macSize;
@@ -115,38 +118,38 @@ public class WrapperMac(T) if(isMAC!T) {
 	public void start(in ubyte[] key, in ubyte[] nonce = null);
 	
 	/**
-     * update the MAC with a single byte.
-     *
-     * Params:
-     *	input	=	the input byte to be entered.
-     */
+	 * update the MAC with a single byte.
+	 *
+	 * Params:
+	 *	input	=	the input byte to be entered.
+	 */
 	@safe
 	public void put(ubyte input) nothrow {
 		mac.put(input);
 	}
 	
 	/**
-     * update the MAC with a block of bytes.
-    *
-    * Params:
-     * input the ubyte slice containing the data.
-     */
+	 * update the MAC with a block of bytes.
+	 *
+	 * Params:
+	 * input the ubyte slice containing the data.
+	 */
 	@safe
 	public void put(in ubyte[] input) nothrow {
 		mac.put(input);
 	}
 	
 	/**
-     * close the MAC, producing the final MAC value. The doFinal
-     * call leaves the MAC reset(). */
+	 * close the MAC, producing the final MAC value. The doFinal
+	 * call leaves the MAC reset(). */
 	@safe
 	public size_t doFinal(ubyte[] output) nothrow {
 		return mac.doFinal(output);
 	}
 	
 	/**
-     * close the MAC, producing the final MAC value. The doFinal
-     * call leaves the MAC reset(). */
+	 * close the MAC, producing the final MAC value. The doFinal
+	 * call leaves the MAC reset(). */
 	@safe
 	public final ubyte[] doFinal() nothrow {
 		ubyte[] output = new ubyte[macSize];
@@ -154,8 +157,8 @@ public class WrapperMac(T) if(isMAC!T) {
 		return output;
 	}
 	/**
-     * reset the digest back to it's initial state.
-     */
+	 * reset the digest back to it's initial state.
+	 */
 	@safe
 	public void reset() nothrow {
 		mac.reset();
