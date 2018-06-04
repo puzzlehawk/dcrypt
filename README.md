@@ -1,3 +1,9 @@
+
+# G O    A W A Y    F R O M    G I T H U B
+Sad, sad, sad... Soon you'll have to log in with your Windows Live ID or whatever bullshit.
+
+![GithubIsDead](github.png)
+
 # dcrypt - A simple cryptography library for D
 
 dcrypt is a light-weight cryptography library written in D.
